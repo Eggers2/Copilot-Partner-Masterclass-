@@ -209,6 +209,22 @@ export default function LandingPage() {
                     Kein Spam. Nur relevante Updates zum Programm-Start.
                     Jederzeit abmeldbar.
                   </p>
+
+                  <div className="flex items-center gap-3 my-2">
+                    <div className="flex-1 h-px bg-dark-slate-700" />
+                    <span className="text-dark-slate-500 text-xs">oder</span>
+                    <div className="flex-1 h-px bg-dark-slate-700" />
+                  </div>
+
+                  <a
+                    href="https://myablefy.com/s/nextskills/copilot-masterclass-5d493b90"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 text-ms-blue-400 hover:text-ms-blue-300 text-sm font-medium transition-colors"
+                  >
+                    Jetzt direkt kaufen mit 22% Rabatt – 3.900 €
+                    <ArrowRight className="w-4 h-4" />
+                  </a>
                 </form>
               )}
             </div>
@@ -225,7 +241,7 @@ export default function LandingPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Star className="w-4 h-4 text-ms-blue-400" />
-                <span>Start: Mai 2025</span>
+                <span>Start: Mai 2026</span>
               </div>
             </div>
           </div>
@@ -534,14 +550,9 @@ export default function LandingPage() {
             </div>
 
             {/* Audience 2 */}
-            <div className="relative group md:-mt-4">
+            <div className="relative group">
               <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/20 to-transparent rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <div className="relative p-8 rounded-3xl border border-cyan-500/40 bg-gradient-to-b from-dark-slate-800/80 to-dark-slate-800/50 hover:border-cyan-400/60 transition-all duration-300">
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <span className="px-4 py-1.5 bg-gradient-to-r from-ms-blue-500 to-cyan-500 rounded-full text-white text-xs font-bold">
-                    Beliebteste Rolle
-                  </span>
-                </div>
                 <div className="w-16 h-16 bg-cyan-500/20 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-cyan-500/30 transition-colors">
                   <Code className="w-8 h-8 text-cyan-400" />
                 </div>
@@ -627,7 +638,7 @@ export default function LandingPage() {
               <span className="text-ms-blue-600">Early-Bird Preis</span>
             </h2>
             <p className="section-subtitle">
-              Start im Mai. Nur für frühe Anmelder: Spare über 20% und
+              Start: Mai 2026. Nur für frühe Anmelder: Spare über 20% und
               starte mit den besten Konditionen.
             </p>
           </div>
@@ -720,17 +731,22 @@ export default function LandingPage() {
                     ))}
                   </ul>
 
-                  <button
-                    onClick={scrollToWaitlist}
+                  <a
+                    href="https://myablefy.com/s/nextskills/copilot-masterclass-5d493b90"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="w-full py-4 bg-white text-ms-blue-700 font-bold rounded-xl hover:bg-ms-blue-50 transition-all duration-200 flex items-center justify-center gap-2 shadow-lg"
                   >
-                    Jetzt auf die Warteliste
+                    Jetzt kaufen – 3.900 €
                     <ArrowRight className="w-5 h-5" />
-                  </button>
+                  </a>
 
-                  <p className="text-center text-ms-blue-300 text-xs mt-4">
-                    Keine Vorauszahlung erforderlich
-                  </p>
+                  <button
+                    onClick={scrollToWaitlist}
+                    className="w-full py-3 mt-3 border border-white/30 text-white/80 font-semibold rounded-xl hover:bg-white/10 transition-all duration-200 flex items-center justify-center gap-2 text-sm"
+                  >
+                    Oder auf die Warteliste eintragen
+                  </button>
                 </div>
               </div>
             </div>
@@ -742,12 +758,12 @@ export default function LandingPage() {
               </div>
               <div>
                 <p className="font-bold text-dark-slate-900 mb-1">
-                  Keine Vorauszahlung – Nur auf die Liste setzen lassen
+                  Zwei Wege – du entscheidest
                 </p>
                 <p className="text-dark-slate-600 text-sm">
-                  Die Warteliste ist kostenlos und unverbindlich. Du wirst als
-                  Erster informiert, wenn die Anmeldung öffnet – und sicherst
-                  dir damit den Early-Bird Preis.
+                  Kaufe jetzt sofort zum Sonderpreis und sichere dir deinen
+                  Zugang. Oder trag dich kostenlos auf die Warteliste ein und
+                  werde informiert, wenn die Anmeldung startet.
                 </p>
               </div>
             </div>
@@ -765,8 +781,7 @@ export default function LandingPage() {
             Bereit, zum KI-Strategen zu werden?
           </h2>
           <p className="text-dark-slate-400 text-lg mb-10">
-            Trag dich jetzt auf die Warteliste ein und sei dabei, wenn die
-            Microsoft Copilot Partner Masterclass im Mai startet.
+            Trag dich jetzt auf die Warteliste ein – oder kaufe sofort zum Sonderpreis. Die Microsoft Copilot Partner Masterclass startet im Mai 2026.
           </p>
 
           <div className="max-w-lg mx-auto">
@@ -820,6 +835,22 @@ export default function LandingPage() {
                     {formState.message}
                   </div>
                 )}
+
+                <div className="flex items-center gap-3 mt-2">
+                  <div className="flex-1 h-px bg-dark-slate-700" />
+                  <span className="text-dark-slate-500 text-xs">oder</span>
+                  <div className="flex-1 h-px bg-dark-slate-700" />
+                </div>
+
+                <a
+                  href="https://myablefy.com/s/nextskills/copilot-masterclass-5d493b90"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 text-ms-blue-400 hover:text-ms-blue-300 text-sm font-medium transition-colors"
+                >
+                  Jetzt direkt kaufen – 3.900 € (22% Rabatt)
+                  <ArrowRight className="w-4 h-4" />
+                </a>
               </form>
             )}
           </div>

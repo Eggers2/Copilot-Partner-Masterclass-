@@ -356,7 +356,7 @@ export default function AdminPage() {
                 <Mail className="w-5 h-5 text-purple-600" />
               </div>
             </div>
-            <p className="text-3xl font-extrabold text-dark-slate-900">Mai 25</p>
+            <p className="text-3xl font-extrabold text-dark-slate-900">Mai 26</p>
             <p className="text-dark-slate-500 text-sm mt-1">
               Programm-Start
             </p>
