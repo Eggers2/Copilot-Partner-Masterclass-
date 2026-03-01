@@ -29,6 +29,25 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // N8N Webhook: fire-and-forget – E-Mail-Benachrichtigung bei neuer Anmeldung
+    const webhookUrl = process.env.N8N_WEBHOOK_URL;
+    if (webhookUrl) {
+      fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: normalizedEmail,
+          timestamp: new Date().toISOString(),
+          entryId: entry.id,
+          source: "waitlist",
+        }),
+      })
+        .then((res) => {
+          if (!res.ok) console.error(`N8N webhook returned ${res.status}`);
+        })
+        .catch((err) => console.error("N8N webhook delivery failed:", err));
+    }
+
     return NextResponse.json(
       {
         success: true,
