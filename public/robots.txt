@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://copilot.next-skills.de/sitemap.xml
