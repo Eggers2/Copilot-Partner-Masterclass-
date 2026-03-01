@@ -1,0 +1,88 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { email } = body;
+
+    if (!email || typeof email !== "string") {
+      return NextResponse.json(
+        { error: "E-Mail-Adresse ist erforderlich." },
+        { status: 400 }
+      );
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: "Bitte gib eine gültige E-Mail-Adresse ein." },
+        { status: 400 }
+      );
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const entry = await prisma.waitlist.create({
+      data: {
+        email: normalizedEmail,
+      },
+    });
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Erfolgreich zur Warteliste hinzugefügt!",
+        id: entry.id,
+      },
+      { status: 201 }
+    );
+  } catch (error: unknown) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "P2002"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Diese E-Mail-Adresse ist bereits auf der Warteliste eingetragen.",
+        },
+        { status: 409 }
+      );
+    }
+
+    console.error("Waitlist POST error:", error);
+    return NextResponse.json(
+      { error: "Ein interner Fehler ist aufgetreten. Bitte versuche es erneut." },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get("authorization");
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (!adminPassword || authHeader !== `Bearer ${adminPassword}`) {
+      return NextResponse.json({ error: "Nicht autorisiert." }, { status: 401 });
+    }
+
+    const entries = await prisma.waitlist.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json({
+      total: entries.length,
+      entries,
+    });
+  } catch (error) {
+    console.error("Waitlist GET error:", error);
+    return NextResponse.json(
+      { error: "Ein interner Fehler ist aufgetreten." },
+      { status: 500 }
+    );
+  }
+}
