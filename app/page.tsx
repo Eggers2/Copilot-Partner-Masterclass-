@@ -74,8 +74,51 @@ export default function LandingPage() {
     }
   };
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Course",
+        "@id": "https://copilot.next-skills.de/#course",
+        name: "Microsoft Copilot Partner Masterclass",
+        description:
+          "Das 12-Monats-Programm für Microsoft Partner: Von der Copilot-Strategie bis zur skalierbaren Adoption. Für Geschäftsführer, Vertrieb und Consultants.",
+        url: "https://copilot.next-skills.de",
+        provider: {
+          "@type": "Organization",
+          name: "Next Skills",
+          url: "https://copilot.next-skills.de",
+        },
+        inLanguage: "de",
+        courseMode: "online",
+        educationalLevel: "Professional",
+        offers: {
+          "@type": "Offer",
+          price: "3900",
+          priceCurrency: "EUR",
+          availability: "https://schema.org/InStock",
+          url: "https://myablefy.com/s/nextskills/copilot-masterclass-5d493b90",
+          validFrom: "2026-05-01",
+        },
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://copilot.next-skills.de/#organization",
+        name: "Next Skills",
+        url: "https://copilot.next-skills.de",
+        logo: "https://copilot.next-skills.de/og-image.png",
+        description:
+          "Next Skills ist auf Microsoft Copilot Adoption und Partner-Enablement spezialisiert.",
+      },
+    ],
+  };
+
   return (
     <main className="min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-dark-slate-900/95 backdrop-blur-sm border-b border-dark-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -220,10 +263,10 @@ export default function LandingPage() {
                     href="https://myablefy.com/s/nextskills/copilot-masterclass-5d493b90"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 text-ms-blue-400 hover:text-ms-blue-300 text-sm font-medium transition-colors"
+                    className="flex items-center justify-center gap-2 text-ms-blue-400 hover:text-ms-blue-300 text-base font-semibold transition-colors"
                   >
                     Jetzt direkt kaufen mit 22% Rabatt – 3.900 €
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="w-5 h-5" />
                   </a>
                 </form>
               )}
@@ -551,42 +594,6 @@ export default function LandingPage() {
 
             {/* Audience 2 */}
             <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/20 to-transparent rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="relative p-8 rounded-3xl border border-cyan-500/40 bg-gradient-to-b from-dark-slate-800/80 to-dark-slate-800/50 hover:border-cyan-400/60 transition-all duration-300">
-                <div className="w-16 h-16 bg-cyan-500/20 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-cyan-500/30 transition-colors">
-                  <Code className="w-8 h-8 text-cyan-400" />
-                </div>
-                <div className="inline-flex px-3 py-1 bg-cyan-500/20 rounded-full text-cyan-300 text-xs font-semibold mb-4">
-                  Tech
-                </div>
-                <h3 className="text-xl font-bold text-white mb-3">
-                  Consultant
-                </h3>
-                <p className="text-dark-slate-400 leading-relaxed">
-                  Lerne, Copilot technisch sauber einzuführen, Adoptionspläne
-                  zu entwickeln und messbare Ergebnisse für Kunden zu
-                  liefern.
-                </p>
-                <ul className="mt-6 space-y-3">
-                  {[
-                    "Technische Tiefe",
-                    "Adoption-Frameworks",
-                    "Kundenprojekte skalieren",
-                  ].map((item) => (
-                    <li
-                      key={item}
-                      className="flex items-center gap-3 text-sm text-dark-slate-300"
-                    >
-                      <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            {/* Audience 3 */}
-            <div className="relative group">
               <div className="absolute inset-0 bg-gradient-to-b from-green-500/20 to-transparent rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <div className="relative p-8 rounded-3xl border border-dark-slate-700 bg-dark-slate-800/50 hover:border-green-500/50 transition-all duration-300">
                 <div className="w-16 h-16 bg-green-500/20 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-green-500/30 transition-colors">
@@ -614,6 +621,42 @@ export default function LandingPage() {
                       className="flex items-center gap-3 text-sm text-dark-slate-300"
                     >
                       <div className="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Audience 3 */}
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/20 to-transparent rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="relative p-8 rounded-3xl border border-cyan-500/40 bg-gradient-to-b from-dark-slate-800/80 to-dark-slate-800/50 hover:border-cyan-400/60 transition-all duration-300">
+                <div className="w-16 h-16 bg-cyan-500/20 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-cyan-500/30 transition-colors">
+                  <Code className="w-8 h-8 text-cyan-400" />
+                </div>
+                <div className="inline-flex px-3 py-1 bg-cyan-500/20 rounded-full text-cyan-300 text-xs font-semibold mb-4">
+                  Tech
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">
+                  Consultant
+                </h3>
+                <p className="text-dark-slate-400 leading-relaxed">
+                  Lerne, Copilot technisch sauber einzuführen, Adoptionspläne
+                  zu entwickeln und messbare Ergebnisse für Kunden zu
+                  liefern.
+                </p>
+                <ul className="mt-6 space-y-3">
+                  {[
+                    "Technische Tiefe",
+                    "Adoption-Frameworks",
+                    "Kundenprojekte skalieren",
+                  ].map((item) => (
+                    <li
+                      key={item}
+                      className="flex items-center gap-3 text-sm text-dark-slate-300"
+                    >
+                      <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0" />
                       {item}
                     </li>
                   ))}
