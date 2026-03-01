@@ -15,6 +15,7 @@ import {
   Mail,
   TrendingUp,
   Shield,
+  Trash2,
 } from "lucide-react";
 
 interface WaitlistEntry {
@@ -40,6 +41,7 @@ export default function AdminPage() {
   const [data, setData] = useState<WaitlistData | null>(null);
   const [dataLoading, setDataLoading] = useState(false);
   const [dataError, setDataError] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const fetchData = useCallback(
     async (token: string) => {
@@ -139,6 +141,30 @@ export default function AdminPage() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Eintrag wirklich löschen?")) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/waitlist?id=${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      if (res.ok) {
+        setData((prev) =>
+          prev
+            ? {
+                ...prev,
+                total: prev.total - 1,
+                entries: prev.entries.filter((e) => e.id !== id),
+              }
+            : prev
+        );
+      }
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -408,6 +434,7 @@ export default function AdminPage() {
                     <th className="text-left px-6 py-4 text-xs font-semibold text-dark-slate-500 uppercase tracking-wider hidden md:table-cell">
                       ID
                     </th>
+                    <th className="px-6 py-4" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-dark-slate-50">
@@ -436,6 +463,16 @@ export default function AdminPage() {
                       </td>
                       <td className="px-6 py-4 text-xs text-dark-slate-300 font-mono hidden md:table-cell">
                         {entry.id.slice(0, 8)}...
+                      </td>
+                      <td className="px-4 py-4 text-right">
+                        <button
+                          onClick={() => handleDelete(entry.id)}
+                          disabled={deletingId === entry.id}
+                          className="p-1.5 rounded text-dark-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40"
+                          title="Eintrag löschen"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </td>
                     </tr>
                   ))}

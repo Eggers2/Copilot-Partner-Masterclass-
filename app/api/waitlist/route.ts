@@ -80,6 +80,42 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function DELETE(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get("authorization");
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (!adminPassword || authHeader !== `Bearer ${adminPassword}`) {
+      return NextResponse.json({ error: "Nicht autorisiert." }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ error: "ID ist erforderlich." }, { status: 400 });
+    }
+
+    await prisma.waitlist.delete({ where: { id } });
+
+    return NextResponse.json({ success: true });
+  } catch (error: unknown) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "P2025"
+    ) {
+      return NextResponse.json({ error: "Eintrag nicht gefunden." }, { status: 404 });
+    }
+    console.error("Waitlist DELETE error:", error);
+    return NextResponse.json(
+      { error: "Ein interner Fehler ist aufgetreten." },
+      { status: 500 }
+    );
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get("authorization");
