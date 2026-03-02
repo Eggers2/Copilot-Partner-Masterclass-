@@ -92,14 +92,6 @@ export default function LandingPage() {
         inLanguage: "de",
         courseMode: "online",
         educationalLevel: "Professional",
-        offers: {
-          "@type": "Offer",
-          price: "3900",
-          priceCurrency: "EUR",
-          availability: "https://schema.org/InStock",
-          url: "https://myablefy.com/s/nextskills/copilot-masterclass-5d493b90",
-          validFrom: "2026-05-01",
-        },
       },
       {
         "@type": "Organization",
@@ -252,22 +244,6 @@ export default function LandingPage() {
                     Kein Spam. Nur relevante Updates zum Programm-Start.
                     Jederzeit abmeldbar.
                   </p>
-
-                  <div className="flex items-center gap-3 my-2">
-                    <div className="flex-1 h-px bg-dark-slate-700" />
-                    <span className="text-dark-slate-500 text-xs">oder</span>
-                    <div className="flex-1 h-px bg-dark-slate-700" />
-                  </div>
-
-                  <a
-                    href="https://myablefy.com/s/nextskills/copilot-masterclass-5d493b90"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 text-ms-blue-400 hover:text-ms-blue-300 text-base font-semibold transition-colors"
-                  >
-                    Jetzt direkt kaufen mit 22% Rabatt – 3.900 €
-                    <ArrowRight className="w-5 h-5" />
-                  </a>
                 </form>
               )}
             </div>
@@ -668,153 +644,6 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════
-          PRICING SECTION
-      ═══════════════════════════════════════════════════ */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <span className="text-ms-blue-600 font-semibold text-sm uppercase tracking-wider">
-              Investition
-            </span>
-            <h2 className="section-title mt-2">
-              Sichere dir den{" "}
-              <span className="text-ms-blue-600">Early-Bird Preis</span>
-            </h2>
-            <p className="section-subtitle">
-              Start: Mai 2026. Nur für frühe Anmelder: Spare über 20% und
-              starte mit den besten Konditionen.
-            </p>
-          </div>
-
-          <div className="max-w-4xl mx-auto">
-            <div className="grid md:grid-cols-2 gap-8 items-stretch">
-              {/* Regular Price */}
-              <div className="card opacity-75 relative overflow-hidden">
-                <div className="absolute top-4 right-4">
-                  <span className="px-3 py-1 bg-dark-slate-100 text-dark-slate-500 text-xs font-semibold rounded-full">
-                    Regulär
-                  </span>
-                </div>
-                <div className="mb-6">
-                  <p className="text-dark-slate-400 text-sm mb-1">
-                    Regulärer Preis ab Juni
-                  </p>
-                  <p className="text-5xl font-extrabold text-dark-slate-400 line-through decoration-2">
-                    5.000 €
-                  </p>
-                  <p className="text-dark-slate-400 text-sm mt-1">
-                    zzgl. MwSt. / 12 Monate
-                  </p>
-                </div>
-                <ul className="space-y-3 text-dark-slate-500">
-                  {[
-                    "Video Academy",
-                    "Live Coaching",
-                    "Sales Assets",
-                    "Community",
-                  ].map((item) => (
-                    <li key={item} className="flex items-center gap-3 text-sm">
-                      <CheckCircle2 className="w-4 h-4 text-dark-slate-300 flex-shrink-0" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Early Bird Price */}
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl">
-                {/* Background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-ms-blue-600 to-ms-blue-800" />
-                <div className="absolute inset-0 bg-gradient-to-tr from-transparent to-cyan-500/20" />
-
-                {/* Badge */}
-                <div className="absolute top-4 right-4">
-                  <span className="px-3 py-1.5 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full flex items-center gap-1">
-                    <Star className="w-3 h-3" />
-                    Early Bird
-                  </span>
-                </div>
-
-                <div className="relative p-8">
-                  <div className="mb-6">
-                    <p className="text-ms-blue-200 text-sm mb-1">
-                      Dein Preis bis zum Start
-                    </p>
-                    <p className="text-6xl font-extrabold text-white">
-                      3.900 €
-                    </p>
-                    <p className="text-ms-blue-300 text-sm mt-1">
-                      zzgl. MwSt. / 12 Monate
-                    </p>
-                  </div>
-
-                  <div className="mb-6 p-3 bg-white/10 rounded-xl">
-                    <p className="text-white text-sm font-semibold">
-                      Du sparst:{" "}
-                      <span className="text-yellow-300">1.100 €</span> (22%
-                      Rabatt)
-                    </p>
-                  </div>
-
-                  <ul className="space-y-3 mb-8">
-                    {[
-                      "Video Academy (50+ Lektionen)",
-                      "Live Coaching mit Alex Eggers",
-                      "Done-for-you Sales Assets",
-                      "Exklusive Partner-Community",
-                      "Early-Bird Bonus-Inhalte",
-                    ].map((item) => (
-                      <li
-                        key={item}
-                        className="flex items-center gap-3 text-sm text-white"
-                      >
-                        <CheckCircle2 className="w-4 h-4 text-cyan-300 flex-shrink-0" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-
-                  <a
-                    href="https://myablefy.com/s/nextskills/copilot-masterclass-5d493b90"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-4 bg-white text-ms-blue-700 font-bold rounded-xl hover:bg-ms-blue-50 transition-all duration-200 flex items-center justify-center gap-2 shadow-lg"
-                  >
-                    Jetzt kaufen – 3.900 €
-                    <ArrowRight className="w-5 h-5" />
-                  </a>
-
-                  <button
-                    onClick={scrollToWaitlist}
-                    className="w-full py-3 mt-3 border border-white/30 text-white/80 font-semibold rounded-xl hover:bg-white/10 transition-all duration-200 flex items-center justify-center gap-2 text-sm"
-                  >
-                    Oder auf die Warteliste eintragen
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Guarantee */}
-            <div className="mt-12 p-6 bg-dark-slate-50 rounded-2xl border border-dark-slate-100 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
-              <div className="flex-shrink-0 w-12 h-12 bg-ms-blue-100 rounded-full flex items-center justify-center">
-                <Shield className="w-6 h-6 text-ms-blue-600" />
-              </div>
-              <div>
-                <p className="font-bold text-dark-slate-900 mb-1">
-                  Zwei Wege – du entscheidest
-                </p>
-                <p className="text-dark-slate-600 text-sm">
-                  Kaufe jetzt sofort zum Sonderpreis und sichere dir deinen
-                  Zugang. Oder trag dich kostenlos auf die Warteliste ein und
-                  werde informiert, wenn die Anmeldung startet.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════
           FINAL CTA SECTION
       ═══════════════════════════════════════════════════ */}
       <section className="py-24 bg-gradient-to-b from-dark-slate-900 to-dark-slate-950">
@@ -824,7 +653,7 @@ export default function LandingPage() {
             Bereit, zum KI-Strategen zu werden?
           </h2>
           <p className="text-dark-slate-400 text-lg mb-10">
-            Trag dich jetzt auf die Warteliste ein – oder kaufe sofort zum Sonderpreis. Die Microsoft Copilot Partner Masterclass startet im Mai 2026.
+            Trag dich jetzt auf die Warteliste ein. Die Microsoft Copilot Partner Masterclass startet im Mai 2026.
           </p>
 
           <div className="max-w-lg mx-auto">
@@ -878,22 +707,6 @@ export default function LandingPage() {
                     {formState.message}
                   </div>
                 )}
-
-                <div className="flex items-center gap-3 mt-2">
-                  <div className="flex-1 h-px bg-dark-slate-700" />
-                  <span className="text-dark-slate-500 text-xs">oder</span>
-                  <div className="flex-1 h-px bg-dark-slate-700" />
-                </div>
-
-                <a
-                  href="https://myablefy.com/s/nextskills/copilot-masterclass-5d493b90"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 text-ms-blue-400 hover:text-ms-blue-300 text-sm font-medium transition-colors"
-                >
-                  Jetzt direkt kaufen – 3.900 € (22% Rabatt)
-                  <ArrowRight className="w-4 h-4" />
-                </a>
               </form>
             )}
           </div>
