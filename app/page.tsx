@@ -92,14 +92,6 @@ export default function LandingPage() {
         inLanguage: "de",
         courseMode: "online",
         educationalLevel: "Professional",
-        offers: {
-          "@type": "Offer",
-          price: "3900",
-          priceCurrency: "EUR",
-          availability: "https://schema.org/InStock",
-          url: "https://myablefy.com/s/nextskills/copilot-masterclass-5d493b90",
-          validFrom: "2026-05-01",
-        },
       },
       {
         "@type": "Organization",
@@ -251,22 +243,6 @@ export default function LandingPage() {
                     Kein Spam. Nach deiner Bewerbung melden wir uns persönlich bei dir.
                     Jederzeit abmeldbar.
                   </p>
-
-                  <div className="flex items-center gap-3 my-2">
-                    <div className="flex-1 h-px bg-dark-slate-700" />
-                    <span className="text-dark-slate-500 text-xs">oder</span>
-                    <div className="flex-1 h-px bg-dark-slate-700" />
-                  </div>
-
-                  <a
-                    href="https://myablefy.com/s/nextskills/copilot-masterclass-5d493b90"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 text-ms-blue-400 hover:text-ms-blue-300 text-base font-semibold transition-colors"
-                  >
-                    Jetzt direkt kaufen mit 22% Rabatt – 3.900 €
-                    <ArrowRight className="w-5 h-5" />
-                  </a>
                 </form>
               )}
             </div>
@@ -877,22 +853,6 @@ export default function LandingPage() {
                     {formState.message}
                   </div>
                 )}
-
-                <div className="flex items-center gap-3 mt-2">
-                  <div className="flex-1 h-px bg-dark-slate-700" />
-                  <span className="text-dark-slate-500 text-xs">oder</span>
-                  <div className="flex-1 h-px bg-dark-slate-700" />
-                </div>
-
-                <a
-                  href="https://myablefy.com/s/nextskills/copilot-masterclass-5d493b90"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 text-ms-blue-400 hover:text-ms-blue-300 text-sm font-medium transition-colors"
-                >
-                  Jetzt direkt kaufen – 3.900 € (22% Rabatt)
-                  <ArrowRight className="w-4 h-4" />
-                </a>
               </form>
             )}
           </div>
