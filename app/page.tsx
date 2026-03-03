@@ -133,7 +133,7 @@ export default function LandingPage() {
               onClick={scrollToWaitlist}
               className="hidden sm:inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-ms-blue-500 hover:bg-ms-blue-600 rounded-lg transition-all duration-200"
             >
-              Warteliste beitreten
+              Jetzt bewerben
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -192,18 +192,17 @@ export default function LandingPage() {
               Deine Blaupause für Consulting, Strategie und Adoption.
             </p>
 
-            {/* Waitlist Form */}
+            {/* Application Form */}
             <div ref={waitlistRef} className="max-w-xl mx-auto">
               {formState.status === "success" ? (
                 <div className="flex flex-col items-center gap-4 p-8 bg-green-500/10 border border-green-500/30 rounded-2xl animate-fade-in">
                   <CheckCircle2 className="w-16 h-16 text-green-400" />
                   <div>
                     <p className="text-green-300 text-xl font-bold mb-1">
-                      Du bist dabei! 🎉
+                      Deine Bewerbung ist eingegangen!
                     </p>
                     <p className="text-green-400/80 text-sm">
-                      {formState.message} Wir melden uns, sobald die
-                      Anmeldung startet.
+                      Wir melden uns persönlich bei dir.
                     </p>
                   </div>
                 </div>
@@ -230,11 +229,11 @@ export default function LandingPage() {
                       {formState.status === "loading" ? (
                         <>
                           <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          Wird eingetragen...
+                          Wird gesendet...
                         </>
                       ) : (
                         <>
-                          Auf die Warteliste
+                          Jetzt bewerben und Early Bird sichern
                           <ArrowRight className="w-5 h-5" />
                         </>
                       )}
@@ -249,7 +248,7 @@ export default function LandingPage() {
                   )}
 
                   <p className="text-dark-slate-500 text-xs">
-                    Kein Spam. Nur relevante Updates zum Programm-Start.
+                    Kein Spam. Nach deiner Bewerbung melden wir uns persönlich bei dir.
                     Jederzeit abmeldbar.
                   </p>
 
@@ -788,7 +787,7 @@ export default function LandingPage() {
                     onClick={scrollToWaitlist}
                     className="w-full py-3 mt-3 border border-white/30 text-white/80 font-semibold rounded-xl hover:bg-white/10 transition-all duration-200 flex items-center justify-center gap-2 text-sm"
                   >
-                    Oder auf die Warteliste eintragen
+                    Oder jetzt bewerben
                   </button>
                 </div>
               </div>
@@ -805,8 +804,8 @@ export default function LandingPage() {
                 </p>
                 <p className="text-dark-slate-600 text-sm">
                   Kaufe jetzt sofort zum Sonderpreis und sichere dir deinen
-                  Zugang. Oder trag dich kostenlos auf die Warteliste ein und
-                  werde informiert, wenn die Anmeldung startet.
+                  Zugang. Oder bewirb dich kostenlos – wir melden uns
+                  persönlich bei dir.
                 </p>
               </div>
             </div>
@@ -824,7 +823,7 @@ export default function LandingPage() {
             Bereit, zum KI-Strategen zu werden?
           </h2>
           <p className="text-dark-slate-400 text-lg mb-10">
-            Trag dich jetzt auf die Warteliste ein – oder kaufe sofort zum Sonderpreis. Die Microsoft Copilot Partner Masterclass startet im Mai 2026.
+            Bewirb dich jetzt – oder kaufe sofort zum Sonderpreis. Die Microsoft Copilot Partner Masterclass startet im Mai 2026.
           </p>
 
           <div className="max-w-lg mx-auto">
@@ -832,10 +831,10 @@ export default function LandingPage() {
               <div className="flex flex-col items-center gap-4 p-8 bg-green-500/10 border border-green-500/30 rounded-2xl">
                 <CheckCircle2 className="w-16 h-16 text-green-400" />
                 <p className="text-green-300 text-xl font-bold">
-                  Du bist bereits eingetragen!
+                  Deine Bewerbung ist eingegangen!
                 </p>
                 <p className="text-green-400/80 text-sm">
-                  Wir melden uns, sobald die Anmeldung startet.
+                  Wir melden uns persönlich bei dir.
                 </p>
               </div>
             ) : (
@@ -861,11 +860,11 @@ export default function LandingPage() {
                     {formState.status === "loading" ? (
                       <>
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Wird eingetragen...
+                        Wird gesendet...
                       </>
                     ) : (
                       <>
-                        Auf die Warteliste
+                        Jetzt bewerben und Early Bird sichern
                         <ArrowRight className="w-5 h-5" />
                       </>
                     )}

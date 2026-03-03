@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
           email: normalizedEmail,
           timestamp: new Date().toISOString(),
           entryId: entry.id,
-          source: "waitlist",
+          source: "application",
         }),
       })
         .then((res) => {
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: "Erfolgreich zur Warteliste hinzugefügt!",
+        message: "Deine Bewerbung wurde erfolgreich eingereicht!",
         id: entry.id,
       },
       { status: 201 }
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "Diese E-Mail-Adresse ist bereits auf der Warteliste eingetragen.",
+            "Mit dieser E-Mail-Adresse liegt bereits eine Bewerbung vor.",
         },
         { status: 409 }
       );
