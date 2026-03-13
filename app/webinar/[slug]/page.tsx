@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { getWebinarBySlug } from "@/lib/db/webinars";
-import { Calendar, Clock, Users, Zap } from "lucide-react";
+import { Calendar, Clock, Zap } from "lucide-react";
 import { WebinarRegistrationForm } from "./registration-form";
 
 export default async function WebinarPage({
@@ -14,8 +13,6 @@ export default async function WebinarPage({
 
   if (!webinar) notFound();
 
-  const spotsLeft = webinar.maxAttendees - webinar._count.registrations;
-  const isFull = spotsLeft <= 0;
   const isClosed = webinar.status !== "OPEN";
 
   return (
@@ -26,7 +23,7 @@ export default async function WebinarPage({
           <div className="w-8 h-8 bg-[#030386] rounded-lg flex items-center justify-center">
             <Zap className="w-5 h-5 text-white" />
           </div>
-          <span className="text-white font-bold text-sm">Next Skills</span>
+          <span className="text-white font-bold text-sm">NextSkills</span>
         </div>
       </header>
 
@@ -58,12 +55,6 @@ export default async function WebinarPage({
               <Clock className="w-5 h-5" />
               {webinar.durationMin} Minuten
             </span>
-            <span className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              {isFull
-                ? "Ausgebucht"
-                : `Noch ${spotsLeft} von ${webinar.maxAttendees} Plätzen frei`}
-            </span>
           </div>
         </div>
 
@@ -78,19 +69,6 @@ export default async function WebinarPage({
                 Die Anmeldung für dieses Webinar ist derzeit nicht möglich.
               </p>
             </div>
-          ) : isFull ? (
-            <div className="text-center py-8">
-              <h2 className="text-xl font-bold text-dark-slate-900 mb-2">
-                Ausgebucht
-              </h2>
-              <p className="text-dark-slate-500">
-                Dieses Webinar ist leider ausgebucht. Trage dich auf unserer{" "}
-                <Link href="/" className="text-[#030386] underline">
-                  Warteliste
-                </Link>{" "}
-                ein, um über neue Termine informiert zu werden.
-              </p>
-            </div>
           ) : (
             <>
               <h2 className="text-xl font-bold text-dark-slate-900 mb-6 text-center">
@@ -103,7 +81,7 @@ export default async function WebinarPage({
 
         {/* Footer */}
         <p className="text-center text-[#DCDCEE]/60 text-xs mt-8">
-          © {new Date().getFullYear()} Next Skills · nextskills.de
+          © {new Date().getFullYear()} NextSkills GmbH · copilotberater.de
         </p>
       </main>
     </div>
