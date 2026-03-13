@@ -124,3 +124,34 @@ model WebinarRegistration {
   @@index([webinarId])
   @@map("webinar_registrations")
 }
+
+model Bestellung {
+  id                   Int      @id @default(autoincrement())
+  bestellNr            String   @unique @map("bestell_nr")
+  paket                String
+  userAnzahl           Int      @map("user_anzahl")
+  zahlungsmodell       String
+  preisNetto           Decimal  @db.Decimal(10, 2) @map("preis_netto")
+  mwstSatz             Decimal  @db.Decimal(4, 2) @map("mwst_satz")
+  mwstBetrag           Decimal  @db.Decimal(10, 2) @map("mwst_betrag")
+  reverseCharge        Boolean  @default(false) @map("reverse_charge")
+  reverseChargeHinweis String?  @map("reverse_charge_hinweis")
+  preisBrutto          Decimal  @db.Decimal(10, 2) @map("preis_brutto")
+  firma                String
+  strasse              String
+  plz                  String
+  ort                  String
+  land                 String   @default("DE")
+  ustId                String?  @map("ust_id")
+  vorname              String
+  nachname             String
+  email                String
+  telefon              String?
+  position             String?
+  anmerkungen          String?
+  status               String   @default("neu")
+  erstelltAm           DateTime @default(now()) @map("erstellt_am")
+  aktualisiertAm       DateTime @updatedAt @map("aktualisiert_am")
+
+  @@map("bestellungen")
+}
