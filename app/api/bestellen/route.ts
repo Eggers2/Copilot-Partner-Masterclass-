@@ -59,8 +59,8 @@ export async function POST(request: NextRequest) {
       request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       "unknown";
 
-    // Rate limiting: 5 orders per IP per hour
-    if (!checkRateLimit(ip, 5, 60 * 60 * 1000)) {
+    // Rate limiting: 10 orders per IP per hour
+    if (!checkRateLimit(ip, 10, 60 * 60 * 1000)) {
       return NextResponse.json(
         { error: "Zu viele Anfragen. Bitte versuchen Sie es später erneut." },
         { status: 429 }
@@ -260,6 +260,7 @@ export async function POST(request: NextRequest) {
 
     // N8N Webhook: fire-and-forget
     const webhookUrl = process.env.N8N_WEBHOOK_URL_bestellen;
+    console.log("N8N Bestell-Webhook URL configured:", !!webhookUrl);
     if (webhookUrl) {
       const webhookPayload = {
         bestellung: {
@@ -304,6 +305,7 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify(webhookPayload),
       })
         .then((res) => {
+          console.log(`N8N Bestell-Webhook response: ${res.status}`);
           if (!res.ok)
             console.error(`N8N Bestell-Webhook returned ${res.status}`);
         })
