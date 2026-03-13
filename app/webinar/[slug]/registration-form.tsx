@@ -83,10 +83,11 @@ export function WebinarRegistrationForm({ slug }: { slug: string }) {
       </div>
       <div>
         <label className="block text-sm font-medium text-dark-slate-700 mb-1">
-          Firma (optional)
+          Firmenname *
         </label>
         <input
           name="company"
+          required
           disabled={state === "loading"}
           placeholder="Deine Firma GmbH"
           className="w-full px-4 py-3 text-sm border border-dark-slate-200 rounded-xl focus:border-[#030386] focus:outline-none disabled:opacity-50"

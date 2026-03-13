@@ -8,6 +8,14 @@ export async function getWebinars() {
   });
 }
 
+export async function getOpenWebinars() {
+  return prisma.webinar.findMany({
+    where: { status: "OPEN" },
+    orderBy: { scheduledAt: "asc" },
+    include: { _count: { select: { registrations: true } } },
+  });
+}
+
 export async function getWebinar(id: string) {
   return prisma.webinar.findUnique({
     where: { id },
