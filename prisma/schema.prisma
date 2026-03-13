@@ -10,10 +10,58 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Waitlist {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email     String   @unique
-  createdAt DateTime @default(now())
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  WON
+  LOST
+}
+
+enum LeadSource {
+  WEBSITE
+  REFERRAL
+  LINKEDIN
+  WEBINAR
+  COLD_OUTREACH
+  OTHER
+}
+
+enum ActivityType {
+  NOTE
+  EMAIL
+  CALL
+  MEETING
+  STATUS_CHANGE
+  FOLLOW_UP
+}
+
+model Lead {
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email      String       @unique
+  name       String?
+  company    String?
+  phone      String?
+  status     LeadStatus   @default(NEW)
+  source     LeadSource   @default(WEBSITE)
+  notes      String?
+  score      Int          @default(0)
+  followUpAt DateTime?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  activities LeadActivity[]
 
   @@map("waitlist")
+}
+
+model LeadActivity {
+  id        String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  leadId    String       @db.Uuid
+  lead      Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type      ActivityType
+  content   String
+  createdAt DateTime     @default(now())
+
+  @@map("lead_activities")
 }

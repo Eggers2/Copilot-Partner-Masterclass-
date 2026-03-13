@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    const entry = await prisma.waitlist.create({
+    const entry = await prisma.lead.create({
       data: {
         email: normalizedEmail,
       },
@@ -96,7 +96,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "ID ist erforderlich." }, { status: 400 });
     }
 
-    await prisma.waitlist.delete({ where: { id } });
+    await prisma.lead.delete({ where: { id } });
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
@@ -125,7 +125,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Nicht autorisiert." }, { status: 401 });
     }
 
-    const entries = await prisma.waitlist.findMany({
+    const entries = await prisma.lead.findMany({
       orderBy: { createdAt: "desc" },
     });
 
