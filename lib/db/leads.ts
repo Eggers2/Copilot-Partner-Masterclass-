@@ -67,13 +67,20 @@ export async function getLeadActivities(leadId: string) {
 
 export async function addActivity(
   leadId: string,
-  activity: { type: ActivityType; content: string }
+  activity: {
+    type: ActivityType;
+    content: string;
+    oldValue?: string | null;
+    newValue?: string | null;
+  }
 ) {
   return prisma.leadActivity.create({
     data: {
       leadId,
       type: activity.type,
       content: activity.content,
+      oldValue: activity.oldValue ?? null,
+      newValue: activity.newValue ?? null,
     },
   });
 }

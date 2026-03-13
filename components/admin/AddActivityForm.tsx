@@ -10,6 +10,7 @@ const ACTIVITY_TYPES = [
   { value: "CALL", label: "Anruf" },
   { value: "MEETING", label: "Meeting" },
   { value: "FOLLOW_UP", label: "Follow-up" },
+  { value: "WEBINAR", label: "Webinar" },
 ];
 
 export function AddActivityForm({ leadId }: { leadId: string }) {

@@ -1,32 +1,50 @@
 import { redirect } from "next/navigation";
 import { isAuthenticated } from "@/lib/auth";
-import { Video } from "lucide-react";
+import { getWebinars } from "@/lib/db/webinars";
+import { WebinarCard } from "@/components/admin/WebinarCard";
+import { CreateWebinarForm } from "@/components/admin/CreateWebinarForm";
 
 export default async function WebinarsPage() {
   const authed = await isAuthenticated();
   if (!authed) redirect("/admin/login");
 
+  const webinars = await getWebinars();
+
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-dark-slate-900">Webinare</h1>
-        <p className="text-dark-slate-500 text-sm mt-1">
-          Webinar-Planung und -Verwaltung
-        </p>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-dark-slate-900">Webinare</h1>
+          <p className="text-dark-slate-500 text-sm mt-1">
+            Webinar-Planung und -Verwaltung
+          </p>
+        </div>
+        <CreateWebinarForm />
       </div>
 
-      <div className="bg-white rounded-2xl border border-dark-slate-100 p-12 shadow-sm text-center">
-        <div className="w-16 h-16 bg-[#E3ECF8] rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <Video className="w-8 h-8 text-[#030386]" />
+      {webinars.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-dark-slate-100 p-12 shadow-sm text-center">
+          <p className="text-dark-slate-500 text-sm">
+            Noch keine Webinare angelegt. Erstelle dein erstes Webinar mit dem
+            Button oben.
+          </p>
         </div>
-        <h2 className="text-xl font-bold text-dark-slate-900 mb-2">
-          Kommt bald
-        </h2>
-        <p className="text-dark-slate-500 text-sm max-w-md mx-auto">
-          Hier kannst du bald Webinare planen, Teilnehmer verwalten und
-          Einladungen versenden. Dieses Feature befindet sich in Entwicklung.
-        </p>
-      </div>
+      ) : (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {webinars.map((webinar) => (
+            <WebinarCard
+              key={webinar.id}
+              id={webinar.id}
+              title={webinar.title}
+              slug={webinar.slug}
+              scheduledAt={webinar.scheduledAt}
+              status={webinar.status}
+              maxAttendees={webinar.maxAttendees}
+              registrationCount={webinar._count.registrations}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
