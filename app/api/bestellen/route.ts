@@ -259,7 +259,7 @@ export async function POST(request: NextRequest) {
     }
 
     // N8N Webhook: fire-and-forget
-    const webhookUrl = process.env.N8N_WEBHOOK_URL;
+    const webhookUrl = process.env.N8N_WEBHOOK_URL_bestellen;
     if (webhookUrl) {
       const webhookPayload = {
         bestellung: {
