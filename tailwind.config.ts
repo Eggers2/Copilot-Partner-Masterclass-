@@ -9,6 +9,13 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        "ns-blue": {
+          500: "#030386",
+          600: "#05015B",
+        },
+        "ns-light": "#E3ECF8",
+        "ns-text": "#3B3B39",
+        "ns-accent": "#DCDCEE",
         "ms-blue": {
           50: "#eff6ff",
           100: "#dbeafe",
