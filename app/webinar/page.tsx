@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { getOpenWebinars } from "@/lib/db/webinars";
-import { Calendar, Clock, Users, Zap, ArrowRight } from "lucide-react";
+import { Calendar, Clock, Zap, ArrowRight } from "lucide-react";
 
 export default async function WebinarOverviewPage() {
   const webinars = await getOpenWebinars();
@@ -16,7 +16,7 @@ export default async function WebinarOverviewPage() {
             <div className="w-8 h-8 bg-[#030386] rounded-lg flex items-center justify-center">
               <Zap className="w-5 h-5 text-white" />
             </div>
-            <span className="text-white font-bold text-sm">Next Skills</span>
+            <span className="text-white font-bold text-sm">NextSkills</span>
           </Link>
         </div>
       </header>
@@ -29,7 +29,7 @@ export default async function WebinarOverviewPage() {
           </h1>
           <p className="text-[#DCDCEE] text-lg max-w-2xl mx-auto">
             Wähle einen Termin und melde dich kostenlos an. Du erhältst
-            anschließend eine Bestätigung mit dem Zoom-Link per E-Mail.
+            anschließend eine Bestätigung mit dem Webinar-Link per E-Mail.
           </p>
         </div>
 
@@ -58,12 +58,7 @@ export default async function WebinarOverviewPage() {
         ) : (
           /* Webinar cards grid */
           <div className="grid sm:grid-cols-2 gap-6">
-            {webinars.map((webinar) => {
-              const spotsLeft =
-                webinar.maxAttendees - webinar._count.registrations;
-              const isFull = spotsLeft <= 0;
-
-              return (
+            {webinars.map((webinar) => (
                 <Link
                   key={webinar.id}
                   href={`/webinar/${webinar.slug}`}
@@ -109,52 +104,21 @@ export default async function WebinarOverviewPage() {
                         )}{" "}
                         Uhr · {webinar.durationMin} Min.
                       </span>
-                      <span className="flex items-center gap-1.5">
-                        <Users className="w-4 h-4" />
-                        {isFull ? (
-                          <span className="text-red-600 font-semibold">
-                            Ausgebucht
-                          </span>
-                        ) : (
-                          <>
-                            Noch {spotsLeft} von {webinar.maxAttendees} Plätzen
-                            frei
-                          </>
-                        )}
-                      </span>
-                    </div>
-
-                    {/* Progress bar */}
-                    <div className="w-full bg-dark-slate-100 rounded-full h-1.5 mb-4">
-                      <div
-                        className="h-1.5 rounded-full transition-all"
-                        style={{
-                          width: `${Math.min(Math.round((webinar._count.registrations / webinar.maxAttendees) * 100), 100)}%`,
-                          backgroundColor: isFull
-                            ? "#dc2626"
-                            : spotsLeft < 10
-                              ? "#d97706"
-                              : "#030386",
-                        }}
-                      />
                     </div>
 
                     <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#030386] group-hover:gap-2 transition-all">
-                      {isFull
-                        ? "Details anzeigen"
-                        : "Jetzt Platz sichern"}
+                      Jetzt Platz sichern
                       <ArrowRight className="w-4 h-4" />
                     </span>
                   </div>
                 </Link>
-              );
-            })}
+            ))}
           </div>
         )}
 
         {/* Footer */}
         <p className="text-center text-[#DCDCEE]/60 text-xs mt-12">
-          © {new Date().getFullYear()} Next Skills · copilotberater.de
+          © {new Date().getFullYear()} NextSkills GmbH · copilotberater.de
         </p>
       </main>
     </div>

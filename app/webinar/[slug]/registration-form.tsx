@@ -48,7 +48,7 @@ export function WebinarRegistrationForm({ slug }: { slug: string }) {
           Anmeldung erfolgreich!
         </h3>
         <p className="text-dark-slate-500">
-          Du erhältst in Kürze eine Bestätigungs-E-Mail mit dem Zoom-Link.
+          Du erhältst in Kürze eine Bestätigungs-E-Mail mit dem Webinar-Link.
         </p>
       </div>
     );
