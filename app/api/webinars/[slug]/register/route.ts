@@ -9,9 +9,9 @@ export async function POST(
     const { slug } = await params;
     const { email, firstName, company } = await req.json();
 
-    if (!email || !firstName) {
+    if (!email || !firstName || !company) {
       return NextResponse.json(
-        { error: "E-Mail und Vorname sind erforderlich." },
+        { error: "E-Mail, Vorname und Firmenname sind erforderlich." },
         { status: 400 }
       );
     }
@@ -50,7 +50,7 @@ export async function POST(
       create: {
         email: normalizedEmail,
         name: firstName,
-        company: company || null,
+        company,
         status: "WEBINAR_INVITED",
         source: "WEBSITE",
         webinarRegistered: true,
@@ -59,7 +59,7 @@ export async function POST(
         status: "WEBINAR_INVITED",
         webinarRegistered: true,
         name: firstName,
-        ...(company ? { company } : {}),
+        company,
       },
     });
 
