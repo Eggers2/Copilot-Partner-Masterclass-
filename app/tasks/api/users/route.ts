@@ -3,6 +3,20 @@ import { isTasksAuthenticated } from "@/lib/tasks-auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
+export async function GET() {
+  const session = await isTasksAuthenticated();
+  if (!session || session.role !== "admin") {
+    return NextResponse.json({ error: "Keine Berechtigung." }, { status: 403 });
+  }
+
+  const users = await prisma.taskUser.findMany({
+    orderBy: { id: "asc" },
+    select: { id: true, username: true, displayName: true, role: true, createdAt: true },
+  });
+
+  return NextResponse.json(users);
+}
+
 export async function POST(req: NextRequest) {
   const session = await isTasksAuthenticated();
   if (!session || session.role !== "admin") {

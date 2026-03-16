@@ -214,6 +214,18 @@ model TaskTag {
   @@map("task_tags")
 }
 
+model TaskRisk {
+  id         Int    @id @default(autoincrement())
+  risk       String @db.VarChar(255)
+  priority   String @db.VarChar(20) // 'Hoch', 'Mittel', 'Niedrig'
+  mitigation String
+  position   Int
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("task_risks")
+}
+
 model TaskTagAssignment {
   taskId Int @map("task_id")
   task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
