@@ -155,3 +155,71 @@ model Bestellung {
 
   @@map("bestellungen")
 }
+
+// ==========================================
+// Kanban Board Models (for /tasks route)
+// ==========================================
+
+model TaskUser {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique @db.VarChar(50)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  displayName  String   @map("display_name") @db.VarChar(100)
+  role         String   @default("member") @db.VarChar(20)
+  createdAt    DateTime @default(now()) @map("created_at")
+  tasks        Task[]
+
+  @@map("task_users")
+}
+
+model TaskColumn {
+  id       Int    @id @default(autoincrement())
+  name     String @db.VarChar(100)
+  position Int
+  color    String? @db.VarChar(7)
+  tasks    Task[]
+
+  @@map("task_columns")
+}
+
+model Task {
+  id          Int       @id @default(autoincrement())
+  title       String    @db.VarChar(255)
+  description String?
+  columnId    Int       @map("column_id")
+  column      TaskColumn @relation(fields: [columnId], references: [id])
+  position    Int
+  workstream  String?   @db.VarChar(50)
+  responsible String?   @db.VarChar(30)
+  priority    String?   @db.VarChar(20)
+  deadline    DateTime? @db.Date
+  notes       String?
+  weekLabel   String?   @map("week_label") @db.VarChar(100)
+  createdBy   Int?      @map("created_by")
+  creator     TaskUser? @relation(fields: [createdBy], references: [id])
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+  tags        TaskTagAssignment[]
+
+  @@map("tasks")
+}
+
+model TaskTag {
+  id       Int    @id @default(autoincrement())
+  name     String @db.VarChar(50)
+  color    String @db.VarChar(7)
+  category String? @db.VarChar(30)
+  tasks    TaskTagAssignment[]
+
+  @@map("task_tags")
+}
+
+model TaskTagAssignment {
+  taskId Int @map("task_id")
+  task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tagId  Int  @map("tag_id")
+  tag    TaskTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, tagId])
+  @@map("task_tag_assignments")
+}
