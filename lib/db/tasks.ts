@@ -1,6 +1,8 @@
 import { prisma } from "../prisma";
+import { ensureDefaults } from "./seed-defaults";
 
 export async function getBoard() {
+  await ensureDefaults();
   const columns = await prisma.taskColumn.findMany({
     orderBy: { position: "asc" },
     include: {
@@ -117,6 +119,7 @@ export async function deleteTask(id: number) {
 }
 
 export async function getAllTags() {
+  await ensureDefaults();
   return prisma.taskTag.findMany({ orderBy: [{ category: "asc" }, { name: "asc" }] });
 }
 
