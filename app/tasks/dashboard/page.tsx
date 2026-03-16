@@ -1,5 +1,6 @@
 import { requireTasksAuth } from "@/lib/tasks-auth";
 import { getTaskStats } from "@/lib/db/tasks";
+import { prisma } from "@/lib/prisma";
 import type { Task, TaskTagAssignment, TaskTag, TaskColumn } from "@prisma/client";
 import {
   CheckCircle2,
@@ -12,7 +13,13 @@ import {
 
 export default async function DashboardPage() {
   await requireTasksAuth();
-  const stats = await getTaskStats();
+  const [stats, wonCount, waitlistCount] = await Promise.all([
+    getTaskStats(),
+    // Count leads with status WON = zahlende Partner
+    prisma.lead.count({ where: { status: "WON" } }),
+    // Count all leads except WON and LOST = active waitlist
+    prisma.lead.count({ where: { status: { notIn: ["WON", "LOST"] } } }),
+  ]);
 
   const percent = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
 
@@ -60,15 +67,15 @@ export default async function DashboardPage() {
         <KPICard
           icon={Users}
           label="Zahlende Partner"
-          value="0 / 20"
-          sublabel="Ziel bis Mai"
+          value={wonCount.toString()}
+          sublabel="Status: Gewonnen"
           color="#05015B"
         />
         <KPICard
           icon={Target}
           label="Warteliste"
-          value="20 / 100+"
-          sublabel="Leads"
+          value={waitlistCount.toString()}
+          sublabel="Aktive Leads"
           color="#D97706"
         />
       </div>
