@@ -62,6 +62,22 @@ export async function loginTaskUser(
   username: string,
   password: string
 ): Promise<TaskSession | null> {
+  // Auto-create admin user if no users exist yet (first-time setup)
+  const userCount = await prisma.taskUser.count();
+  if (userCount === 0) {
+    const adminPassword = process.env.TASKS_ADMIN_PASSWORD || "changeme123";
+    const hash = await bcrypt.hash(adminPassword, 12);
+    await prisma.taskUser.create({
+      data: {
+        username: "alex",
+        passwordHash: hash,
+        displayName: "Alex",
+        role: "admin",
+      },
+    });
+    console.log("✅ Auto-created admin user (username: alex)");
+  }
+
   const user = await prisma.taskUser.findUnique({ where: { username } });
   if (!user) return null;
 
