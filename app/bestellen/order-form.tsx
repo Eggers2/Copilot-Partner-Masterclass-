@@ -13,7 +13,7 @@ const PACKAGES: Record<
   { label: string; users: number; usersLabel: string; yearly: number; monthly: number }
 > = {
   starter: { label: "Starter", users: 3, usersLabel: "3 User", yearly: 8900, monthly: 890 },
-  team: { label: "Team", users: 6, usersLabel: "6 User", yearly: 9900, monthly: 1090 },
+  team: { label: "Team", users: 6, usersLabel: "6 User", yearly: 9900, monthly: 990 },
   business: { label: "Business", users: 15, usersLabel: "bis 15 User", yearly: 14900, monthly: 1490 },
 };
 
@@ -528,7 +528,7 @@ export function OrderForm() {
                 className="mt-0.5 w-4 h-4 accent-ns-blue-500"
               />
               <span className="text-sm text-ns-text">
-                Ich akzeptiere die AGB und habe die Datenschutzerklärung gelesen. *
+                Ich akzeptiere die AGB.
               </span>
             </label>
           </div>
