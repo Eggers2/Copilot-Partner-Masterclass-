@@ -8,7 +8,7 @@ const workstreams = [
   "Partnerschaften", "Plattform", "Funnel", "Content", "Marketing",
   "Sales Assets", "Webinar", "Launch", "ADN Events",
 ];
-const responsibles = ["ALEX", "DU", "BEIDE"];
+const responsibles = ["ALEX", "Katherina", "BEIDE"];
 const priorities = ["SOFORT", "DIESE_WOCHE", "GEPLANT", "EVENT"];
 
 export default function CreateTaskForm({
@@ -58,7 +58,7 @@ export default function CreateTaskForm({
     if (responsible) {
       const rMap: Record<string, string> = {
         ALEX: "💻 ALEX",
-        DU: "🎨 DU",
+        Katherina: "🎨 Katherina",
         BEIDE: "🤝 BEIDE",
       };
       const rTag = tags.find(

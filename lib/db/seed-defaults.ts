@@ -1,10 +1,22 @@
 import { prisma } from "../prisma";
 
 let seeded = false;
+let seedingPromise: Promise<void> | null = null;
 
 export async function ensureDefaults() {
   if (seeded) return;
 
+  // Prevent concurrent seeding — all callers wait on the same promise
+  if (seedingPromise) return seedingPromise;
+  seedingPromise = doSeed();
+  try {
+    await seedingPromise;
+  } finally {
+    seedingPromise = null;
+  }
+}
+
+async function doSeed() {
   const taskCount = await prisma.task.count();
   const colCount = await prisma.taskColumn.count();
 
@@ -43,7 +55,7 @@ export async function ensureDefaults() {
       { name: "🟢 GEPLANT", color: "#16A34A", category: "priority" },
       { name: "📅 EVENT", color: "#7C3AED", category: "priority" },
       { name: "💻 ALEX", color: "#030386", category: "responsible" },
-      { name: "🎨 DU", color: "#6B21A8", category: "responsible" },
+      { name: "🎨 Katherina", color: "#6B21A8", category: "responsible" },
       { name: "🤝 BEIDE", color: "#D97706", category: "responsible" },
     ],
   });
@@ -79,7 +91,7 @@ async function seedLaunchTasks() {
   };
   const respTag: Record<string, string> = {
     ALEX: "💻 ALEX",
-    DU: "🎨 DU",
+    Katherina: "🎨 Katherina",
     BEIDE: "🤝 BEIDE",
   };
 
@@ -111,18 +123,18 @@ async function seedLaunchTasks() {
     { title: "Webinar Skript finalisieren", weekLabel: "WOCHE 2 — 21.–27. März", responsible: "BEIDE", priority: "SOFORT", status: "erledigt", workstream: "Webinar" },
     { title: "Webinar aufnehmen & schneiden", weekLabel: "WOCHE 2 — 21.–27. März", deadline: "2026-03-26", responsible: "BEIDE", priority: "SOFORT", status: "offen", workstream: "Webinar" },
     { title: "Webinar-Registrierungsseite bauen + N8N Automation", weekLabel: "WOCHE 2 — 21.–27. März", deadline: "2026-03-27", responsible: "ALEX", priority: "DIESE_WOCHE", status: "offen", workstream: "Webinar" },
-    { title: "One-Pager PDF: Nutzenversprechen, Module, Pricing, CTA", weekLabel: "WOCHE 2 — 21.–27. März", deadline: "2026-03-25", responsible: "DU", priority: "DIESE_WOCHE", status: "offen", workstream: "Sales Assets" },
-    { title: "Pitch Deck (5–7 Slides)", weekLabel: "WOCHE 2 — 21.–27. März", deadline: "2026-03-27", responsible: "DU", priority: "DIESE_WOCHE", status: "offen", workstream: "Sales Assets" },
+    { title: "One-Pager PDF: Nutzenversprechen, Module, Pricing, CTA", weekLabel: "WOCHE 2 — 21.–27. März", deadline: "2026-03-25", responsible: "Katherina", priority: "DIESE_WOCHE", status: "offen", workstream: "Sales Assets" },
+    { title: "Pitch Deck (5–7 Slides)", weekLabel: "WOCHE 2 — 21.–27. März", deadline: "2026-03-27", responsible: "Katherina", priority: "DIESE_WOCHE", status: "offen", workstream: "Sales Assets" },
     { title: "E-Mail-Sequenz Warteliste in Klick-Tipp einrichten", weekLabel: "WOCHE 2 — 21.–27. März", responsible: "ALEX", priority: "SOFORT", status: "erledigt", workstream: "Funnel" },
     // WOCHE 3-4
     { title: "Curriculum finalisieren: Modulstruktur & Lektionsreihenfolge", weekLabel: "WOCHE 3–4 — 28. März – 10. April", deadline: "2026-03-31", responsible: "BEIDE", priority: "DIESE_WOCHE", status: "offen", workstream: "Content" },
     { title: "Modul 1: Drehbuch + Filming", weekLabel: "WOCHE 3–4 — 28. März – 10. April", deadline: "2026-04-04", responsible: "BEIDE", priority: "GEPLANT", status: "offen", workstream: "Content" },
     { title: "Modul 2 produzieren + schneiden", weekLabel: "WOCHE 3–4 — 28. März – 10. April", deadline: "2026-04-10", responsible: "BEIDE", priority: "GEPLANT", status: "offen", workstream: "Content" },
     { title: "Kursplattform (Ablefy) einrichten: Struktur, Branding", weekLabel: "WOCHE 3–4 — 28. März – 10. April", deadline: "2026-04-04", responsible: "ALEX", priority: "GEPLANT", status: "offen", workstream: "Plattform" },
-    { title: "LinkedIn Content-Plan starten: 3×/Woche", weekLabel: "WOCHE 3–4 — 28. März – 10. April", deadline: "2026-03-31", responsible: "DU", priority: "DIESE_WOCHE", status: "offen", workstream: "Marketing" },
+    { title: "LinkedIn Content-Plan starten: 3×/Woche", weekLabel: "WOCHE 3–4 — 28. März – 10. April", deadline: "2026-03-31", responsible: "Katherina", priority: "DIESE_WOCHE", status: "offen", workstream: "Marketing" },
     { title: "YouTube Teaser: 'Warum Systemhäuser jetzt handeln müssen'", weekLabel: "WOCHE 3–4 — 28. März – 10. April", deadline: "2026-04-07", responsible: "BEIDE", priority: "GEPLANT", status: "offen", workstream: "Content" },
     { title: "Landingpage copilotberater.de überarbeiten", weekLabel: "WOCHE 3–4 — 28. März – 10. April", deadline: "2026-04-04", responsible: "ALEX", priority: "GEPLANT", status: "offen", workstream: "Funnel" },
-    { title: "ADN: Co-Marketing-Assets liefern", weekLabel: "WOCHE 3–4 — 28. März – 10. April", deadline: "2026-04-04", responsible: "DU", priority: "GEPLANT", status: "offen", workstream: "Partnerschaften" },
+    { title: "ADN: Co-Marketing-Assets liefern", weekLabel: "WOCHE 3–4 — 28. März – 10. April", deadline: "2026-04-04", responsible: "Katherina", priority: "GEPLANT", status: "offen", workstream: "Partnerschaften" },
     { title: "KI League: Gemeinsame Aktion definieren", weekLabel: "WOCHE 3–4 — 28. März – 10. April", deadline: "2026-04-04", responsible: "BEIDE", priority: "GEPLANT", status: "offen", workstream: "Partnerschaften" },
     { title: "Testimonials / Social Proof sammeln", weekLabel: "WOCHE 3–4 — 28. März – 10. April", deadline: "2026-04-07", responsible: "BEIDE", priority: "GEPLANT", status: "offen", workstream: "Marketing" },
     // WOCHE 5-6
@@ -132,14 +144,14 @@ async function seedLaunchTasks() {
     { title: "IAMCP / Channelpartner Outreach", weekLabel: "WOCHE 5–6 — 11.–24. April", deadline: "2026-04-18", responsible: "BEIDE", priority: "GEPLANT", status: "offen", workstream: "Partnerschaften" },
     { title: "Module 3 & 4 produzieren", weekLabel: "WOCHE 5–6 — 11.–24. April", deadline: "2026-04-24", responsible: "BEIDE", priority: "GEPLANT", status: "offen", workstream: "Content" },
     { title: "ADN on Air Vorbereitung", weekLabel: "WOCHE 5–6 — 11.–24. April", deadline: "2026-04-22", responsible: "BEIDE", priority: "GEPLANT", status: "offen", workstream: "ADN Events" },
-    { title: "ADN Transformation Day Materialien", weekLabel: "WOCHE 5–6 — 11.–24. April", deadline: "2026-04-22", responsible: "DU", priority: "GEPLANT", status: "offen", workstream: "ADN Events" },
+    { title: "ADN Transformation Day Materialien", weekLabel: "WOCHE 5–6 — 11.–24. April", deadline: "2026-04-22", responsible: "Katherina", priority: "GEPLANT", status: "offen", workstream: "ADN Events" },
     { title: "27.4. ADN ON AIR — Live Event", weekLabel: "WOCHE 5–6 — 11.–24. April", deadline: "2026-04-27", responsible: "BEIDE", priority: "EVENT", status: "offen", workstream: "ADN Events" },
     // WOCHE 7
     { title: "Standard-Preis aktivieren", weekLabel: "WOCHE 7 — 28. April – 4. Mai", deadline: "2026-04-28", responsible: "ALEX", priority: "GEPLANT", status: "offen", workstream: "Launch" },
     { title: "Persönliche Outreach: Top-Kontakte anrufen", weekLabel: "WOCHE 7 — 28. April – 4. Mai", deadline: "2026-04-30", responsible: "BEIDE", priority: "GEPLANT", status: "offen", workstream: "Sales Assets" },
     { title: "Module 5 & 6 produzieren", weekLabel: "WOCHE 7 — 28. April – 4. Mai", deadline: "2026-05-02", responsible: "BEIDE", priority: "GEPLANT", status: "offen", workstream: "Content" },
     { title: "Kursplattform: Finale Checks, Testdurchlauf", weekLabel: "WOCHE 7 — 28. April – 4. Mai", deadline: "2026-05-02", responsible: "ALEX", priority: "GEPLANT", status: "offen", workstream: "Plattform" },
-    { title: "Transformation Day: Druck, QR, Handout final", weekLabel: "WOCHE 7 — 28. April – 4. Mai", deadline: "2026-05-02", responsible: "DU", priority: "GEPLANT", status: "offen", workstream: "ADN Events" },
+    { title: "Transformation Day: Druck, QR, Handout final", weekLabel: "WOCHE 7 — 28. April – 4. Mai", deadline: "2026-05-02", responsible: "Katherina", priority: "GEPLANT", status: "offen", workstream: "ADN Events" },
     { title: "5.5. ADN TRANSFORMATION DAY — Live Event", weekLabel: "WOCHE 7 — 28. April – 4. Mai", deadline: "2026-05-05", responsible: "BEIDE", priority: "EVENT", status: "offen", workstream: "ADN Events" },
     // WOCHE 8
     { title: "LAUNCH: Kurs öffnen, Willkommens-Mail, Community starten", weekLabel: "WOCHE 8 — 5.–11. Mai", deadline: "2026-05-05", responsible: "ALEX", priority: "GEPLANT", status: "offen", workstream: "Launch" },
