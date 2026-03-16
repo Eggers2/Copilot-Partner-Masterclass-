@@ -4,7 +4,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 
 const PACKAGES = {
   starter: { label: "Starter", users: 3, yearly: 8900, monthly: 890 },
-  team: { label: "Team", users: 6, yearly: 9900, monthly: 1090 },
+  team: { label: "Team", users: 6, yearly: 9900, monthly: 990 },
   business: { label: "Business", users: 15, yearly: 14900, monthly: 1490 },
 } as const;
 
