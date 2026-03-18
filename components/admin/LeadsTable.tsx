@@ -1,22 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Search } from "lucide-react";
+import { Search, Trash2, Download } from "lucide-react";
 import type { LeadStatus, LeadSource } from "@prisma/client";
 import { LeadStatusBadge } from "./LeadStatusBadge";
 import {
   LEAD_STATUS_CONFIG,
   LEAD_SOURCE_CONFIG,
 } from "@/lib/constants/lead-config";
+import { deleteLeadAction } from "@/app/admin/actions";
 
 interface Lead {
   id: string;
   email: string;
   name: string | null;
   company: string | null;
+  phone?: string | null;
   status: LeadStatus;
   source: LeadSource;
+  score?: number;
+  notes?: string | null;
   createdAt: string;
   _count: { activities: number };
 }
@@ -30,6 +34,19 @@ export function LeadsTable({ leads }: LeadsTableProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "">("");
   const [sourceFilter, setSourceFilter] = useState<LeadSource | "">("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+
+  const handleDelete = (e: React.MouseEvent, lead: Lead) => {
+    e.stopPropagation();
+    const displayName = lead.name || lead.email;
+    if (!confirm(`Möchten Sie den Lead "${displayName}" wirklich löschen?`)) return;
+    setDeletingId(lead.id);
+    startTransition(async () => {
+      await deleteLeadAction(lead.id);
+      setDeletingId(null);
+    });
+  };
 
   const filtered = leads.filter((lead) => {
     if (statusFilter && lead.status !== statusFilter) return false;
@@ -44,6 +61,36 @@ export function LeadsTable({ leads }: LeadsTableProps) {
     }
     return true;
   });
+
+  const downloadCSV = () => {
+    const headers = ["Name", "E-Mail", "Firma", "Telefon", "Status", "Quelle", "Score", "Notizen", "Erstellt am"];
+    const rows = filtered.map((lead) => [
+      lead.name ?? "",
+      lead.email,
+      lead.company ?? "",
+      lead.phone ?? "",
+      LEAD_STATUS_CONFIG[lead.status].label,
+      LEAD_SOURCE_CONFIG[lead.source].label,
+      String(lead.score ?? ""),
+      lead.notes ?? "",
+      new Date(lead.createdAt).toLocaleString("de-DE"),
+    ]);
+
+    const csvContent = [
+      headers.join(";"),
+      ...rows.map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(";")),
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `leads-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="bg-white rounded-2xl border border-dark-slate-100 shadow-sm overflow-hidden">
@@ -83,6 +130,13 @@ export function LeadsTable({ leads }: LeadsTableProps) {
             </option>
           ))}
         </select>
+        <button
+          onClick={downloadCSV}
+          className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#030386] border border-[#030386] rounded-lg hover:bg-[#E3ECF8]/50 transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          CSV
+        </button>
       </div>
 
       {/* Table */}
@@ -105,13 +159,16 @@ export function LeadsTable({ leads }: LeadsTableProps) {
               <th className="text-left px-6 py-3 text-xs font-semibold text-dark-slate-500 uppercase tracking-wider">
                 Datum
               </th>
+              <th className="text-right px-6 py-3 text-xs font-semibold text-dark-slate-500 uppercase tracking-wider">
+                Aktionen
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-dark-slate-50">
             {filtered.length === 0 ? (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={6}
                   className="px-6 py-12 text-center text-dark-slate-400 text-sm"
                 >
                   Keine Leads gefunden.
@@ -136,9 +193,13 @@ export function LeadsTable({ leads }: LeadsTableProps) {
                           {lead.name || lead.email}
                         </p>
                         {lead.name && (
-                          <p className="text-xs text-dark-slate-400">
+                          <a
+                            href={`mailto:${lead.email}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-xs text-[#030386] hover:underline"
+                          >
                             {lead.email}
-                          </p>
+                          </a>
                         )}
                       </div>
                     </div>
@@ -154,6 +215,16 @@ export function LeadsTable({ leads }: LeadsTableProps) {
                   </td>
                   <td className="px-6 py-4 text-sm text-dark-slate-400">
                     {new Date(lead.createdAt).toLocaleDateString("de-DE")}
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <button
+                      onClick={(e) => handleDelete(e, lead)}
+                      disabled={deletingId === lead.id}
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-dark-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                      title="Lead löschen"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </td>
                 </tr>
               ))
