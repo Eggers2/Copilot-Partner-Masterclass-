@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Search, Trash2, Download } from "lucide-react";
 import type { LeadStatus, LeadSource } from "@prisma/client";
 import { LeadStatusBadge } from "./LeadStatusBadge";
+import { FirstCallBadge } from "./FirstCallBadge";
 import {
   LEAD_STATUS_CONFIG,
   LEAD_SOURCE_CONFIG,
@@ -23,6 +24,7 @@ interface Lead {
   notes?: string | null;
   createdAt: string;
   _count: { activities: number };
+  firstCallScore: { totalScore: number } | null;
 }
 
 interface LeadsTableProps {
@@ -154,6 +156,9 @@ export function LeadsTable({ leads }: LeadsTableProps) {
                 Status
               </th>
               <th className="text-left px-6 py-3 text-xs font-semibold text-dark-slate-500 uppercase tracking-wider">
+                Score
+              </th>
+              <th className="text-left px-6 py-3 text-xs font-semibold text-dark-slate-500 uppercase tracking-wider">
                 Quelle
               </th>
               <th className="text-left px-6 py-3 text-xs font-semibold text-dark-slate-500 uppercase tracking-wider">
@@ -168,7 +173,7 @@ export function LeadsTable({ leads }: LeadsTableProps) {
             {filtered.length === 0 ? (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={7}
                   className="px-6 py-12 text-center text-dark-slate-400 text-sm"
                 >
                   Keine Leads gefunden.
@@ -209,6 +214,9 @@ export function LeadsTable({ leads }: LeadsTableProps) {
                   </td>
                   <td className="px-6 py-4">
                     <LeadStatusBadge status={lead.status} />
+                  </td>
+                  <td className="px-6 py-4">
+                    <FirstCallBadge totalScore={lead.firstCallScore?.totalScore ?? null} />
                   </td>
                   <td className="px-6 py-4 text-sm text-dark-slate-500">
                     {LEAD_SOURCE_CONFIG[lead.source].label}

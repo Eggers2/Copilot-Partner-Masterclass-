@@ -2,8 +2,9 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
-import { getLead } from "@/lib/db/leads";
+import { getLead, getFirstCallScore } from "@/lib/db/leads";
 import { LeadDetailPanel } from "@/components/admin/LeadDetailPanel";
+import { FirstCallSection } from "@/components/admin/FirstCallSection";
 import { ActivityTimeline } from "@/components/admin/ActivityTimeline";
 import { AddActivityForm } from "@/components/admin/AddActivityForm";
 
@@ -16,7 +17,10 @@ export default async function LeadDetailPage({
   if (!authed) redirect("/admin/login");
 
   const { id } = await params;
-  const lead = await getLead(id);
+  const [lead, firstCallScore] = await Promise.all([
+    getLead(id),
+    getFirstCallScore(id),
+  ]);
 
   if (!lead) notFound();
 
@@ -26,6 +30,16 @@ export default async function LeadDetailPage({
     updatedAt: lead.updatedAt.toISOString(),
     followUpAt: lead.followUpAt?.toISOString() ?? null,
   };
+
+  // First-Call-Score serialisieren (Datumswerte → ISO-Strings)
+  const serializedFirstCallScore = firstCallScore
+    ? {
+        ...firstCallScore,
+        calledAt: firstCallScore.calledAt.toISOString(),
+        updatedAt: firstCallScore.updatedAt.toISOString(),
+        followUpDate: firstCallScore.followUpDate?.toISOString() ?? null,
+      }
+    : null;
 
   const serializedActivities = lead.activities.map((a) => ({
     ...a,
@@ -50,6 +64,7 @@ export default async function LeadDetailPage({
       <div className="grid lg:grid-cols-5 gap-6">
         <div className="lg:col-span-3 space-y-6">
           <LeadDetailPanel lead={serializedLead} />
+          <FirstCallSection leadId={lead.id} existingScore={serializedFirstCallScore} />
           <AddActivityForm leadId={lead.id} />
         </div>
         <div className="lg:col-span-2">

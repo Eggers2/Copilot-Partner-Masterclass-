@@ -73,6 +73,7 @@ model Lead {
   updatedAt            DateTime              @updatedAt
   activities           LeadActivity[]
   webinarRegistrations WebinarRegistration[]
+  firstCallScore       FirstCallScore?
 
   @@map("waitlist")
 }
@@ -233,4 +234,40 @@ model TaskTagAssignment {
 
   @@id([taskId, tagId])
   @@map("task_tag_assignments")
+}
+
+// ==========================================
+// First Call Scoring (Qualifikations-Scorecard)
+// ==========================================
+
+model FirstCallScore {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  leadId             String    @unique @db.Uuid @map("lead_id")
+  lead               Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  // Scorecard-Kriterien (je 1–5 Punkte)
+  copilotDemand      Int       @default(1) @map("copilot_demand")
+  currentOffer       Int       @default(1) @map("current_offer")
+  teamCapacity       Int       @default(1) @map("team_capacity")
+  decisionMaker      Int       @default(1) @map("decision_maker")
+  budgetReadiness    Int       @default(1) @map("budget_readiness")
+  urgency            Int       @default(1)
+  mindset            Int       @default(1)
+  msPartnerStatus    Int       @default(1) @map("ms_partner_status")
+  totalScore         Int       @default(8) @map("total_score")
+
+  // Gesprächsnotizen
+  painPoint          String?   @map("pain_point")
+  teamSize           String?   @map("team_size")
+  recommendedPackage String?   @map("recommended_package")
+  objections         String?
+  nextStep           String?   @map("next_step")
+  followUpDate       DateTime? @map("follow_up_date") @db.Date
+  contactSource      String?   @map("contact_source")
+
+  // Zeitstempel
+  calledAt           DateTime  @default(now()) @map("called_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  @@map("first_call_scores")
 }

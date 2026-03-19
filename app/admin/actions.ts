@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { setAuthCookie, clearAuthCookie, requireAuth } from "@/lib/auth";
-import { updateLead, addActivity } from "@/lib/db/leads";
+import { updateLead, addActivity, upsertFirstCallScore } from "@/lib/db/leads";
 import {
   createWebinar,
   updateWebinar,
@@ -115,8 +115,59 @@ export async function addActivityAction(
 export async function deleteLeadAction(id: string): Promise<void> {
   await requireAuth();
   await prisma.webinarRegistration.deleteMany({ where: { leadId: id } });
+  await prisma.firstCallScore.deleteMany({ where: { leadId: id } });
   await prisma.lead.delete({ where: { id } });
   revalidatePath("/admin");
+}
+
+// ─── FIRST CALL SCORING ──────────────────────────────
+
+/** Speichert oder aktualisiert den First-Call-Score eines Leads */
+export async function saveFirstCallScoreAction(
+  _prev: unknown,
+  formData: FormData
+): Promise<{ success?: boolean; error?: string }> {
+  await requireAuth();
+
+  const leadId = formData.get("leadId") as string;
+  if (!leadId) return { error: "Lead-ID fehlt." };
+
+  // Score-Felder parsen und auf 1–5 begrenzen
+  const parseScore = (name: string) => {
+    const val = parseInt(formData.get(name) as string) || 1;
+    return Math.max(1, Math.min(5, val));
+  };
+
+  const followUpDateRaw = formData.get("followUpDate") as string;
+
+  await upsertFirstCallScore(leadId, {
+    copilotDemand: parseScore("copilotDemand"),
+    currentOffer: parseScore("currentOffer"),
+    teamCapacity: parseScore("teamCapacity"),
+    decisionMaker: parseScore("decisionMaker"),
+    budgetReadiness: parseScore("budgetReadiness"),
+    urgency: parseScore("urgency"),
+    mindset: parseScore("mindset"),
+    msPartnerStatus: parseScore("msPartnerStatus"),
+    painPoint: (formData.get("painPoint") as string) || null,
+    teamSize: (formData.get("teamSize") as string) || null,
+    recommendedPackage: (formData.get("recommendedPackage") as string) || null,
+    objections: (formData.get("objections") as string) || null,
+    nextStep: (formData.get("nextStep") as string) || null,
+    followUpDate: followUpDateRaw ? new Date(followUpDateRaw) : null,
+    contactSource: (formData.get("contactSource") as string) || null,
+  });
+
+  // Aktivität protokollieren
+  await addActivity(leadId, {
+    type: "CALL" as ActivityType,
+    content: "First Call Scoring durchgeführt",
+  });
+
+  revalidatePath(`/admin/leads/${leadId}`);
+  revalidatePath("/admin");
+
+  return { success: true };
 }
 
 // ─── WEBINAR ACTIONS ──────────────────────────────────
