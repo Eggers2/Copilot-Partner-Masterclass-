@@ -1,5 +1,4 @@
 import { Users, TrendingUp, Clock, Euro } from "lucide-react";
-import { LEAD_TARGET } from "@/lib/constants/lead-config";
 
 interface KpiData {
   total: number;
@@ -7,20 +6,16 @@ interface KpiData {
   waitlistCount: number;
   followUpCount: number;
   won: number;
+  activeFunnel: number;
   revenueTotal: number;
 }
 
 export function KpiCards({ data }: { data: KpiData }) {
-  const progressPercent = Math.min(
-    Math.round((data.waitlistCount / LEAD_TARGET) * 100),
-    100
-  );
-
   const cards = [
     {
-      title: "Warteliste",
-      value: data.waitlistCount,
-      subtitle: `${progressPercent}% vom Ziel (${LEAD_TARGET})`,
+      title: "Aktive Leads",
+      value: data.activeFunnel,
+      subtitle: "Im Funnel",
       icon: Users,
       iconBg: "bg-[#E3ECF8]",
       iconColor: "text-[#030386]",
