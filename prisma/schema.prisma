@@ -18,8 +18,6 @@ enum LeadStatus {
   WON
   LOST
   WAITLIST
-  SEQUENCE_ACTIVE
-  WEBINAR_INVITED
   WEBINAR_ATTENDED
   FOLLOW_UP
 }
@@ -68,6 +66,7 @@ model Lead {
   source               LeadSource            @default(WEBSITE)
   notes                String?
   score                Int                   @default(0)
+  revenue              Int                   @default(0)
   followUpAt           DateTime?
   webinarRegistered    Boolean               @default(false) @map("webinar_registered")
   createdAt            DateTime              @default(now())

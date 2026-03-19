@@ -52,6 +52,7 @@ export async function updateLead(
     source?: LeadSource;
     notes?: string | null;
     score?: number;
+    revenue?: number;
     followUpAt?: Date | null;
   }
 ) {
@@ -86,17 +87,15 @@ export async function addActivity(
 }
 
 export async function getKpiStats() {
-  const [total, byStatus, followUpsDue] = await Promise.all([
+  const [total, byStatus, revenueSum] = await Promise.all([
     prisma.lead.count(),
     prisma.lead.groupBy({
       by: ["status"],
       _count: { id: true },
     }),
-    prisma.lead.count({
-      where: {
-        followUpAt: { lte: new Date() },
-        status: { notIn: ["WON", "LOST"] },
-      },
+    prisma.lead.aggregate({
+      where: { status: "WON" },
+      _sum: { revenue: true },
     }),
   ]);
 
@@ -109,13 +108,17 @@ export async function getKpiStats() {
   const lost = statusMap["LOST"] ?? 0;
   const closed = won + lost;
   const conversionRate = closed > 0 ? Math.round((won / closed) * 100) : 0;
+  const waitlistCount = statusMap["WAITLIST"] ?? 0;
+  const followUpCount = statusMap["FOLLOW_UP"] ?? 0;
 
   return {
     total,
     byStatus: statusMap,
-    followUpsDue,
+    waitlistCount,
+    followUpCount,
     conversionRate,
     won,
+    revenueTotal: revenueSum._sum.revenue ?? 0,
   };
 }
 

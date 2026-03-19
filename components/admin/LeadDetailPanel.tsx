@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useActionState } from "react";
 import type { LeadStatus, LeadSource } from "@prisma/client";
 import { Save } from "lucide-react";
@@ -20,6 +21,7 @@ interface Lead {
   source: LeadSource;
   notes: string | null;
   score: number;
+  revenue: number;
   followUpAt: string | null;
   createdAt: string;
 }
@@ -38,6 +40,7 @@ function SubmitButton() {
 
 export function LeadDetailPanel({ lead }: { lead: Lead }) {
   const [state, formAction] = useActionState(updateLeadAction, null);
+  const [selectedStatus, setSelectedStatus] = useState<LeadStatus>(lead.status);
 
   return (
     <div className="bg-white rounded-2xl border border-dark-slate-100 p-6 shadow-sm">
@@ -105,6 +108,7 @@ export function LeadDetailPanel({ lead }: { lead: Lead }) {
             <select
               name="status"
               defaultValue={lead.status}
+              onChange={(e) => setSelectedStatus(e.target.value as LeadStatus)}
               className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none"
             >
               {Object.entries(LEAD_STATUS_CONFIG).map(([key, config]) => (
@@ -145,6 +149,22 @@ export function LeadDetailPanel({ lead }: { lead: Lead }) {
               className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none"
             />
           </div>
+          {selectedStatus === "WON" && (
+            <div>
+              <label className="block text-sm font-medium text-dark-slate-600 mb-1">
+                Umsatz (€)
+              </label>
+              <input
+                name="revenue"
+                type="number"
+                min={0}
+                step={1}
+                defaultValue={lead.revenue > 0 ? lead.revenue / 100 : ""}
+                placeholder="0,00"
+                className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none"
+              />
+            </div>
+          )}
         </div>
 
         <div>
