@@ -1,24 +1,25 @@
-import { Users, TrendingUp, Clock, Target } from "lucide-react";
-import { LEAD_TARGET, EARLY_BIRD_PRICE } from "@/lib/constants/lead-config";
+import { Users, TrendingUp, Clock, Euro } from "lucide-react";
+import { LEAD_TARGET } from "@/lib/constants/lead-config";
 
 interface KpiData {
   total: number;
   conversionRate: number;
-  followUpsDue: number;
+  waitlistCount: number;
+  followUpCount: number;
   won: number;
+  revenueTotal: number;
 }
 
 export function KpiCards({ data }: { data: KpiData }) {
-  const revenueEstimate = data.won * EARLY_BIRD_PRICE;
   const progressPercent = Math.min(
-    Math.round((data.total / LEAD_TARGET) * 100),
+    Math.round((data.waitlistCount / LEAD_TARGET) * 100),
     100
   );
 
   const cards = [
     {
-      title: "Leads gesamt",
-      value: data.total,
+      title: "Warteliste",
+      value: data.waitlistCount,
       subtitle: `${progressPercent}% vom Ziel (${LEAD_TARGET})`,
       icon: Users,
       iconBg: "bg-[#E3ECF8]",
@@ -33,18 +34,18 @@ export function KpiCards({ data }: { data: KpiData }) {
       iconColor: "text-green-600",
     },
     {
-      title: "Follow-ups fällig",
-      value: data.followUpsDue,
-      subtitle: "Offene Aufgaben",
+      title: "Offene Aufgaben",
+      value: data.followUpCount,
+      subtitle: "Follow-up Einträge",
       icon: Clock,
       iconBg: "bg-amber-50",
       iconColor: "text-amber-600",
     },
     {
-      title: "Umsatzpotenzial",
-      value: `${(revenueEstimate / 100).toLocaleString("de-DE")} €`,
-      subtitle: `${EARLY_BIRD_PRICE / 100} € × ${data.won} Kunden`,
-      icon: Target,
+      title: "Umsatz",
+      value: `${(data.revenueTotal / 100).toLocaleString("de-DE")} €`,
+      subtitle: `${data.won} gewonnene Deals`,
+      icon: Euro,
       iconBg: "bg-purple-50",
       iconColor: "text-purple-600",
     },

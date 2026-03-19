@@ -30,14 +30,14 @@ export async function POST(req: NextRequest) {
       const oldStatus = lead.status;
       await prisma.lead.update({
         where: { id: lead.id },
-        data: { status: "SEQUENCE_ACTIVE" as LeadStatus },
+        data: { status: "CONTACTED" as LeadStatus },
       });
       await logActivity(
         lead.id,
         "STATUS_CHANGE",
         "E-Mail-Sequenz gestartet (n8n)",
         oldStatus,
-        "SEQUENCE_ACTIVE"
+        "CONTACTED"
       );
       break;
     }
@@ -68,14 +68,14 @@ export async function POST(req: NextRequest) {
       const oldStatus = lead.status;
       await prisma.lead.update({
         where: { id: lead.id },
-        data: { status: "WEBINAR_INVITED", webinarRegistered: true },
+        data: { status: "CONTACTED", webinarRegistered: true },
       });
       await logActivity(
         lead.id,
         "WEBINAR",
         `Für Webinar '${webinar.title}' registriert`,
         oldStatus,
-        "WEBINAR_INVITED"
+        "CONTACTED"
       );
       break;
     }

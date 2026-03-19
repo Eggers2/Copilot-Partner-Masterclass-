@@ -60,6 +60,10 @@ export async function updateLeadAction(
   const newStatus = formData.get("status") as LeadStatus;
   const followUpAtRaw = formData.get("followUpAt") as string;
 
+  const revenueRaw = formData.get("revenue") as string;
+  const revenueEuro = parseFloat(revenueRaw);
+  const revenueCents = !isNaN(revenueEuro) ? Math.round(revenueEuro * 100) : 0;
+
   await updateLead(id, {
     name: (formData.get("name") as string) || null,
     company: (formData.get("company") as string) || null,
@@ -68,6 +72,7 @@ export async function updateLeadAction(
     source: formData.get("source") as LeadSource,
     notes: (formData.get("notes") as string) || null,
     score: parseInt(formData.get("score") as string) || 0,
+    revenue: newStatus === "WON" ? revenueCents : undefined,
     followUpAt: followUpAtRaw ? new Date(followUpAtRaw) : null,
   });
 

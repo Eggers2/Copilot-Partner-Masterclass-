@@ -5,7 +5,7 @@ import type {
   RegistrationStatus,
 } from "@prisma/client";
 
-export const LEAD_TARGET = 20;
+export const LEAD_TARGET = 500;
 export const EARLY_BIRD_PRICE = 3490;
 
 export const LEAD_STATUS_CONFIG: Record<
@@ -14,15 +14,13 @@ export const LEAD_STATUS_CONFIG: Record<
 > = {
   NEW: { label: "Neu", color: "#030386", bg: "#E3ECF8", order: 0 },
   WAITLIST: { label: "Warteliste", color: "#6b7280", bg: "#f3f4f6", order: 1 },
-  SEQUENCE_ACTIVE: { label: "Sequenz läuft", color: "#0891b2", bg: "#cffafe", order: 2 },
-  CONTACTED: { label: "Kontaktiert", color: "#05015B", bg: "#DCDCEE", order: 3 },
-  WEBINAR_INVITED: { label: "Webinar eingeladen", color: "#7c3aed", bg: "#ede9fe", order: 4 },
-  WEBINAR_ATTENDED: { label: "Webinar besucht", color: "#2563eb", bg: "#dbeafe", order: 5 },
-  QUALIFIED: { label: "Qualifiziert", color: "#0078D4", bg: "#dbeafe", order: 6 },
-  PROPOSAL: { label: "Angebot", color: "#9333ea", bg: "#f3e8ff", order: 7 },
-  FOLLOW_UP: { label: "Follow-up", color: "#d97706", bg: "#fef3c7", order: 8 },
-  WON: { label: "Gewonnen", color: "#16a34a", bg: "#dcfce7", order: 9 },
-  LOST: { label: "Verloren", color: "#dc2626", bg: "#fef2f2", order: 10 },
+  CONTACTED: { label: "Kontaktiert", color: "#05015B", bg: "#DCDCEE", order: 2 },
+  WEBINAR_ATTENDED: { label: "Webinar besucht", color: "#2563eb", bg: "#dbeafe", order: 3 },
+  QUALIFIED: { label: "Qualifiziert", color: "#0078D4", bg: "#dbeafe", order: 4 },
+  PROPOSAL: { label: "Angebot", color: "#9333ea", bg: "#f3e8ff", order: 5 },
+  FOLLOW_UP: { label: "Follow-up", color: "#d97706", bg: "#fef3c7", order: 6 },
+  WON: { label: "Gewonnen", color: "#16a34a", bg: "#dcfce7", order: 7 },
+  LOST: { label: "Verloren", color: "#dc2626", bg: "#fef2f2", order: 8 },
 };
 
 export const LEAD_SOURCE_CONFIG: Record<LeadSource, { label: string }> = {
@@ -37,12 +35,13 @@ export const LEAD_SOURCE_CONFIG: Record<LeadSource, { label: string }> = {
 export const FUNNEL_STAGES: LeadStatus[] = [
   "NEW",
   "WAITLIST",
-  "SEQUENCE_ACTIVE",
-  "WEBINAR_INVITED",
+  "CONTACTED",
   "WEBINAR_ATTENDED",
   "QUALIFIED",
   "PROPOSAL",
+  "FOLLOW_UP",
   "WON",
+  "LOST",
 ];
 
 export const WEBINAR_STATUS_CONFIG: Record<
