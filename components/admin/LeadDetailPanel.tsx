@@ -46,7 +46,7 @@ export function LeadDetailPanel({ lead }: { lead: Lead }) {
           <h2 className="text-xl font-bold text-dark-slate-900">
             {lead.name || lead.email}
           </h2>
-          <p className="text-dark-slate-500 text-sm">{lead.email}</p>
+          <a href={`mailto:${lead.email}`} className="text-[#030386] text-sm hover:underline">{lead.email}</a>
         </div>
         <LeadStatusBadge status={lead.status} />
       </div>

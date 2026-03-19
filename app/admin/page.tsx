@@ -46,6 +46,7 @@ export default async function AdminDashboard() {
         leads={leads.map((l) => ({
           ...l,
           createdAt: l.createdAt.toISOString(),
+          followUpAt: l.followUpAt?.toISOString() ?? null,
         }))}
       />
     </div>

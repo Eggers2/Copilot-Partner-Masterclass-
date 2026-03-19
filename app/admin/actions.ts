@@ -109,9 +109,9 @@ export async function addActivityAction(
 
 export async function deleteLeadAction(id: string): Promise<void> {
   await requireAuth();
+  await prisma.webinarRegistration.deleteMany({ where: { leadId: id } });
   await prisma.lead.delete({ where: { id } });
   revalidatePath("/admin");
-  redirect("/admin");
 }
 
 // ─── WEBINAR ACTIONS ──────────────────────────────────
