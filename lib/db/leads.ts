@@ -29,7 +29,10 @@ export async function getLeads(filters?: LeadFilters) {
     where,
     orderBy: { createdAt: "desc" },
     take: filters?.limit,
-    include: { _count: { select: { activities: true } } },
+    include: {
+      _count: { select: { activities: true } },
+      firstCallScore: { select: { totalScore: true } },
+    },
   });
 }
 
@@ -120,6 +123,50 @@ export async function getKpiStats() {
     won,
     revenueTotal: revenueSum._sum.revenue ?? 0,
   };
+}
+
+// ─── FIRST CALL SCORING ──────────────────────────────
+
+/** Gibt den First-Call-Score für einen Lead zurück (oder null) */
+export async function getFirstCallScore(leadId: string) {
+  return prisma.firstCallScore.findUnique({
+    where: { leadId },
+  });
+}
+
+/** Eingabedaten für First-Call-Score */
+export interface FirstCallScoreInput {
+  copilotDemand: number;
+  currentOffer: number;
+  teamCapacity: number;
+  decisionMaker: number;
+  budgetReadiness: number;
+  urgency: number;
+  mindset: number;
+  msPartnerStatus: number;
+  painPoint?: string | null;
+  teamSize?: string | null;
+  recommendedPackage?: string | null;
+  objections?: string | null;
+  nextStep?: string | null;
+  followUpDate?: Date | null;
+  contactSource?: string | null;
+}
+
+/** Erstellt oder aktualisiert den First-Call-Score für einen Lead */
+export async function upsertFirstCallScore(leadId: string, data: FirstCallScoreInput) {
+  const totalScore =
+    data.copilotDemand + data.currentOffer + data.teamCapacity +
+    data.decisionMaker + data.budgetReadiness + data.urgency +
+    data.mindset + data.msPartnerStatus;
+
+  const payload = { ...data, totalScore };
+
+  return prisma.firstCallScore.upsert({
+    where: { leadId },
+    create: { leadId, ...payload },
+    update: payload,
+  });
 }
 
 export async function getFollowUpTasks() {

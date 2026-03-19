@@ -55,6 +55,34 @@ export const WEBINAR_STATUS_CONFIG: Record<
   CANCELLED: { label: "Abgesagt", color: "#dc2626", bg: "#fef2f2" },
 };
 
+// ─── FIRST CALL SCORE TIERS ──────────────────────────
+
+export const FIRST_CALL_SCORE_TIERS = [
+  { min: 35, label: "Hot Lead", emoji: "\uD83D\uDD34", color: "#E53E3E", bg: "#FED7D7" },
+  { min: 25, label: "Warm Lead", emoji: "\uD83D\uDFE1", color: "#D97706", bg: "#FEF3C7" },
+  { min: 15, label: "Lukewarm", emoji: "\uD83D\uDD35", color: "#3B82F6", bg: "#DBEAFE" },
+  { min: 0,  label: "Kein Fit", emoji: "\u26AB",       color: "#6B7280", bg: "#F3F4F6" },
+] as const;
+
+/** Gibt die Score-Stufe für einen First-Call-Gesamtscore zurück */
+export function getScoreTier(totalScore: number | null | undefined) {
+  if (totalScore == null) return null;
+  return FIRST_CALL_SCORE_TIERS.find((tier) => totalScore >= tier.min) ?? null;
+}
+
+// ─── FIRST CALL SCORECARD KRITERIEN ──────────────────
+
+export const FIRST_CALL_CRITERIA = [
+  { key: "copilotDemand",    label: "Copilot-Nachfrage",     hint: "Kunden fragen aktiv nach Copilot / KI?" },
+  { key: "currentOffer",     label: "Aktuelles Angebot",     hint: "Haben sie schon ein Copilot-Angebot? (Nein = Chance)" },
+  { key: "teamCapacity",     label: "Team & Kapazität",      hint: "Genug Leute + Zeit für den Aufbau?" },
+  { key: "decisionMaker",    label: "Entscheider",           hint: "Sprichst du mit dem GF / Budget-Entscheider?" },
+  { key: "budgetReadiness",  label: "Budget-Bereitschaft",   hint: "Reaktion auf Preisnennung" },
+  { key: "urgency",          label: "Zeitdruck",             hint: "Müssen jetzt handeln vs. irgendwann" },
+  { key: "mindset",          label: "Mindset",               hint: "Bereitschaft, in Beratung zu investieren" },
+  { key: "msPartnerStatus",  label: "MS-Partner-Status",     hint: "Aktiver CSP / Solutions Partner mit M365-Kunden?" },
+] as const;
+
 export const REGISTRATION_STATUS_CONFIG: Record<
   RegistrationStatus,
   { label: string; color: string; bg: string }
