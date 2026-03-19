@@ -114,6 +114,8 @@ export async function getKpiStats() {
   const waitlistCount = statusMap["WAITLIST"] ?? 0;
   const followUpCount = statusMap["FOLLOW_UP"] ?? 0;
 
+  const activeFunnel = total - won - lost;
+
   return {
     total,
     byStatus: statusMap,
@@ -121,6 +123,7 @@ export async function getKpiStats() {
     followUpCount,
     conversionRate,
     won,
+    activeFunnel,
     revenueTotal: revenueSum._sum.revenue ?? 0,
   };
 }
