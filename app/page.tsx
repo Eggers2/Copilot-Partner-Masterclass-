@@ -789,7 +789,7 @@ export default function LandingPage() {
               <h4 className="text-white font-semibold text-sm mb-4">Kontakt</h4>
               <ul className="space-y-2 text-sm">
                 <li><a href="mailto:info@next-skills.de" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-[#00C896] transition-colors">info@next-skills.de</a></li>
-                <li><a href="https://copilot-berater.de" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-[#00C896] transition-colors">copilot-berater.de</a></li>
+                <li><a href="https://www.copilot-berater.de" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-[#00C896] transition-colors">copilot-berater.de</a></li>
                 <li><a href="https://next-skills.de" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-[#00C896] transition-colors">next-skills.de</a></li>
                 <li><a href="https://www.linkedin.com/in/teams-pro/" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-[#00C896] transition-colors">LinkedIn</a></li>
                 <li><a href="https://www.youtube.com/@alexandereggers" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-[#00C896] transition-colors">YouTube</a></li>
