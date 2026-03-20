@@ -186,7 +186,7 @@ export default function LandingPage() {
                 </>
               ) : (
                 <>
-                  Jetzt Platz sichern
+                  Jetzt bewerben
                   <ArrowRight className="w-5 h-5" />
                 </>
               )}
@@ -490,7 +490,7 @@ export default function LandingPage() {
             <span className="section-label">Was enthalten ist</span>
             <h2 className="section-title">Alles, was Sie für den Start brauchen.</h2>
             <p className="section-subtitle mx-auto">
-              Kein Eigenaufbau. Keine Recherche. Keine Experimente auf Kosten Ihrer Kunden.
+              Kein Eigenaufbau. Keine Recherche.<br />Keine Experimente auf Kosten Ihrer Kunden.
             </p>
           </div>
 
@@ -502,7 +502,7 @@ export default function LandingPage() {
                   "50+ On-Demand-Videos: Discovery bis Skalierung",
                   "Copilot Beratungs-Kompass (4-Schritte-Framework)",
                   "Demo-Umgebungen & praxisnahe Use Cases",
-                  "Lernpfade on demand – neben dem Tagesgeschäft",
+                  "Copilot-berater-de Zertifizierung",
                 ],
               },
               {
@@ -572,7 +572,7 @@ export default function LandingPage() {
                   { num: "6\u00D7", label: "Microsoft MVP ausgezeichnet" },
                   { num: "25+", label: "Jahre IT-Erfahrung" },
                   { num: "9k+", label: "YouTube-Abonnenten" },
-                  { num: "4", label: "MVPs in DE für M365 & M365 Copilot" },
+                  { num: "15k+", label: "LinkedIn Follower" },
                 ].map((c, i) => (
                   <div key={i} className="bg-white p-4 rounded-[10px] text-center">
                     <div className="text-[#00C896] text-2xl font-bold" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>{c.num}</div>
@@ -751,7 +751,7 @@ export default function LandingPage() {
             </h2>
 
             <p className="text-white/50 text-lg max-w-[520px] mx-auto mb-10">
-              20+ Systemhäuser stehen bereits auf der Warteliste. Tragen Sie sich jetzt ein und sichern Sie Ihren Zugang.
+              60+ Systemhäuser stehen bereits auf der Warteliste. Tragen Sie sich jetzt ein und sichern Sie Ihren Zugang.
             </p>
 
             {renderForm()}
@@ -788,11 +788,11 @@ export default function LandingPage() {
             <div>
               <h4 className="text-white font-semibold text-sm mb-4">Kontakt</h4>
               <ul className="space-y-2 text-sm">
-                <li><span className="text-white/50">info@next-skills.de</span></li>
-                <li><span className="text-white/50">copilotberater.de</span></li>
-                <li><span className="text-white/50">next-skills.de</span></li>
-                <li><span className="text-white/50">LinkedIn</span></li>
-                <li><span className="text-white/50">YouTube</span></li>
+                <li><a href="mailto:info@next-skills.de" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-[#00C896] transition-colors">info@next-skills.de</a></li>
+                <li><a href="https://copilotberater.de" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-[#00C896] transition-colors">copilotberater.de</a></li>
+                <li><a href="https://next-skills.de" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-[#00C896] transition-colors">next-skills.de</a></li>
+                <li><a href="https://www.linkedin.com/in/intuneguy/" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-[#00C896] transition-colors">LinkedIn</a></li>
+                <li><a href="https://www.youtube.com/@yourcopilotguide" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-[#00C896] transition-colors">YouTube</a></li>
               </ul>
             </div>
           </div>
@@ -800,7 +800,7 @@ export default function LandingPage() {
           {/* Footer bottom */}
           <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-white/40">
             <span>
-              &copy; 2026 NextSkills GmbH &middot; Alexander Eggers | Katharina Nehr &middot; Alle Rechte vorbehalten.
+              &copy; 2026 NextSkills GmbH &middot; Alexander Eggers | Katherina Nehr &middot; Alle Rechte vorbehalten.
             </span>
             <span className="flex items-center gap-2">
               <span className="px-2 py-0.5 border border-white/20 rounded text-[10px] font-semibold text-white/60">MVP</span>
