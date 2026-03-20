@@ -9,6 +9,21 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        slate: {
+          DEFAULT: "#1A1A2E",
+          2: "#23233D",
+          3: "#2d2d48",
+        },
+        green: {
+          DEFAULT: "#00C896",
+          d: "#00a87e",
+        },
+        ice: "#EAF9F4",
+        cool: "#E8E8F0",
+        gray: {
+          DEFAULT: "#6B6B8A",
+        },
+        // Keep old colors for other pages that may use them
         "ns-blue": {
           500: "#030386",
           600: "#05015B",
@@ -44,7 +59,14 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["Segoe UI", "system-ui", "-apple-system", "sans-serif"],
+        heading: [
+          "'Bricolage Grotesque'",
+          "system-ui",
+          "-apple-system",
+          "sans-serif",
+        ],
+        body: ["'Figtree'", "system-ui", "-apple-system", "sans-serif"],
+        sans: ["'Figtree'", "system-ui", "-apple-system", "sans-serif"],
       },
       animation: {
         "fade-in": "fadeIn 0.5s ease-in-out",
