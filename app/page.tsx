@@ -345,11 +345,10 @@ export default function LandingPage() {
         <div className="container-main">
           <div className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2 text-white/70 text-sm font-medium">
             {[
-              "Microsoft-zertifiziertes Curriculum",
               "Microsoft Teams Community inklusive",
               "Live Q&A 2\u00D7 pro Monat",
               "Sofort einsetzbare Materialien",
-              "6\u00D7 Microsoft MVP Trainer",
+              "6\u00D7 Microsoft MVP",
             ].map((item, i) => (
               <span key={i} className="flex items-center gap-3">
                 {i > 0 && <span className="w-1.5 h-1.5 rounded-full bg-[#00C896] hidden sm:inline-block" />}
@@ -561,8 +560,8 @@ export default function LandingPage() {
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             {/* Left – Photo + Credentials */}
             <div className="reveal">
-              <div className="w-48 h-48 rounded-full bg-[#23233D] flex items-center justify-center mx-auto lg:mx-0 mb-8">
-                <span className="text-[#00C896] text-5xl font-bold" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>AE</span>
+              <div className="w-48 h-48 rounded-full overflow-hidden mx-auto lg:mx-0 mb-8">
+                <img src="/trainer-alexander-eggers.png" alt="Alexander Eggers" className="w-full h-full object-cover" />
               </div>
               <div className="text-center lg:text-left mb-8">
                 <h3 className="text-[#1A1A2E] text-xl font-bold" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>Alexander Eggers</h3>
@@ -573,7 +572,7 @@ export default function LandingPage() {
                   { num: "6\u00D7", label: "Microsoft MVP ausgezeichnet" },
                   { num: "25+", label: "Jahre IT-Erfahrung" },
                   { num: "9k+", label: "YouTube-Abonnenten" },
-                  { num: "~160", label: "MVPs gesamt in Deutschland" },
+                  { num: "4", label: "MVPs in DE für M365 & M365 Copilot" },
                 ].map((c, i) => (
                   <div key={i} className="bg-white p-4 rounded-[10px] text-center">
                     <div className="text-[#00C896] text-2xl font-bold" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>{c.num}</div>
@@ -591,7 +590,7 @@ export default function LandingPage() {
                 Alexander Eggers ist einer der gefragtesten Microsoft-Copilot-Experten im deutschsprachigen Raum. Als geschäftsführender Gesellschafter der ke solutions GmbH und Gründer der NextSkills GmbH verbindet er tiefes technisches Know-how mit dem Blick für Praxis und Umsatz.
               </p>
               <p className="text-[#6B6B8A] text-base leading-relaxed mb-6">
-                Er ist einer von nur ~160 Microsoft MVPs in Deutschland – ausgezeichnet in den Kategorien Office Apps &amp; Services und M365 Copilot. Regelmäßiger Speaker bei der Microsoft AI School und Inhaber eines YouTube-Kanals mit über 9.000 Abonnenten.
+                Er ist einer von nur 4 Microsoft MVPs in Deutschland ausgezeichnet in den Kategorien &ldquo;M365&rdquo; und &ldquo;M365 Copilot&rdquo;. Regelmäßiger Speaker bei der Microsoft AI School und Inhaber eines YouTube-Kanals mit über 9.000 Abonnenten.
               </p>
 
               {/* Tags */}
