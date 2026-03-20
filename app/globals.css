@@ -3,8 +3,15 @@
 @tailwind utilities;
 
 :root {
-  --ms-blue: #0078D4;
-  --dark-slate: #1e293b;
+  --slate: #1A1A2E;
+  --slate-2: #23233D;
+  --slate-3: #2d2d48;
+  --green: #00C896;
+  --green-d: #00a87e;
+  --ice: #EAF9F4;
+  --cool: #E8E8F0;
+  --gray: #6B6B8A;
+  --white: #FFFFFF;
 }
 
 html {
@@ -13,30 +20,115 @@ html {
 
 @layer base {
   body {
-    @apply bg-white text-dark-slate-900 font-sans;
+    font-family: 'Figtree', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color: var(--gray);
+    background: var(--white);
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-ms-blue-500 hover:bg-ms-blue-600 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-ms-blue-400 focus:ring-offset-2;
+    background: var(--green);
+    color: var(--slate);
+    font-weight: 600;
+    padding: 14px 28px;
+    border-radius: 10px;
+    border: none;
+    transition: all .2s ease;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 1rem;
   }
 
-  .btn-secondary {
-    @apply inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-ms-blue-600 bg-white border-2 border-ms-blue-500 hover:bg-ms-blue-50 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ms-blue-400 focus:ring-offset-2;
+  .btn-primary:hover {
+    background: var(--green-d);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0, 200, 150, .35);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: white;
+    border: 2px solid rgba(255, 255, 255, .25);
+    border-radius: 10px;
+    padding: 14px 28px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 1rem;
+    transition: all .2s ease;
+    text-decoration: none;
+  }
+
+  .btn-ghost:hover {
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  .section-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 12px;
+    display: block;
   }
 
   .section-title {
-    @apply text-3xl md:text-4xl font-bold text-dark-slate-900 mb-4;
+    font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--slate);
+    margin-bottom: 16px;
+    font-size: clamp(28px, 4vw, 44px);
+    line-height: 1.15;
   }
 
   .section-subtitle {
-    @apply text-lg text-dark-slate-600 max-w-2xl mx-auto;
+    font-size: 1.1rem;
+    color: var(--gray);
+    max-width: 600px;
+    line-height: 1.7;
   }
 
-  .card {
-    @apply bg-white rounded-2xl shadow-lg border border-dark-slate-100 p-8;
+  .container-main {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 0 24px;
   }
+
+  /* Scroll-reveal animations */
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity .65s ease, transform .65s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  .reveal-delay-1 { transition-delay: .1s; }
+  .reveal-delay-2 { transition-delay: .2s; }
+  .reveal-delay-3 { transition-delay: .3s; }
 }
 
 /* Custom scrollbar */
@@ -45,14 +137,14 @@ html {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--slate);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #94a3b8;
+  background: var(--slate-3);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #0078D4;
+  background: var(--green);
 }
