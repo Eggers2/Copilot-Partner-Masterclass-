@@ -155,7 +155,7 @@ export default function LandingPage() {
               Ihre Bewerbung ist eingegangen!
             </p>
             <p className="text-[#00C896]/70 text-sm">
-              Wir melden uns persoenlich bei Ihnen.
+              Wir melden uns persönlich bei Ihnen.
             </p>
           </div>
         </div>
@@ -201,7 +201,7 @@ export default function LandingPage() {
           )}
 
           <p className="text-[#6B6B8A] text-xs text-center">
-            Keine Verpflichtung. Wir melden uns persoenlich.
+            Keine Verpflichtung. Wir melden uns persönlich.
           </p>
         </form>
       )}
@@ -306,7 +306,7 @@ export default function LandingPage() {
 
           {/* Subheadline */}
           <p className="text-white/60 text-lg md:text-xl max-w-[560px] mb-10 leading-relaxed">
-            Das erste spezialisierte Copilot-Programm fuer Microsoft-Partner im DACH-Raum. In 90 Tagen Ihren ersten Beratungsauftrag – mit fertigen Templates, Demo-Umgebungen und persoenlichem MVP-Zugang.
+            Das erste spezialisierte Copilot-Programm für Microsoft-Partner im DACH-Raum. In 90 Tagen Ihren ersten Beratungsauftrag – mit fertigen Templates, Demo-Umgebungen und persönlichem MVP-Zugang.
           </p>
 
           {/* Buttons */}
@@ -322,7 +322,7 @@ export default function LandingPage() {
           {/* Stats row */}
           <div className="w-full border-t border-white/10 pt-10 grid grid-cols-2 md:grid-cols-4 gap-8 max-w-[800px]">
             {[
-              { num: "60+", label: "Systemhaeuser auf der Warteliste" },
+              { num: "60+", label: "Systemhäuser auf der Warteliste" },
               { num: "6\u00D7", label: "Microsoft MVP Alexander Eggers" },
               { num: "90", label: "Tage bis zum ersten Auftrag" },
               { num: "25+", label: "Jahre Microsoft-Erfahrung" },
@@ -364,7 +364,7 @@ export default function LandingPage() {
       <section style={{ background: "#1A1A2E" }} className="py-[110px]">
         <div className="container-main">
           <div className="text-center mb-16 reveal">
-            <span className="section-label">Die Realitaet im Systemhaus</span>
+            <span className="section-label">Die Realität im Systemhaus</span>
             <h2
               className="text-white font-bold mb-4"
               style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", letterSpacing: "-0.025em" }}
@@ -372,7 +372,7 @@ export default function LandingPage() {
               Kennen Sie das?
             </h2>
             <p className="text-white/50 text-lg max-w-[600px] mx-auto">
-              Das sind keine Hypothesen – das sind Aussagen, die wir in Hunderten von Gespraechen mit Systemhaus-Geschaeftsfuehrern gehoert haben.
+              Das sind keine Hypothesen – das sind Aussagen, die wir in Hunderten von Gesprächen mit Systemhaus-Geschäftsführern gehört haben.
             </p>
           </div>
 
@@ -382,7 +382,7 @@ export default function LandingPage() {
               "\u201EWir haben kein Workshop-Format, keine Demo-Umgebung, keinen Beratungsansatz.\u201C",
               "\u201EWir haben ein Jahr zugeschaut – jetzt kommen Kunden zu uns und wir sind nicht bereit.\u201C",
               "\u201EDie Marge bei Lizenzen sinkt. Aber wie der Weg zur Beratung geht, ist uns unklar.\u201C",
-              "\u201EKeine Zeit, das alles selbst aufzubauen – das Tagesgeschaeft frisst alles.\u201C",
+              "\u201EKeine Zeit, das alles selbst aufzubauen – das Tagesgeschäft frisst alles.\u201C",
             ].map((quote, i) => (
               <div
                 key={i}
@@ -403,10 +403,10 @@ export default function LandingPage() {
                   className="text-[#00C896] text-xl font-bold mb-3"
                   style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
                 >
-                  Die Loesung existiert.
+                  Die Lösung existiert.
                 </h3>
                 <p className="text-white/70 text-sm leading-relaxed mb-6">
-                  Die Copilot Partner Masterclass schliesst genau diese Luecke – strukturiert, praxisnah und in 90 Tagen.
+                  Die Copilot Partner Masterclass schließt genau diese Lücke – strukturiert, praxisnah und in 90 Tagen.
                 </p>
               </div>
               <a href="#solution" className="btn-primary !py-3 w-fit text-sm">
@@ -425,10 +425,10 @@ export default function LandingPage() {
             <div className="reveal">
               <span className="section-label">Das Programm</span>
               <h2 className="section-title">
-                Das Betriebssystem fuer Ihr Copilot-Geschaeft.
+                Das Betriebssystem für Ihr Copilot-Geschäft.
               </h2>
               <p className="text-[#6B6B8A] text-base leading-relaxed mb-8">
-                Die Copilot Partner Masterclass ist kein Kurs – es ist das komplette Toolkit, um Copilot-Beratung als eigenstaendiges, margenstarkes Geschaeftsfeld aufzubauen.
+                Die Copilot Partner Masterclass ist kein Kurs – es ist das komplette Toolkit, um Copilot-Beratung als eigenständiges, margenstarkes Geschäftsfeld aufzubauen.
               </p>
 
               {/* Quote block */}
@@ -448,7 +448,7 @@ export default function LandingPage() {
                 {
                   icon: <Layers className="w-6 h-6 text-[#00C896]" />,
                   title: "Strukturiertes Curriculum",
-                  text: "50+ On-Demand-Videos von Discovery bis Skalierung – angepasst an die Systemhaus-Realitaet.",
+                  text: "50+ On-Demand-Videos von Discovery bis Skalierung – angepasst an die Systemhaus-Realität.",
                 },
                 {
                   icon: <Box className="w-6 h-6 text-[#00C896]" />,
@@ -462,7 +462,7 @@ export default function LandingPage() {
                 },
                 {
                   icon: <Activity className="w-6 h-6 text-[#00C896]" />,
-                  title: "Persoenlicher MVP-Zugang",
+                  title: "Persönlicher MVP-Zugang",
                   text: "Direkter Draht zu Alexander Eggers – 2\u00D7 monatliche Live-Sessions und 1:1-Support.",
                 },
               ].map((card, i) => (
@@ -489,7 +489,7 @@ export default function LandingPage() {
         <div className="container-main">
           <div className="text-center mb-16 reveal">
             <span className="section-label">Was enthalten ist</span>
-            <h2 className="section-title">Alles, was Sie fuer den Start brauchen.</h2>
+            <h2 className="section-title">Alles, was Sie für den Start brauchen.</h2>
             <p className="section-subtitle mx-auto">
               Kein Eigenaufbau. Keine Recherche. Keine Experimente auf Kosten Ihrer Kunden.
             </p>
@@ -503,14 +503,14 @@ export default function LandingPage() {
                   "50+ On-Demand-Videos: Discovery bis Skalierung",
                   "Copilot Beratungs-Kompass (4-Schritte-Framework)",
                   "Demo-Umgebungen & praxisnahe Use Cases",
-                  "Lernpfade on demand – neben dem Tagesgeschaeft",
+                  "Lernpfade on demand – neben dem Tagesgeschäft",
                 ],
               },
               {
                 title: "Sales & Vertrieb",
                 items: [
                   "Fertige Pitch Decks & Angebotsvorlagen",
-                  "Einwandbehandlung & Gespraechsleitfaeden",
+                  "Einwandbehandlung & Gesprächsleitfäden",
                   "Workshop-Templates: Agenda, Folien, Handouts",
                   "Discovery-Fragebogen & Readiness-Checkliste",
                 ],
@@ -520,7 +520,7 @@ export default function LandingPage() {
                 items: [
                   "Microsoft Teams Community – kein neues Tool",
                   "Live Q&A Sessions 2\u00D7 pro Monat",
-                  "Peer-Austausch mit anderen Systemhaeusern",
+                  "Peer-Austausch mit anderen Systemhäusern",
                   "Onboarding-Session nach Paket",
                 ],
               },
@@ -528,7 +528,7 @@ export default function LandingPage() {
                 title: "Updates & Support",
                 items: [
                   "Laufende Modul-Updates (Copilot entwickelt sich)",
-                  "Persoenlicher 1:1 Kontakt zu Alex Eggers",
+                  "Persönlicher 1:1 Kontakt zu Alex Eggers",
                   "Neue Use Cases & Praxisbeispiele laufend",
                   "Direktzugang zur aktuellsten Copilot-Expertise",
                 ],
@@ -586,12 +586,12 @@ export default function LandingPage() {
             {/* Right – Bio */}
             <div className="reveal reveal-delay-2">
               <span className="section-label">Ihr Trainer</span>
-              <h2 className="section-title">Alexander Eggers – Microsoft MVP fuer Copilot & M365.</h2>
+              <h2 className="section-title">Alexander Eggers – Microsoft MVP für Copilot & M365.</h2>
               <p className="text-[#6B6B8A] text-base leading-relaxed mb-6">
-                Alexander Eggers ist einer der gefragtesten Microsoft-Copilot-Experten im deutschsprachigen Raum. Als geschaeftsfuehrender Gesellschafter der ke solutions GmbH und Gruender der NextSkills GmbH verbindet er tiefes technisches Know-how mit dem Blick fuer Praxis und Umsatz.
+                Alexander Eggers ist einer der gefragtesten Microsoft-Copilot-Experten im deutschsprachigen Raum. Als geschäftsführender Gesellschafter der ke solutions GmbH und Gründer der NextSkills GmbH verbindet er tiefes technisches Know-how mit dem Blick für Praxis und Umsatz.
               </p>
               <p className="text-[#6B6B8A] text-base leading-relaxed mb-6">
-                Er ist einer von nur ~160 Microsoft MVPs in Deutschland – ausgezeichnet in den Kategorien Office Apps &amp; Services und M365 Copilot. Regelmaessiger Speaker bei der Microsoft AI School und Inhaber eines YouTube-Kanals mit ueber 9.000 Abonnenten.
+                Er ist einer von nur ~160 Microsoft MVPs in Deutschland – ausgezeichnet in den Kategorien Office Apps &amp; Services und M365 Copilot. Regelmäßiger Speaker bei der Microsoft AI School und Inhaber eines YouTube-Kanals mit über 9.000 Abonnenten.
               </p>
 
               {/* Tags */}
@@ -607,10 +607,10 @@ export default function LandingPage() {
               <div className="space-y-4">
                 <blockquote className="border-l-4 border-[#00C896] pl-4 text-sm text-[#6B6B8A] italic">
                   &bdquo;Vielen Dank! Sehr gut aufgesetzt, klarer Ablauf, viel Inhalt und Inspiration!&ldquo;
-                  <footer className="text-xs mt-1 not-italic font-medium">– Teilnehmer, Workshop Microsoft Oesterreich</footer>
+                  <footer className="text-xs mt-1 not-italic font-medium">– Teilnehmer, Workshop Microsoft Österreich</footer>
                 </blockquote>
                 <blockquote className="border-l-4 border-[#00C896] pl-4 text-sm text-[#6B6B8A] italic">
-                  &bdquo;Noch mal ganz grosses Lob – tolles Format, tolle Leute und viele wertvolle Informationen.&ldquo;
+                  &bdquo;Noch mal ganz großes Lob – tolles Format, tolle Leute und viele wertvolle Informationen.&ldquo;
                   <footer className="text-xs mt-1 not-italic font-medium">– Feedback zur Show &bdquo;Alex & Ragnar&ldquo;</footer>
                 </blockquote>
               </div>
@@ -647,7 +647,7 @@ export default function LandingPage() {
                   { feature: "Fertige Vertriebstools", cols: ["—", "—", "—", "Inklusive"] },
                   { feature: "Copilot-Beratungsansatz", cols: ["—", "Teilweise", "—", "4-Schritte-Framework"] },
                   { feature: "Laufende Updates", cols: ["Ja", "—", "Selten", "Kontinuierlich"] },
-                  { feature: "Community & Peers", cols: ["—", "—", "Begrenzt", "Exklusiv (Systemhaeuser)"] },
+                  { feature: "Community & Peers", cols: ["—", "—", "Begrenzt", "Exklusiv (Systemhäuser)"] },
                   { feature: "MVP-Zugang", cols: ["—", "—", "—", "Direkt"] },
                   { feature: "Kosten", cols: ["Kostenlos", "Tageshonorar", "Gering", "Auf Anfrage"] },
                 ].map((row, i) => (
@@ -681,31 +681,31 @@ export default function LandingPage() {
       <section id="faq" style={{ background: "#E8E8F0" }} className="py-[110px]">
         <div className="container-main max-w-[800px]">
           <div className="text-center mb-16 reveal">
-            <span className="section-label">Haeufige Fragen</span>
-            <h2 className="section-title">Einwaende kennen wir. Antworten auch.</h2>
+            <span className="section-label">Häufige Fragen</span>
+            <h2 className="section-title">Einwände kennen wir. Antworten auch.</h2>
           </div>
 
           <div className="space-y-4 reveal">
             {[
               {
-                q: "Wir haben keine Zeit fuer ein weiteres Programm.",
-                a: "Die Masterclass ist bewusst neben dem Tagesgeschaeft konzipiert. Alle Videos sind on demand abrufbar – zwischen Projekten, abends, im eigenen Tempo. Es gibt keine Pflicht-Termine ausser den optionalen Live-Sessions. Nicht handeln kostet mehr Zeit: Kunden, die jetzt zu besser positionierten Wettbewerbern abwandern, muessen erst wieder zurueckgewonnen werden.",
+                q: "Wir haben keine Zeit für ein weiteres Programm.",
+                a: "Die Masterclass ist bewusst neben dem Tagesgeschäft konzipiert. Alle Videos sind on demand abrufbar – zwischen Projekten, abends, im eigenen Tempo. Es gibt keine Pflicht-Termine außer den optionalen Live-Sessions. Nicht handeln kostet mehr Zeit: Kunden, die jetzt zu besser positionierten Wettbewerbern abwandern, müssen erst wieder zurückgewonnen werden.",
               },
               {
                 q: "Das ist uns zu teuer.",
-                a: "Ein einziger Copilot-Beratungstag bringt zwischen \u20AC 1.200 und \u20AC 2.500. Das Programm amortisiert sich also nach dem ersten abgerechneten Workshop. Die eigentliche Frage ist: Koennen Sie es sich leisten, es nicht zu tun – waehrend Ihre Kunden aktiv nach Copilot-Beratung fragen?",
+                a: "Ein einziger Copilot-Beratungstag bringt zwischen \u20AC 1.200 und \u20AC 2.500. Das Programm amortisiert sich also nach dem ersten abgerechneten Workshop. Die eigentliche Frage ist: Können Sie es sich leisten, es nicht zu tun – während Ihre Kunden aktiv nach Copilot-Beratung fragen?",
               },
               {
                 q: "Wir schauen noch, der Markt ist noch nicht reif.",
-                a: "Das Zeitfenster schliesst sich in 12–18 Monaten. Wer sich jetzt positioniert, dominiert seinen regionalen Markt. Die Systemhaeuser, die heute auf unserer Warteliste stehen, haben diesen Moment bereits erkannt. Wer wartet, verkauft weiterhin nur Lizenzen mit sinkenden Margen – und erklaert seinen Kunden, warum der Wettbewerber schon liefern kann.",
+                a: "Das Zeitfenster schließt sich in 12–18 Monaten. Wer sich jetzt positioniert, dominiert seinen regionalen Markt. Die Systemhäuser, die heute auf unserer Warteliste stehen, haben diesen Moment bereits erkannt. Wer wartet, verkauft weiterhin nur Lizenzen mit sinkenden Margen – und erklärt seinen Kunden, warum der Wettbewerber schon liefern kann.",
               },
               {
-                q: "Das koennen wir auch selbst aufbauen.",
-                a: "Natuerlich. Der Eigenaufbau dauert erfahrungsgemaess 6–12 Monate: Curriculum entwickeln, Demo-Umgebungen bauen, Vertriebsmaterialien erstellen, Beratungsansatz testen. In dieser Zeit fragen Ihre Kunden. Jetzt. Heute. Die Masterclass liefert alles fertig – sofort einsetzbar, aus echter Systemhaus-Praxis.",
+                q: "Das können wir auch selbst aufbauen.",
+                a: "Natürlich. Der Eigenaufbau dauert erfahrungsgemäß 6–12 Monate: Curriculum entwickeln, Demo-Umgebungen bauen, Vertriebsmaterialien erstellen, Beratungsansatz testen. In dieser Zeit fragen Ihre Kunden. Jetzt. Heute. Die Masterclass liefert alles fertig – sofort einsetzbar, aus echter Systemhaus-Praxis.",
               },
               {
-                q: "Fuer wen ist das Programm geeignet?",
-                a: "Die Masterclass richtet sich an Geschaeftsfuehrer und Vertriebsleiter von Microsoft-Partnern (Systemhaeuser) im DACH-Raum, die Copilot-Beratung als eigenstaendiges Geschaeftsfeld aufbauen wollen. Technische Berater, die beim Kunden vor Ort sind, profitieren ebenfalls direkt von den fertigen Frameworks und Templates.",
+                q: "Für wen ist das Programm geeignet?",
+                a: "Die Masterclass richtet sich an Geschäftsführer und Vertriebsleiter von Microsoft-Partnern (Systemhäuser) im DACH-Raum, die Copilot-Beratung als eigenständiges Geschäftsfeld aufbauen wollen. Technische Berater, die beim Kunden vor Ort sind, profitieren ebenfalls direkt von den fertigen Frameworks und Templates.",
               },
             ].map((faq, i) => (
               <details
@@ -741,7 +741,7 @@ export default function LandingPage() {
         <div className="relative container-main text-center">
           <div className="reveal">
             <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium border border-[#00C896]/30 text-[#00C896] mb-8" style={{ background: "rgba(0,200,150,.08)" }}>
-              Launch Mai 2026 &middot; Plaetze begrenzt
+              Launch Mai 2026 &middot; Plätze begrenzt
             </span>
 
             <h2
@@ -752,7 +752,7 @@ export default function LandingPage() {
             </h2>
 
             <p className="text-white/50 text-lg max-w-[520px] mx-auto mb-10">
-              20+ Systemhaeuser stehen bereits auf der Warteliste. Tragen Sie sich jetzt ein und sichern Sie Ihren Zugang.
+              20+ Systemhäuser stehen bereits auf der Warteliste. Tragen Sie sich jetzt ein und sichern Sie Ihren Zugang.
             </p>
 
             {renderForm()}
@@ -770,7 +770,7 @@ export default function LandingPage() {
                 Next<span className="text-[#00C896]">Skills</span>
               </span>
               <p className="text-white/50 text-sm leading-relaxed">
-                Das erste spezialisierte 12-Monats-Enablement-Programm fuer Microsoft-Partner im DACH-Raum. Vom Lizenz-Reseller zum strategischen KI-Berater.
+                Das erste spezialisierte 12-Monats-Enablement-Programm für Microsoft-Partner im DACH-Raum. Vom Lizenz-Reseller zum strategischen KI-Berater.
               </p>
             </div>
 
@@ -780,7 +780,7 @@ export default function LandingPage() {
               <ul className="space-y-2 text-sm">
                 <li><a href="#solution" className="text-white/50 hover:text-[#00C896] transition-colors">Das Programm</a></li>
                 <li><a href="#included" className="text-white/50 hover:text-[#00C896] transition-colors">Was enthalten ist</a></li>
-                <li><a href="#trainer" className="text-white/50 hover:text-[#00C896] transition-colors">Ueber den Trainer</a></li>
+                <li><a href="#trainer" className="text-white/50 hover:text-[#00C896] transition-colors">Über den Trainer</a></li>
                 <li><a href="#faq" className="text-white/50 hover:text-[#00C896] transition-colors">FAQ</a></li>
               </ul>
             </div>
