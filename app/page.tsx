@@ -286,7 +286,6 @@ export default function LandingPage() {
           {/* Badge */}
           <div className="mb-8">
             <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium border border-[#00C896]/30 text-[#00C896]" style={{ background: "rgba(0,200,150,.08)" }}>
-              <span className="w-2 h-2 rounded-full bg-[#00C896] inline-block" />
               12-Monats-Enablement &middot; DACH &middot; Launch Mai 2026
             </span>
           </div>
@@ -322,7 +321,7 @@ export default function LandingPage() {
           {/* Stats row */}
           <div className="w-full border-t border-white/10 pt-10 grid grid-cols-2 md:grid-cols-4 gap-8 max-w-[800px]">
             {[
-              { num: "60+", label: "Systemhäuser auf der Warteliste" },
+              { num: "80+", label: "Systemhäuser auf der Warteliste" },
               { num: "6\u00D7", label: "Microsoft MVP Alexander Eggers" },
               { num: "90", label: "Tage bis zum ersten Auftrag" },
               { num: "25+", label: "Jahre Microsoft-Erfahrung" },
@@ -348,7 +347,7 @@ export default function LandingPage() {
               "Microsoft Teams Community inklusive",
               "Live Q&A 2\u00D7 pro Monat",
               "Sofort einsetzbare Materialien",
-              "6\u00D7 Microsoft MVP",
+              "Copilot-berater.de Zertifizierung",
             ].map((item, i) => (
               <span key={i} className="flex items-center gap-3">
                 {i > 0 && <span className="w-1.5 h-1.5 rounded-full bg-[#00C896] hidden sm:inline-block" />}
@@ -502,7 +501,7 @@ export default function LandingPage() {
                   "50+ On-Demand-Videos: Discovery bis Skalierung",
                   "Copilot Beratungs-Kompass (4-Schritte-Framework)",
                   "Demo-Umgebungen & praxisnahe Use Cases",
-                  "Copilot-berater-de Zertifizierung",
+                  "Copilot-berater.de Zertifizierung",
                 ],
               },
               {
@@ -571,7 +570,7 @@ export default function LandingPage() {
                 {[
                   { num: "6\u00D7", label: "Microsoft MVP ausgezeichnet" },
                   { num: "25+", label: "Jahre IT-Erfahrung" },
-                  { num: "9k+", label: "YouTube-Abonnenten" },
+                  { num: "10k+", label: "YouTube-Abonnenten" },
                   { num: "15k+", label: "LinkedIn Follower" },
                 ].map((c, i) => (
                   <div key={i} className="bg-white p-4 rounded-[10px] text-center">
@@ -587,10 +586,10 @@ export default function LandingPage() {
               <span className="section-label">Ihr Trainer</span>
               <h2 className="section-title">Alexander Eggers – Microsoft MVP für Copilot & M365.</h2>
               <p className="text-[#6B6B8A] text-base leading-relaxed mb-6">
-                Alexander Eggers ist einer der gefragtesten Microsoft-Copilot-Experten im deutschsprachigen Raum. Als geschäftsführender Gesellschafter der ke solutions GmbH und Gründer der NextSkills GmbH verbindet er tiefes technisches Know-how mit dem Blick für Praxis und Umsatz.
+                Alexander Eggers ist einer der gefragtesten Microsoft-Copilot-Experten im deutschsprachigen Raum. Als Gesellschafter der ke solutions GmbH und Gründer der NextSkills GmbH verbindet er tiefes technisches Know-how mit dem Blick für Praxis und Umsatz.
               </p>
               <p className="text-[#6B6B8A] text-base leading-relaxed mb-6">
-                Er ist einer von nur 4 Microsoft MVPs in Deutschland ausgezeichnet in den Kategorien &ldquo;M365&rdquo; und &ldquo;M365 Copilot&rdquo;. Regelmäßiger Speaker bei der Microsoft AI School und Inhaber eines YouTube-Kanals mit über 9.000 Abonnenten.
+                Er ist einer von nur 4 Microsoft MVPs in Deutschland ausgezeichnet in den Kategorien &ldquo;M365&rdquo; und &ldquo;M365 Copilot&rdquo;. Regelmäßiger Speaker bei der Microsoft AI School und Inhaber eines YouTube-Kanals mit über 10.000 Abonnenten.
               </p>
 
               {/* Tags */}
@@ -692,7 +691,7 @@ export default function LandingPage() {
               },
               {
                 q: "Das ist uns zu teuer.",
-                a: "Ein einziger Copilot-Beratungstag bringt zwischen \u20AC 1.200 und \u20AC 2.500. Das Programm amortisiert sich also nach dem ersten abgerechneten Workshop. Die eigentliche Frage ist: Können Sie es sich leisten, es nicht zu tun – während Ihre Kunden aktiv nach Copilot-Beratung fragen?",
+                a: "Ein einziger Copilot-Beratungstag bringt zwischen \u20AC 1.200 und \u20AC 2.500. Das Programm amortisiert sich also nach dem ersten abgerechneten Copilot Adoption Kunden. Die eigentliche Frage ist: Können Sie es sich leisten, es nicht zu tun – während Ihre Kunden aktiv nach Copilot-Beratung fragen?",
               },
               {
                 q: "Wir schauen noch, der Markt ist noch nicht reif.",
@@ -751,7 +750,7 @@ export default function LandingPage() {
             </h2>
 
             <p className="text-white/50 text-lg max-w-[520px] mx-auto mb-10">
-              60+ Systemhäuser stehen bereits auf der Warteliste. Tragen Sie sich jetzt ein und sichern Sie Ihren Zugang.
+              80+ Systemhäuser stehen bereits auf der Warteliste. Tragen Sie sich jetzt ein und starten Sie Ihren Bewerbungsprozess.
             </p>
 
             {renderForm()}
@@ -789,7 +788,7 @@ export default function LandingPage() {
               <h4 className="text-white font-semibold text-sm mb-4">Kontakt</h4>
               <ul className="space-y-2 text-sm">
                 <li><a href="mailto:info@next-skills.de" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-[#00C896] transition-colors">info@next-skills.de</a></li>
-                <li><a href="https://www.copilot-berater.de" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-[#00C896] transition-colors">copilot-berater.de</a></li>
+                <li><a href="https://www.copilotberater.de" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-[#00C896] transition-colors">copilotberater.de</a></li>
                 <li><a href="https://next-skills.de" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-[#00C896] transition-colors">next-skills.de</a></li>
                 <li><a href="https://www.linkedin.com/in/teams-pro/" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-[#00C896] transition-colors">LinkedIn</a></li>
                 <li><a href="https://www.youtube.com/@alexandereggers" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-[#00C896] transition-colors">YouTube</a></li>
