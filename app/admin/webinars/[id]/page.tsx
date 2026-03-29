@@ -1,10 +1,11 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Calendar, Clock, Users, ExternalLink, Link2 } from "lucide-react";
+import { ArrowLeft, Calendar, Users, ExternalLink, Link2 } from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
 import { getWebinar } from "@/lib/db/webinars";
 import { WebinarStatusBadge } from "@/components/admin/WebinarStatusBadge";
 import { RegistrationTable } from "@/components/admin/RegistrationTable";
+import { CsvUpload } from "@/components/admin/CsvUpload";
 import { WebinarStatusActions } from "./status-actions";
 
 export default async function WebinarDetailPage({
@@ -67,30 +68,26 @@ export default async function WebinarDetailPage({
             })}
           </span>
           <span className="flex items-center gap-1.5">
-            <Clock className="w-4 h-4 text-dark-slate-400" />
-            {webinar.durationMin} Min.
-          </span>
-          <span className="flex items-center gap-1.5">
             <Users className="w-4 h-4 text-dark-slate-400" />
-            {webinar._count.registrations} / {webinar.maxAttendees} Teilnehmer
+            {webinar._count.registrations} Teilnehmer
           </span>
         </div>
 
         <div className="flex flex-wrap items-center gap-4 text-sm">
-          {webinar.zoomLink && (
+          {webinar.streamyardLink && (
             <a
-              href={webinar.zoomLink}
+              href={webinar.streamyardLink}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1 text-[#030386] hover:underline"
             >
               <ExternalLink className="w-3.5 h-3.5" />
-              Zoom-Link
+              StreamYard Anmeldung
             </a>
           )}
           <span className="flex items-center gap-1 text-dark-slate-400">
             <Link2 className="w-3.5 h-3.5" />
-            /webinar/{webinar.slug}
+            /webinare (Landingpage)
           </span>
         </div>
 
@@ -101,6 +98,11 @@ export default async function WebinarDetailPage({
             currentStatus={webinar.status}
           />
         </div>
+      </div>
+
+      {/* CSV Upload */}
+      <div className="mb-6">
+        <CsvUpload webinarId={webinar.id} />
       </div>
 
       {/* Registrations */}

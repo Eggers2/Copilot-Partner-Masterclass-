@@ -92,18 +92,16 @@ model LeadActivity {
 }
 
 model Webinar {
-  id            String               @id @default(cuid())
-  title         String
-  slug          String               @unique
-  scheduledAt   DateTime             @map("scheduled_at")
-  durationMin   Int                  @default(60) @map("duration_min")
-  zoomLink      String?              @map("zoom_link")
-  maxAttendees  Int                  @default(50) @map("max_attendees")
-  status        WebinarStatus        @default(PLANNED)
-  description   String?
-  createdAt     DateTime             @default(now()) @map("created_at")
-  updatedAt     DateTime             @updatedAt @map("updated_at")
-  registrations WebinarRegistration[]
+  id              String               @id @default(cuid())
+  title           String
+  slug            String               @unique
+  scheduledAt     DateTime             @map("scheduled_at")
+  streamyardLink  String?              @map("streamyard_link")
+  status          WebinarStatus        @default(PLANNED)
+  description     String?
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
+  registrations   WebinarRegistration[]
 
   @@map("webinars")
 }
