@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import Image from "next/image";
 import Link from "next/link";
 import { getOpenWebinars } from "@/lib/db/webinars";
 import {
@@ -8,15 +9,12 @@ import {
   ArrowRight,
   Users,
   Target,
-  Zap,
   BookOpen,
   CheckCircle2,
   TrendingUp,
   Play,
-  Award,
   MessageSquare,
   Video,
-  BarChart3,
 } from "lucide-react";
 
 export const metadata = {
@@ -78,7 +76,7 @@ export default async function WebinareLandingPage() {
             style={{ background: "rgba(0,200,150,.08)" }}
           >
             <Play className="w-4 h-4" />
-            Kostenlose Aufzeichnung &middot; ca. 30 Minuten
+            Kostenloses Webinar &middot; ca. 30 Minuten
           </span>
 
           <h1
@@ -93,11 +91,22 @@ export default async function WebinareLandingPage() {
             Masterclass
           </h1>
 
-          <p className="text-[#B0B0C8] text-lg md:text-xl max-w-[680px] mx-auto mb-8 leading-relaxed">
+          <p className="text-[#B0B0C8] text-lg md:text-xl max-w-[680px] mx-auto mb-6 leading-relaxed">
             In 30 Minuten erfahrt ihr, warum Copilot-Beratung das gr&ouml;&szlig;te
             Gesch&auml;ftsfeld seit dem Cloud-Shift ist &ndash; und wie ihr in 90
             Tagen vom Lizenzverk&auml;ufer zum strategischen KI-Berater werdet.
           </p>
+
+          {/* Trust Badge */}
+          <div className="mb-8">
+            <span
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium"
+              style={{ background: "#EAF9F4", color: "#00C896" }}
+            >
+              <Users className="w-4 h-4" />
+              100+ Systemh&auml;user bereits auf der Warteliste
+            </span>
+          </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             {webinars.length > 0 ? (
@@ -106,7 +115,7 @@ export default async function WebinareLandingPage() {
                 className="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-[#1A1A2E] font-bold text-base transition-all duration-200 hover:scale-[1.03]"
                 style={{ background: "#00C896" }}
               >
-                Jetzt anmelden &amp; Video ansehen
+                Jetzt kostenlos anmelden
                 <ArrowRight className="w-5 h-5" />
               </a>
             ) : (
@@ -123,9 +132,13 @@ export default async function WebinareLandingPage() {
 
           {/* Speaker Mini */}
           <div className="mt-10 inline-flex items-center gap-3 px-5 py-3 rounded-full bg-white/5 border border-white/10">
-            <div className="w-10 h-10 rounded-full bg-[#00C896]/20 flex items-center justify-center">
-              <Award className="w-5 h-5 text-[#00C896]" />
-            </div>
+            <Image
+              src="https://www.copilotberater.de/trainer-alexander-eggers.png"
+              alt="Alexander Eggers"
+              width={40}
+              height={40}
+              className="w-10 h-10 rounded-full object-cover"
+            />
             <div className="text-left">
               <p className="text-white text-sm font-semibold">Alexander Eggers</p>
               <p className="text-[#B0B0C8] text-xs">
@@ -146,7 +159,7 @@ export default async function WebinareLandingPage() {
               color: "#1A1A2E",
             }}
           >
-            Was ihr in diesem Video lernt
+            Was ihr in diesem Webinar lernt
           </h2>
           <p className="text-center text-[#6B6B8A] max-w-xl mx-auto mb-12">
             Drei Kernthemen in 30 Minuten &ndash; mit konkreten Zahlen, einem
@@ -218,7 +231,7 @@ export default async function WebinareLandingPage() {
               </h3>
               <ul className="text-[#6B6B8A] text-sm leading-relaxed space-y-2">
                 <li>12-Monats-Enablement f&uuml;r Microsoft Partner</li>
-                <li>6 Module, 28+ Lektionen, 7+ Stunden Video</li>
+                <li>8 Module, 28+ Lektionen, 10+ Stunden Videomaterial</li>
                 <li>10 App-Deep-Dives f&uuml;r Copilot in der Praxis</li>
                 <li>2x monatlich Live Q&amp;A mit Alexander Eggers</li>
                 <li>Fertige Vertriebstools: Pitch-Decks, Vorlagen, Templates</li>
@@ -247,7 +260,7 @@ export default async function WebinareLandingPage() {
               { value: "96,7%", label: "der M365-Basis noch ohne Copilot" },
               { value: "160%", label: "Seat-Wachstum pro Jahr" },
               { value: "36%", label: "der dt. Unternehmen nutzen KI (Bitkom 2025)" },
-              { value: "39.000\u00A0\u20AC+", label: "Jahresumsatz pro Kunde (Beispiel)" },
+              { value: "100+", label: "Systemhäuser auf der Warteliste" },
             ].map((stat) => (
               <div
                 key={stat.label}
@@ -269,64 +282,8 @@ export default async function WebinareLandingPage() {
         </div>
       </section>
 
-      {/* ═══ ROI-RECHNUNG ═══ */}
-      <section className="py-20 px-4" style={{ background: "#F8F8FC" }}>
-        <div className="max-w-4xl mx-auto">
-          <h2
-            className="text-center font-extrabold text-3xl md:text-4xl mb-4"
-            style={{
-              fontFamily: "'Bricolage Grotesque', sans-serif",
-              color: "#1A1A2E",
-            }}
-          >
-            Was ein einzelner Kunde bringt
-          </h2>
-          <p className="text-center text-[#6B6B8A] max-w-lg mx-auto mb-12">
-            Eine realistische Rechnung aus dem Video &ndash; basierend auf
-            typischen Copilot-Beratungsprojekten.
-          </p>
-
-          <div className="bg-white rounded-2xl border border-[#E5E5F0] overflow-hidden">
-            <div className="divide-y divide-[#E5E5F0]">
-              {[
-                { item: "Discovery-Workshop (halber Tag)", value: "3.500 \u20AC" },
-                { item: "Copilot-Rollout-Auftrag", value: "15.000\u201325.000 \u20AC" },
-                { item: "Adoption-Retainer (monatlich)", value: "1.500\u20133.000 \u20AC" },
-                { item: "Copilot-Beratungstag", value: "1.200\u20132.500 \u20AC" },
-              ].map((row) => (
-                <div
-                  key={row.item}
-                  className="flex items-center justify-between px-6 py-4"
-                >
-                  <span className="text-[#1A1A2E] text-sm font-medium">
-                    {row.item}
-                  </span>
-                  <span className="text-[#00C896] font-bold text-sm">
-                    {row.value}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <div
-              className="flex items-center justify-between px-6 py-5"
-              style={{ background: "rgba(0,200,150,.06)" }}
-            >
-              <span className="text-[#1A1A2E] font-bold">
-                Ein Kunde im ersten Jahr
-              </span>
-              <span
-                className="text-xl font-extrabold"
-                style={{ color: "#00C896" }}
-              >
-                39.000 &euro;+ Umsatz
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* ═══ SPRECHER ═══ */}
-      <section className="py-20 px-4 bg-white">
+      <section className="py-20 px-4" style={{ background: "#F8F8FC" }}>
         <div className="max-w-4xl mx-auto">
           <h2
             className="text-center font-extrabold text-3xl md:text-4xl mb-12"
@@ -338,11 +295,15 @@ export default async function WebinareLandingPage() {
             Euer Sprecher
           </h2>
 
-          <div className="bg-[#F8F8FC] rounded-2xl p-8 border border-[#E5E5F0]">
-            <div className="flex flex-col sm:flex-row items-start gap-6">
-              <div className="w-20 h-20 rounded-2xl bg-[#1A1A2E] flex items-center justify-center flex-shrink-0">
-                <Award className="w-10 h-10 text-[#00C896]" />
-              </div>
+          <div className="bg-white rounded-2xl p-8 border border-[#E5E5F0]">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-8">
+              <Image
+                src="https://www.copilotberater.de/trainer-alexander-eggers.png"
+                alt="Alexander Eggers – 6x Microsoft MVP"
+                width={200}
+                height={200}
+                className="w-[180px] h-[180px] md:w-[200px] md:h-[200px] rounded-2xl object-cover flex-shrink-0"
+              />
               <div>
                 <h3
                   className="text-xl font-bold mb-1"
@@ -357,17 +318,16 @@ export default async function WebinareLandingPage() {
                   {[
                     "6x Microsoft MVP (Office Apps & Services + M365 Copilot)",
                     "Microsoft Certified Trainer",
-                    "25+ Jahre im Microsoft-&Ouml;kosystem",
+                    "25+ Jahre im Microsoft-\u00D6kosystem",
                     "10.000+ YouTube-Abonnenten, 400+ Videos",
-                    "Regelm&auml;&szlig;iger Speaker bei der Microsoft AI School",
-                    "Copilot-Experte f&uuml;r den Microsoft Partner-Kanal",
+                    "Regelm\u00E4\u00DFiger Speaker bei der Microsoft AI School",
+                    "Copilot-Experte f\u00FCr den Microsoft Partner-Kanal",
                   ].map((item) => (
                     <div key={item} className="flex items-start gap-2">
                       <CheckCircle2 className="w-4 h-4 text-[#00C896] flex-shrink-0 mt-0.5" />
-                      <span
-                        className="text-[#6B6B8A] text-sm"
-                        dangerouslySetInnerHTML={{ __html: item }}
-                      />
+                      <span className="text-[#6B6B8A] text-sm">
+                        {item}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -378,7 +338,7 @@ export default async function WebinareLandingPage() {
       </section>
 
       {/* ═══ FÜR WEN ═══ */}
-      <section className="py-20 px-4" style={{ background: "#F8F8FC" }}>
+      <section className="py-20 px-4 bg-white">
         <div className="max-w-5xl mx-auto">
           <h2
             className="text-center font-extrabold text-3xl md:text-4xl mb-12"
@@ -387,7 +347,7 @@ export default async function WebinareLandingPage() {
               color: "#1A1A2E",
             }}
           >
-            F&uuml;r wen ist dieses Video?
+            F&uuml;r wen ist dieses Webinar?
           </h2>
 
           <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
@@ -421,10 +381,10 @@ export default async function WebinareLandingPage() {
             className="text-center font-extrabold text-3xl md:text-4xl text-white mb-4"
             style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
           >
-            Jetzt Video ansehen
+            Jetzt Webinar ansehen
           </h2>
           <p className="text-center text-[#B0B0C8] mb-12 max-w-lg mx-auto">
-            Meldet euch kostenlos an und schaut euch die Aufzeichnung direkt an.
+            Meldet euch kostenlos an und schaut euch das Webinar direkt an.
             Ihr erhaltet anschlie&szlig;end eine Best&auml;tigung per E-Mail.
           </p>
 
@@ -436,7 +396,7 @@ export default async function WebinareLandingPage() {
               </h3>
               <p className="text-[#B0B0C8] text-sm mb-6">
                 Tragt euch auf unsere Warteliste ein &ndash; wir informieren euch,
-                sobald das Video freigeschaltet wird.
+                sobald das Webinar freigeschaltet wird.
               </p>
               <Link
                 href="/"
@@ -491,7 +451,7 @@ export default async function WebinareLandingPage() {
                     <div className="flex items-center gap-4 text-sm text-[#B0B0C8] mb-6">
                       <span className="flex items-center gap-1.5">
                         <Clock className="w-4 h-4" />
-                        ca. 30 Minuten &middot; Aufzeichnung
+                        ca. 30 Minuten &middot; Webinar
                       </span>
                     </div>
 
