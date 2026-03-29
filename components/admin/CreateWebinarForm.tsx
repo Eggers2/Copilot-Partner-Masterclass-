@@ -89,36 +89,12 @@ export function CreateWebinarForm() {
           </div>
           <div>
             <label className="block text-sm font-medium text-dark-slate-600 mb-1">
-              Dauer (Minuten)
+              StreamYard Anmelde-Link
             </label>
             <input
-              name="durationMin"
-              type="number"
-              defaultValue={60}
-              min={15}
-              className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-dark-slate-600 mb-1">
-              Zoom-Link
-            </label>
-            <input
-              name="zoomLink"
+              name="streamyardLink"
               type="url"
-              placeholder="https://zoom.us/j/..."
-              className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-dark-slate-600 mb-1">
-              Max. Teilnehmer
-            </label>
-            <input
-              name="maxAttendees"
-              type="number"
-              defaultValue={50}
-              min={1}
+              placeholder="https://streamyard.com/watch/..."
               className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none"
             />
           </div>

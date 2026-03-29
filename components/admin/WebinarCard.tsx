@@ -1,32 +1,25 @@
 import Link from "next/link";
 import type { WebinarStatus } from "@prisma/client";
-import { Calendar, Users, ExternalLink } from "lucide-react";
+import { Calendar, Users } from "lucide-react";
 import { WebinarStatusBadge } from "./WebinarStatusBadge";
 
 interface WebinarCardProps {
   id: string;
   title: string;
-  slug: string;
   scheduledAt: Date | string;
   status: WebinarStatus;
-  maxAttendees: number;
   registrationCount: number;
+  streamyardLink: string | null;
 }
 
 export function WebinarCard({
   id,
   title,
-  slug,
   scheduledAt,
   status,
-  maxAttendees,
   registrationCount,
+  streamyardLink,
 }: WebinarCardProps) {
-  const progressPercent = Math.min(
-    Math.round((registrationCount / maxAttendees) * 100),
-    100
-  );
-
   return (
     <Link
       href={`/admin/webinars/${id}`}
@@ -50,33 +43,15 @@ export function WebinarCard({
         </span>
         <span className="flex items-center gap-1.5">
           <Users className="w-4 h-4" />
-          {registrationCount} / {maxAttendees}
+          {registrationCount} Teilnehmer
         </span>
       </div>
 
-      {/* Progress bar */}
-      <div className="w-full bg-dark-slate-100 rounded-full h-2 mb-3">
-        <div
-          className="h-2 rounded-full transition-all"
-          style={{
-            width: `${progressPercent}%`,
-            backgroundColor:
-              progressPercent >= 90
-                ? "#dc2626"
-                : progressPercent >= 60
-                  ? "#d97706"
-                  : "#030386",
-          }}
-        />
-      </div>
-
       <div className="flex items-center justify-between text-xs text-dark-slate-400">
-        <span>{progressPercent}% belegt</span>
-        {status === "OPEN" && (
-          <span className="flex items-center gap-1">
-            <ExternalLink className="w-3 h-3" />
-            /webinar/{slug}
-          </span>
+        {streamyardLink ? (
+          <span className="text-green-600 font-medium">StreamYard verknüpft</span>
+        ) : (
+          <span className="text-amber-600 font-medium">Kein StreamYard-Link</span>
         )}
       </div>
     </Link>

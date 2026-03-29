@@ -50,9 +50,7 @@ export async function createWebinar(data: {
   title: string;
   slug: string;
   scheduledAt: Date;
-  durationMin?: number;
-  zoomLink?: string | null;
-  maxAttendees?: number;
+  streamyardLink?: string | null;
   description?: string | null;
 }) {
   return prisma.webinar.create({ data });
@@ -64,9 +62,7 @@ export async function updateWebinar(
     title?: string;
     slug?: string;
     scheduledAt?: Date;
-    durationMin?: number;
-    zoomLink?: string | null;
-    maxAttendees?: number;
+    streamyardLink?: string | null;
     status?: WebinarStatus;
     description?: string | null;
   }

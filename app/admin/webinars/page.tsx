@@ -36,11 +36,10 @@ export default async function WebinarsPage() {
               key={webinar.id}
               id={webinar.id}
               title={webinar.title}
-              slug={webinar.slug}
               scheduledAt={webinar.scheduledAt}
               status={webinar.status}
-              maxAttendees={webinar.maxAttendees}
               registrationCount={webinar._count.registrations}
+              streamyardLink={webinar.streamyardLink}
             />
           ))}
         </div>

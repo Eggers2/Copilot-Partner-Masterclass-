@@ -191,9 +191,7 @@ export async function createWebinarAction(
       title: title.trim(),
       slug: slug.trim(),
       scheduledAt: new Date(scheduledAtRaw),
-      durationMin: parseInt(formData.get("durationMin") as string) || 60,
-      zoomLink: (formData.get("zoomLink") as string) || null,
-      maxAttendees: parseInt(formData.get("maxAttendees") as string) || 50,
+      streamyardLink: (formData.get("streamyardLink") as string) || null,
       description: (formData.get("description") as string) || null,
     });
   } catch (error: unknown) {
@@ -325,4 +323,212 @@ export async function bulkMarkAttendanceAction(
   revalidatePath("/admin");
 
   return { success: true };
+}
+
+// ─── STREAMYARD CSV PROCESSING ──────────────────────
+
+export interface CsvParticipant {
+  email: string;
+  firstName: string;
+  lastName: string;
+  company: string;
+  status: string;
+}
+
+export interface CsvPreviewEntry {
+  email: string;
+  firstName: string;
+  lastName: string;
+  company: string;
+  csvStatus: string;
+  isNew: boolean;
+  attended: boolean;
+  existingLeadName: string | null;
+  existingLeadCompany: string | null;
+}
+
+export async function previewCsvAction(
+  csvText: string
+): Promise<{ entries: CsvPreviewEntry[]; error?: string }> {
+  await requireAuth();
+
+  const participants = parseCsv(csvText);
+  if (participants.length === 0) {
+    return { entries: [], error: "Keine Teilnehmer in der CSV gefunden." };
+  }
+
+  const emails = participants.map((p) => p.email.toLowerCase().trim());
+  const existingLeads = await prisma.lead.findMany({
+    where: { email: { in: emails } },
+    select: { email: true, name: true, company: true },
+  });
+
+  const leadMap = new Map(existingLeads.map((l) => [l.email, l]));
+
+  const entries: CsvPreviewEntry[] = participants.map((p) => {
+    const normalizedEmail = p.email.toLowerCase().trim();
+    const existing = leadMap.get(normalizedEmail);
+    const attended = isAttendedStatus(p.status);
+
+    return {
+      email: normalizedEmail,
+      firstName: p.firstName,
+      lastName: p.lastName,
+      company: p.company,
+      csvStatus: p.status,
+      isNew: !existing,
+      attended,
+      existingLeadName: existing?.name ?? null,
+      existingLeadCompany: existing?.company ?? null,
+    };
+  });
+
+  return { entries };
+}
+
+export async function processCsvAction(
+  webinarId: string,
+  participants: CsvParticipant[]
+): Promise<{ success?: boolean; error?: string; processed?: number }> {
+  await requireAuth();
+
+  const webinar = await prisma.webinar.findUnique({ where: { id: webinarId } });
+  if (!webinar) return { error: "Webinar nicht gefunden." };
+
+  let processed = 0;
+
+  for (const p of participants) {
+    const normalizedEmail = p.email.toLowerCase().trim();
+    const fullName = [p.firstName, p.lastName].filter(Boolean).join(" ") || null;
+    const attended = isAttendedStatus(p.status);
+
+    // Upsert lead: create if new
+    const lead = await prisma.lead.upsert({
+      where: { email: normalizedEmail },
+      create: {
+        email: normalizedEmail,
+        name: fullName,
+        company: p.company || null,
+        status: attended ? "WEBINAR_ATTENDED" : "WAITLIST",
+        source: "WEBINAR",
+        webinarRegistered: true,
+      },
+      update: {
+        webinarRegistered: true,
+      },
+    });
+
+    // Update name/company only if currently empty, update status if attended
+    const updates: Record<string, unknown> = {};
+    if (!lead.name && fullName) updates.name = fullName;
+    if (!lead.company && p.company) updates.company = p.company;
+    if (attended && lead.status !== "WEBINAR_ATTENDED" && lead.status !== "WON" && lead.status !== "QUALIFIED" && lead.status !== "PROPOSAL") {
+      updates.status = "WEBINAR_ATTENDED";
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await prisma.lead.update({
+        where: { id: lead.id },
+        data: updates,
+      });
+    }
+
+    // Upsert webinar registration
+    const regStatus = attended ? "ATTENDED" : "REGISTERED";
+    await prisma.webinarRegistration.upsert({
+      where: {
+        webinarId_leadId: { webinarId, leadId: lead.id },
+      },
+      create: {
+        webinarId,
+        leadId: lead.id,
+        status: regStatus as RegistrationStatus,
+        attendedAt: attended ? new Date() : undefined,
+        source: "streamyard",
+      },
+      update: {
+        status: regStatus as RegistrationStatus,
+        attendedAt: attended ? new Date() : undefined,
+      },
+    });
+
+    // Log activity
+    const activityContent = attended
+      ? `Webinar besucht: ${webinar.title} (StreamYard Import)`
+      : `Webinar-Anmeldung: ${webinar.title} (StreamYard Import)`;
+
+    await addActivity(lead.id, {
+      type: "WEBINAR" as ActivityType,
+      content: activityContent,
+    });
+
+    processed++;
+  }
+
+  revalidatePath(`/admin/webinars/${webinarId}`);
+  revalidatePath("/admin");
+
+  return { success: true, processed };
+}
+
+function parseCsv(csvText: string): CsvParticipant[] {
+  const lines = csvText.split("\n").map((l) => l.trim()).filter(Boolean);
+  if (lines.length < 2) return [];
+
+  const header = parseCsvLine(lines[0]).map((h) => h.toLowerCase().trim());
+  const emailIdx = header.findIndex((h) => h === "email");
+  const firstNameIdx = header.findIndex((h) => h === "firstname" || h === "first name" || h === "vorname");
+  const lastNameIdx = header.findIndex((h) => h === "lastname" || h === "last name" || h === "nachname");
+  const companyIdx = header.findIndex((h) => h === "firma" || h === "company" || h === "organisation");
+  const statusIdx = header.findIndex((h) => h === "status");
+
+  if (emailIdx === -1) return [];
+
+  const participants: CsvParticipant[] = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const cols = parseCsvLine(lines[i]);
+    const email = cols[emailIdx]?.trim();
+    if (!email || !email.includes("@")) continue;
+
+    participants.push({
+      email,
+      firstName: firstNameIdx >= 0 ? cols[firstNameIdx]?.trim() || "" : "",
+      lastName: lastNameIdx >= 0 ? cols[lastNameIdx]?.trim() || "" : "",
+      company: companyIdx >= 0 ? cols[companyIdx]?.trim() || "" : "",
+      status: statusIdx >= 0 ? cols[statusIdx]?.trim().toLowerCase() || "registered" : "registered",
+    });
+  }
+
+  return participants;
+}
+
+function parseCsvLine(line: string): string[] {
+  const result: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === "," && !inQuotes) {
+      result.push(current);
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  result.push(current);
+  return result;
+}
+
+function isAttendedStatus(status: string): boolean {
+  const s = status.toLowerCase().trim();
+  return s === "attended" || s === "attended live" || s === "watched on-demand" || s === "watched on demand";
 }
