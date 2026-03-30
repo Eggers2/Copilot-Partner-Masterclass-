@@ -316,12 +316,12 @@ export default async function WebinareLandingPage() {
                 </p>
                 <div className="grid sm:grid-cols-2 gap-3">
                   {[
-                    "6x Microsoft MVP (Office Apps & Services + M365 Copilot)",
-                    "Microsoft Certified Trainer",
+                    "6x Microsoft MVP (M365 + M365 Copilot)",
                     "25+ Jahre im Microsoft-\u00D6kosystem",
+                    "Speaker und Trainer f\u00FCr Microsoft, Vodafone, Payback und viele mehr",
                     "10.000+ YouTube-Abonnenten, 400+ Videos",
+                    "15.000+ LinkedIn Follower",
                     "Regelm\u00E4\u00DFiger Speaker bei der Microsoft AI School",
-                    "Copilot-Experte f\u00FCr den Microsoft Partner-Kanal",
                   ].map((item) => (
                     <div key={item} className="flex items-start gap-2">
                       <CheckCircle2 className="w-4 h-4 text-[#00C896] flex-shrink-0 mt-0.5" />
@@ -435,6 +435,13 @@ export default async function WebinareLandingPage() {
                         }
                       )}
                     </p>
+                    <p className="text-white text-lg font-semibold mt-1">
+                      {new Date(webinar.scheduledAt).toLocaleTimeString(
+                        "de-DE",
+                        { hour: "2-digit", minute: "2-digit" }
+                      )}{" "}
+                      Uhr
+                    </p>
                   </div>
 
                   <div className="p-6">
@@ -494,7 +501,7 @@ export default async function WebinareLandingPage() {
                     Pers&ouml;nliches Gespr&auml;ch buchen
                   </p>
                   <p className="text-[#B0B0C8] text-xs">
-                    20 Min. per Video &ndash; kostenlos &amp; unverbindlich
+                    30 Min. per Video &ndash; kostenlos &amp; unverbindlich
                   </p>
                 </div>
               </a>
