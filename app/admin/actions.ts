@@ -220,6 +220,53 @@ export async function updateWebinarStatusAction(
   revalidatePath("/admin/webinars");
 }
 
+export async function deleteWebinarAction(id: string): Promise<void> {
+  await requireAuth();
+  await prisma.webinarRegistration.deleteMany({ where: { webinarId: id } });
+  await prisma.webinar.delete({ where: { id } });
+  revalidatePath("/admin/webinars");
+  redirect("/admin/webinars");
+}
+
+export async function updateWebinarAction(
+  _prev: unknown,
+  formData: FormData
+): Promise<{ success?: boolean; error?: string }> {
+  await requireAuth();
+
+  const id = formData.get("id") as string;
+  const title = formData.get("title") as string;
+  const scheduledAtRaw = formData.get("scheduledAt") as string;
+
+  if (!id || !title?.trim() || !scheduledAtRaw) {
+    return { error: "Titel und Datum sind erforderlich." };
+  }
+
+  try {
+    await updateWebinar(id, {
+      title: title.trim(),
+      scheduledAt: new Date(scheduledAtRaw),
+      streamyardLink: (formData.get("streamyardLink") as string) || null,
+      description: (formData.get("description") as string) || null,
+    });
+  } catch (error: unknown) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "P2002"
+    ) {
+      return { error: "Ein Webinar mit diesem Slug existiert bereits." };
+    }
+    throw error;
+  }
+
+  revalidatePath(`/admin/webinars/${id}`);
+  revalidatePath("/admin/webinars");
+
+  return { success: true };
+}
+
 export async function markAttendanceAction(
   _prev: unknown,
   formData: FormData
