@@ -142,7 +142,7 @@ export default async function WebinareLandingPage() {
             <div className="text-left">
               <p className="text-white text-sm font-semibold">Alexander Eggers</p>
               <p className="text-[#B0B0C8] text-xs">
-                6x Microsoft MVP &middot; MCT &middot; 25+ Jahre M365
+                6x Microsoft MVP &middot; 25+ Jahre M365
               </p>
             </div>
           </div>
@@ -422,7 +422,7 @@ export default async function WebinareLandingPage() {
                     <p className="text-[#00C896]/70 text-xs font-semibold uppercase tracking-wider">
                       {new Date(webinar.scheduledAt).toLocaleDateString(
                         "de-DE",
-                        { weekday: "long" }
+                        { weekday: "long", timeZone: "Europe/Berlin" }
                       )}
                     </p>
                     <p className="text-white text-2xl font-bold">
@@ -432,13 +432,14 @@ export default async function WebinareLandingPage() {
                           day: "2-digit",
                           month: "long",
                           year: "numeric",
+                          timeZone: "Europe/Berlin",
                         }
                       )}
                     </p>
                     <p className="text-white text-lg font-semibold mt-1">
                       {new Date(webinar.scheduledAt).toLocaleTimeString(
                         "de-DE",
-                        { hour: "2-digit", minute: "2-digit" }
+                        { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Berlin" }
                       )}{" "}
                       Uhr
                     </p>
