@@ -561,7 +561,16 @@ export function OrderForm() {
                 className="mt-0.5 w-4 h-4 accent-green"
               />
               <span className="text-sm text-slate">
-                Ich akzeptiere die AGB.
+                Ich akzeptiere die{" "}
+                <a
+                  href="/agb"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-green font-medium underline hover:text-green-d"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  AGB
+                </a>.
               </span>
             </label>
           </div>
