@@ -148,20 +148,23 @@ export function OrderForm() {
   if (formState === "success") {
     return (
       <div className="max-w-2xl mx-auto text-center py-16 px-4">
-        <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
-        <h2 className="text-2xl font-bold text-ns-text mb-4">
+        <CheckCircle className="w-20 h-20 text-green mx-auto mb-6" />
+        <h2
+          className="text-2xl font-bold text-slate mb-4"
+          style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
+        >
           Vielen Dank für Ihre Bestellung!
         </h2>
-        <p className="text-ns-text/80 text-lg mb-2">
+        <p className="text-gray text-lg mb-2">
           Wir haben Ihre Bestellung erhalten und senden Ihnen in Kürze eine
           Rechnung per E-Mail an{" "}
-          <strong className="text-ns-text">{successEmail}</strong>.
+          <strong className="text-slate">{successEmail}</strong>.
         </p>
-        <p className="text-ns-text/60 mt-6">
+        <p className="text-gray/60 mt-6">
           Bei Fragen erreichen Sie uns unter{" "}
           <a
             href="mailto:info@next-skills.de"
-            className="text-ns-blue-500 hover:underline"
+            className="text-green hover:underline"
           >
             info@next-skills.de
           </a>
@@ -180,8 +183,13 @@ export function OrderForm() {
 
       {/* Sektion A: Paketwahl */}
       <section>
-        <h2 className="text-xl font-bold text-ns-text mb-1">Paket wählen</h2>
-        <p className="text-sm text-ns-text/60 mb-4">Alle Preise zzgl. MwSt.</p>
+        <h2
+          className="text-xl font-bold text-slate mb-1"
+          style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
+        >
+          Paket wählen
+        </h2>
+        <p className="text-sm text-gray mb-4">Alle Preise zzgl. MwSt.</p>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {(Object.keys(PACKAGES) as PacketKey[]).map((key) => {
             const p = PACKAGES[key];
@@ -194,22 +202,22 @@ export function OrderForm() {
                 onClick={() => setPaket(key)}
                 className={`relative text-left p-6 rounded-xl border-2 transition-all duration-200 ${
                   isSelected
-                    ? "border-ns-blue-500 shadow-lg bg-white"
-                    : "border-dark-slate-200 bg-white hover:border-dark-slate-300"
+                    ? "border-green shadow-lg bg-white"
+                    : "border-cool bg-white hover:border-gray/30"
                 }`}
               >
                 {isRecommended && (
-                  <span className="absolute -top-3 left-4 bg-ns-blue-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                  <span className="absolute -top-3 left-4 bg-green text-slate text-xs font-semibold px-3 py-1 rounded-full">
                     Empfohlen
                   </span>
                 )}
-                <h3 className="text-lg font-bold text-ns-text mt-1">{p.label}</h3>
-                <p className="text-sm text-ns-text/60 mb-3">{p.usersLabel}</p>
-                <p className="text-2xl font-bold text-ns-blue-500">
+                <h3 className="text-lg font-bold text-slate mt-1">{p.label}</h3>
+                <p className="text-sm text-gray mb-3">{p.usersLabel}</p>
+                <p className="text-2xl font-bold text-green">
                   {formatEuro(p.yearly)}
-                  <span className="text-sm font-normal text-ns-text/60"> / Jahr</span>
+                  <span className="text-sm font-normal text-gray"> / Jahr</span>
                 </p>
-                <p className="text-sm text-ns-text/60 mt-1">
+                <p className="text-sm text-gray mt-1">
                   oder {formatEuro(p.monthly)} / Monat
                 </p>
               </button>
@@ -220,24 +228,29 @@ export function OrderForm() {
 
       {/* Sektion B: Zahlungsmodell */}
       <section>
-        <h2 className="text-xl font-bold text-ns-text mb-4">Zahlungsmodell</h2>
+        <h2
+          className="text-xl font-bold text-slate mb-4"
+          style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
+        >
+          Zahlungsmodell
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <button
             type="button"
             onClick={() => setZahlungsmodell("jahresabo")}
             className={`text-left p-5 rounded-xl border-2 transition-all duration-200 ${
               zahlungsmodell === "jahresabo"
-                ? "border-ns-blue-500 shadow-lg bg-white"
-                : "border-dark-slate-200 bg-white hover:border-dark-slate-300"
+                ? "border-green shadow-lg bg-white"
+                : "border-cool bg-white hover:border-gray/30"
             }`}
           >
             <div className="flex items-center justify-between mb-1">
-              <h3 className="font-bold text-ns-text">Jahresabo</h3>
-              <span className="text-lg font-bold text-ns-blue-500">
+              <h3 className="font-bold text-slate">Jahresabo</h3>
+              <span className="text-lg font-bold text-green">
                 {formatEuro(pkg.yearly)}
               </span>
             </div>
-            <p className="text-sm text-ns-text/60">
+            <p className="text-sm text-gray">
               Einmalige Jahresrechnung – Sie sparen bis zu 2 Monate
             </p>
           </button>
@@ -246,17 +259,17 @@ export function OrderForm() {
             onClick={() => setZahlungsmodell("monatlich")}
             className={`text-left p-5 rounded-xl border-2 transition-all duration-200 ${
               zahlungsmodell === "monatlich"
-                ? "border-ns-blue-500 shadow-lg bg-white"
-                : "border-dark-slate-200 bg-white hover:border-dark-slate-300"
+                ? "border-green shadow-lg bg-white"
+                : "border-cool bg-white hover:border-gray/30"
             }`}
           >
             <div className="flex items-center justify-between mb-1">
-              <h3 className="font-bold text-ns-text">Monatliche Zahlung</h3>
-              <span className="text-lg font-bold text-ns-blue-500">
+              <h3 className="font-bold text-slate">Monatliche Zahlung</h3>
+              <span className="text-lg font-bold text-green">
                 {formatEuro(pkg.monthly)}
               </span>
             </div>
-            <p className="text-sm text-ns-text/60">
+            <p className="text-sm text-gray">
               12 monatliche Rechnungen – flexibel kündbar nach Mindestlaufzeit
             </p>
           </button>
@@ -265,10 +278,15 @@ export function OrderForm() {
 
       {/* Sektion C: Unternehmensdaten */}
       <section>
-        <h2 className="text-xl font-bold text-ns-text mb-4">Unternehmensdaten</h2>
+        <h2
+          className="text-xl font-bold text-slate mb-4"
+          style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
+        >
+          Unternehmensdaten
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
-            <label htmlFor="firma" className="block text-sm font-medium text-ns-text mb-1">
+            <label htmlFor="firma" className="block text-sm font-medium text-slate mb-1">
               Firmenname *
             </label>
             <input
@@ -279,11 +297,11 @@ export function OrderForm() {
               value={firma}
               onChange={(e) => setFirma(e.target.value)}
               disabled={formState === "loading"}
-              className="w-full px-4 py-3 text-sm border border-dark-slate-200 rounded-xl focus:border-ns-blue-500 focus:outline-none disabled:opacity-50"
+              className="w-full px-4 py-3 text-sm border border-cool rounded-xl focus:border-green focus:outline-none disabled:opacity-50 text-slate"
             />
           </div>
           <div className="md:col-span-2">
-            <label htmlFor="strasse" className="block text-sm font-medium text-ns-text mb-1">
+            <label htmlFor="strasse" className="block text-sm font-medium text-slate mb-1">
               Straße + Hausnummer *
             </label>
             <input
@@ -293,11 +311,11 @@ export function OrderForm() {
               value={strasse}
               onChange={(e) => setStrasse(e.target.value)}
               disabled={formState === "loading"}
-              className="w-full px-4 py-3 text-sm border border-dark-slate-200 rounded-xl focus:border-ns-blue-500 focus:outline-none disabled:opacity-50"
+              className="w-full px-4 py-3 text-sm border border-cool rounded-xl focus:border-green focus:outline-none disabled:opacity-50 text-slate"
             />
           </div>
           <div>
-            <label htmlFor="plz" className="block text-sm font-medium text-ns-text mb-1">
+            <label htmlFor="plz" className="block text-sm font-medium text-slate mb-1">
               PLZ *
             </label>
             <input
@@ -308,11 +326,11 @@ export function OrderForm() {
               value={plz}
               onChange={(e) => setPlz(e.target.value)}
               disabled={formState === "loading"}
-              className="w-full px-4 py-3 text-sm border border-dark-slate-200 rounded-xl focus:border-ns-blue-500 focus:outline-none disabled:opacity-50"
+              className="w-full px-4 py-3 text-sm border border-cool rounded-xl focus:border-green focus:outline-none disabled:opacity-50 text-slate"
             />
           </div>
           <div>
-            <label htmlFor="ort" className="block text-sm font-medium text-ns-text mb-1">
+            <label htmlFor="ort" className="block text-sm font-medium text-slate mb-1">
               Ort *
             </label>
             <input
@@ -322,11 +340,11 @@ export function OrderForm() {
               value={ort}
               onChange={(e) => setOrt(e.target.value)}
               disabled={formState === "loading"}
-              className="w-full px-4 py-3 text-sm border border-dark-slate-200 rounded-xl focus:border-ns-blue-500 focus:outline-none disabled:opacity-50"
+              className="w-full px-4 py-3 text-sm border border-cool rounded-xl focus:border-green focus:outline-none disabled:opacity-50 text-slate"
             />
           </div>
           <div>
-            <label htmlFor="land" className="block text-sm font-medium text-ns-text mb-1">
+            <label htmlFor="land" className="block text-sm font-medium text-slate mb-1">
               Land *
             </label>
             <select
@@ -338,7 +356,7 @@ export function OrderForm() {
                 setUstId("");
               }}
               disabled={formState === "loading"}
-              className="w-full px-4 py-3 text-sm border border-dark-slate-200 rounded-xl focus:border-ns-blue-500 focus:outline-none disabled:opacity-50 bg-white"
+              className="w-full px-4 py-3 text-sm border border-cool rounded-xl focus:border-green focus:outline-none disabled:opacity-50 bg-white text-slate"
             >
               {(Object.keys(LAENDER) as Land[]).map((key) => (
                 <option key={key} value={key}>
@@ -348,7 +366,7 @@ export function OrderForm() {
             </select>
           </div>
           <div>
-            <label htmlFor="ustId" className="block text-sm font-medium text-ns-text mb-1">
+            <label htmlFor="ustId" className="block text-sm font-medium text-slate mb-1">
               USt-IdNr. {ustIdRequired && "*"}
             </label>
             <input
@@ -365,10 +383,10 @@ export function OrderForm() {
                   ? "ATU12345678"
                   : "CHE-123.456.789"
               }
-              className="w-full px-4 py-3 text-sm border border-dark-slate-200 rounded-xl focus:border-ns-blue-500 focus:outline-none disabled:opacity-50"
+              className="w-full px-4 py-3 text-sm border border-cool rounded-xl focus:border-green focus:outline-none disabled:opacity-50 text-slate"
             />
             {ustIdRequired && (
-              <p className="text-xs text-ns-blue-500 mt-1">
+              <p className="text-xs text-green mt-1">
                 Für die steuerfreie Abrechnung benötigen wir Ihre USt-IdNr.
               </p>
             )}
@@ -378,10 +396,15 @@ export function OrderForm() {
 
       {/* Sektion D: Ansprechpartner */}
       <section>
-        <h2 className="text-xl font-bold text-ns-text mb-4">Ansprechpartner</h2>
+        <h2
+          className="text-xl font-bold text-slate mb-4"
+          style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
+        >
+          Ansprechpartner
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="vorname" className="block text-sm font-medium text-ns-text mb-1">
+            <label htmlFor="vorname" className="block text-sm font-medium text-slate mb-1">
               Vorname *
             </label>
             <input
@@ -391,11 +414,11 @@ export function OrderForm() {
               value={vorname}
               onChange={(e) => setVorname(e.target.value)}
               disabled={formState === "loading"}
-              className="w-full px-4 py-3 text-sm border border-dark-slate-200 rounded-xl focus:border-ns-blue-500 focus:outline-none disabled:opacity-50"
+              className="w-full px-4 py-3 text-sm border border-cool rounded-xl focus:border-green focus:outline-none disabled:opacity-50 text-slate"
             />
           </div>
           <div>
-            <label htmlFor="nachname" className="block text-sm font-medium text-ns-text mb-1">
+            <label htmlFor="nachname" className="block text-sm font-medium text-slate mb-1">
               Nachname *
             </label>
             <input
@@ -405,11 +428,11 @@ export function OrderForm() {
               value={nachname}
               onChange={(e) => setNachname(e.target.value)}
               disabled={formState === "loading"}
-              className="w-full px-4 py-3 text-sm border border-dark-slate-200 rounded-xl focus:border-ns-blue-500 focus:outline-none disabled:opacity-50"
+              className="w-full px-4 py-3 text-sm border border-cool rounded-xl focus:border-green focus:outline-none disabled:opacity-50 text-slate"
             />
           </div>
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-ns-text mb-1">
+            <label htmlFor="email" className="block text-sm font-medium text-slate mb-1">
               E-Mail *
             </label>
             <input
@@ -420,11 +443,11 @@ export function OrderForm() {
               onChange={(e) => setEmail(e.target.value)}
               disabled={formState === "loading"}
               placeholder="max@firma.de"
-              className="w-full px-4 py-3 text-sm border border-dark-slate-200 rounded-xl focus:border-ns-blue-500 focus:outline-none disabled:opacity-50"
+              className="w-full px-4 py-3 text-sm border border-cool rounded-xl focus:border-green focus:outline-none disabled:opacity-50 text-slate"
             />
           </div>
           <div>
-            <label htmlFor="telefon" className="block text-sm font-medium text-ns-text mb-1">
+            <label htmlFor="telefon" className="block text-sm font-medium text-slate mb-1">
               Telefon
             </label>
             <input
@@ -434,11 +457,11 @@ export function OrderForm() {
               onChange={(e) => setTelefon(e.target.value)}
               disabled={formState === "loading"}
               placeholder="+49 221 12345"
-              className="w-full px-4 py-3 text-sm border border-dark-slate-200 rounded-xl focus:border-ns-blue-500 focus:outline-none disabled:opacity-50"
+              className="w-full px-4 py-3 text-sm border border-cool rounded-xl focus:border-green focus:outline-none disabled:opacity-50 text-slate"
             />
           </div>
           <div className="md:col-span-2">
-            <label htmlFor="position" className="block text-sm font-medium text-ns-text mb-1">
+            <label htmlFor="position" className="block text-sm font-medium text-slate mb-1">
               Position / Rolle
             </label>
             <input
@@ -448,7 +471,7 @@ export function OrderForm() {
               onChange={(e) => setPosition(e.target.value)}
               disabled={formState === "loading"}
               placeholder="z.B. Geschäftsführer, IT-Leiter"
-              className="w-full px-4 py-3 text-sm border border-dark-slate-200 rounded-xl focus:border-ns-blue-500 focus:outline-none disabled:opacity-50"
+              className="w-full px-4 py-3 text-sm border border-cool rounded-xl focus:border-green focus:outline-none disabled:opacity-50 text-slate"
             />
           </div>
         </div>
@@ -456,9 +479,14 @@ export function OrderForm() {
 
       {/* Sektion E: Anmerkungen */}
       <section>
-        <h2 className="text-xl font-bold text-ns-text mb-4">Anmerkungen</h2>
+        <h2
+          className="text-xl font-bold text-slate mb-4"
+          style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
+        >
+          Anmerkungen
+        </h2>
         <div>
-          <label htmlFor="anmerkungen" className="block text-sm font-medium text-ns-text mb-1">
+          <label htmlFor="anmerkungen" className="block text-sm font-medium text-slate mb-1">
             Haben Sie Fragen oder Anmerkungen?
           </label>
           <textarea
@@ -468,9 +496,9 @@ export function OrderForm() {
             value={anmerkungen}
             onChange={(e) => setAnmerkungen(e.target.value)}
             disabled={formState === "loading"}
-            className="w-full px-4 py-3 text-sm border border-dark-slate-200 rounded-xl focus:border-ns-blue-500 focus:outline-none disabled:opacity-50 resize-none"
+            className="w-full px-4 py-3 text-sm border border-cool rounded-xl focus:border-green focus:outline-none disabled:opacity-50 resize-none text-slate"
           />
-          <p className="text-xs text-ns-text/50 text-right mt-1">
+          <p className="text-xs text-gray text-right mt-1">
             {anmerkungen.length}/500 Zeichen
           </p>
         </div>
@@ -478,42 +506,47 @@ export function OrderForm() {
 
       {/* Sektion F: Zusammenfassung & Absenden */}
       <section>
-        <div className="bg-ns-light rounded-xl p-6 border border-ns-accent">
-          <h2 className="text-xl font-bold text-ns-text mb-4">Ihre Bestellung</h2>
-          <div className="space-y-2 text-sm text-ns-text">
+        <div className="bg-cool rounded-xl p-6 border border-cool">
+          <h2
+            className="text-xl font-bold text-slate mb-4"
+            style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
+          >
+            Ihre Bestellung
+          </h2>
+          <div className="space-y-2 text-sm text-slate">
             <div className="flex justify-between">
-              <span>Paket:</span>
+              <span className="text-gray">Paket:</span>
               <span className="font-medium">
                 {pkg.label} ({pkg.usersLabel})
               </span>
             </div>
             <div className="flex justify-between">
-              <span>Zahlung:</span>
+              <span className="text-gray">Zahlung:</span>
               <span className="font-medium">
                 {zahlungsmodell === "jahresabo" ? "Jahresabo" : "Monatliche Zahlung"}
               </span>
             </div>
             <div className="flex justify-between">
-              <span>Preis:</span>
+              <span className="text-gray">Preis:</span>
               <span className="font-medium">
                 {formatEuro(preisNetto)} netto {preisLabel}
               </span>
             </div>
             <div className="flex justify-between">
-              <span>zzgl. MwSt. ({mwst.mwstSatz}%):</span>
+              <span className="text-gray">zzgl. MwSt. ({mwst.mwstSatz}%):</span>
               <span className="font-medium">{formatEuro(mwst.mwstBetrag)}</span>
             </div>
-            <hr className="border-ns-accent my-2" />
+            <hr className="border-gray/20 my-2" />
             <div className="flex justify-between text-base font-bold">
               <span>Gesamt:</span>
-              <span>
+              <span className="text-green">
                 {formatEuro(mwst.preisBrutto)} brutto {preisLabel}
               </span>
             </div>
           </div>
 
           {mwst.reverseChargeHinweis && (
-            <p className="text-xs text-ns-blue-500 mt-3 bg-white/60 rounded-lg p-2">
+            <p className="text-xs text-green mt-3 bg-ice rounded-lg p-2">
               {mwst.reverseChargeHinweis}
             </p>
           )}
@@ -525,9 +558,9 @@ export function OrderForm() {
                 checked={agbAccepted}
                 onChange={(e) => setAgbAccepted(e.target.checked)}
                 required
-                className="mt-0.5 w-4 h-4 accent-ns-blue-500"
+                className="mt-0.5 w-4 h-4 accent-green"
               />
-              <span className="text-sm text-ns-text">
+              <span className="text-sm text-slate">
                 Ich akzeptiere die AGB.
               </span>
             </label>
@@ -547,11 +580,11 @@ export function OrderForm() {
           <button
             type="submit"
             disabled={formState === "loading" || !agbAccepted}
-            className="w-full mt-6 py-4 bg-ns-blue-500 hover:bg-ns-blue-600 disabled:opacity-60 text-white font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-base"
+            className="w-full mt-6 py-4 bg-green hover:bg-green-d disabled:opacity-60 text-slate font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-base hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,200,150,.35)]"
           >
             {formState === "loading" ? (
               <>
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-slate/30 border-t-slate rounded-full animate-spin" />
                 Bestellung wird verarbeitet...
               </>
             ) : (

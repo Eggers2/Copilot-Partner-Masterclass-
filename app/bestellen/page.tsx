@@ -10,19 +10,21 @@ export const metadata: Metadata = {
 
 export default function BestellenPage() {
   return (
-    <div className="min-h-screen bg-ns-light">
+    <div className="min-h-screen bg-ice">
       {/* Header */}
-      <header className="bg-white border-b border-dark-slate-200">
+      <header className="bg-slate border-b border-slate-2">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-ns-blue-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">NS</span>
-            </div>
-            <span className="font-bold text-ns-text text-lg">Next Skills</span>
-          </div>
+          <Link href="/" className="flex items-center gap-3">
+            <span
+              className="font-bold text-white text-xl"
+              style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
+            >
+              Next<span className="text-green">Skills</span>
+            </span>
+          </Link>
           <Link
             href="/"
-            className="text-sm text-ns-text/60 hover:text-ns-text transition-colors"
+            className="text-sm text-white/60 hover:text-white transition-colors"
           >
             Zurück zur Startseite
           </Link>
@@ -30,13 +32,28 @@ export default function BestellenPage() {
       </header>
 
       {/* Hero */}
-      <div className="bg-gradient-to-b from-white to-ns-light py-12 text-center px-4">
-        <h1 className="text-3xl md:text-4xl font-bold text-ns-text mb-3">
-          Microsoft Copilot Partner Masterclass
-        </h1>
-        <p className="text-ns-text/70 text-lg max-w-2xl mx-auto">
-          Wählen Sie Ihr Paket und bestellen Sie den Zugang für Ihr Team.
-        </p>
+      <div className="bg-slate py-16 text-center px-4 relative overflow-hidden">
+        <div
+          className="absolute inset-0 opacity-30"
+          style={{
+            background:
+              "radial-gradient(ellipse at 50% 80%, rgba(0,200,150,.25) 0%, transparent 60%)",
+          }}
+        />
+        <div className="relative z-10">
+          <span className="inline-block text-green text-xs font-bold tracking-widest uppercase mb-4">
+            Jetzt bestellen
+          </span>
+          <h1
+            className="text-3xl md:text-4xl font-bold text-white mb-3"
+            style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
+          >
+            Microsoft Copilot Partner Masterclass
+          </h1>
+          <p className="text-gray text-lg max-w-2xl mx-auto">
+            Wählen Sie Ihr Paket und bestellen Sie den Zugang für Ihr Team.
+          </p>
+        </div>
       </div>
 
       {/* Form */}
@@ -45,10 +62,10 @@ export default function BestellenPage() {
       </div>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-dark-slate-200 py-6 text-center text-sm text-ns-text/50">
+      <footer className="bg-slate border-t border-slate-2 py-6 text-center text-sm text-gray">
         <p>
-          © {new Date().getFullYear()} Next Skills GmbH · copilotberater.de ·{" "}
-          <a href="mailto:info@next-skills.de" className="hover:text-ns-text">
+          © {new Date().getFullYear()} NextSkills GmbH · copilotberater.de ·{" "}
+          <a href="mailto:info@next-skills.de" className="hover:text-green transition-colors">
             info@next-skills.de
           </a>
         </p>
