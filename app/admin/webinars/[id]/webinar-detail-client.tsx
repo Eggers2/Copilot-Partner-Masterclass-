@@ -58,6 +58,7 @@ export function WebinarDetailClient({ webinar }: WebinarDetailClientProps) {
             year: "numeric",
             hour: "2-digit",
             minute: "2-digit",
+            timeZone: "Europe/Berlin",
           })}
         </span>
         <span className="flex items-center gap-1.5">
