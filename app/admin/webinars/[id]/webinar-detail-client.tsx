@@ -11,7 +11,6 @@ interface WebinarDetailClientProps {
   webinar: {
     id: string;
     title: string;
-    slug: string;
     scheduledAt: string;
     streamyardLink: string | null;
     description: string | null;

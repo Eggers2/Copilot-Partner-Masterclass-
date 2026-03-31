@@ -205,17 +205,15 @@ export async function createWebinarAction(
   await requireAuth();
 
   const title = formData.get("title") as string;
-  const slug = formData.get("slug") as string;
   const scheduledAtRaw = formData.get("scheduledAt") as string;
 
-  if (!title?.trim() || !slug?.trim() || !scheduledAtRaw) {
-    return { error: "Titel, Slug und Datum sind erforderlich." };
+  if (!title?.trim() || !scheduledAtRaw) {
+    return { error: "Titel und Datum sind erforderlich." };
   }
 
   try {
     await createWebinar({
       title: title.trim(),
-      slug: slug.trim(),
       scheduledAt: parseBerlinDate(scheduledAtRaw),
       streamyardLink: (formData.get("streamyardLink") as string) || null,
       description: (formData.get("description") as string) || null,
@@ -227,7 +225,7 @@ export async function createWebinarAction(
       "code" in error &&
       error.code === "P2002"
     ) {
-      return { error: "Ein Webinar mit diesem Slug existiert bereits." };
+      return { error: "Fehler beim Erstellen des Webinars." };
     }
     throw error;
   }
@@ -282,7 +280,7 @@ export async function updateWebinarAction(
       "code" in error &&
       error.code === "P2002"
     ) {
-      return { error: "Ein Webinar mit diesem Slug existiert bereits." };
+      return { error: "Fehler beim Erstellen des Webinars." };
     }
     throw error;
   }
