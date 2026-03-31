@@ -603,5 +603,5 @@ function parseCsvLine(line: string): string[] {
 
 function isAttendedStatus(status: string): boolean {
   const s = status.toLowerCase().trim();
-  return s === "attended" || s === "attended live" || s === "watched on-demand" || s === "watched on demand";
+  return s === "live" || s === "attended" || s === "attended live" || s === "watched on-demand" || s === "watched on demand";
 }
