@@ -4,17 +4,6 @@ import { useState, useActionState } from "react";
 import { Plus, X } from "lucide-react";
 import { createWebinarAction } from "@/app/admin/actions";
 
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[äÄ]/g, "ae")
-    .replace(/[öÖ]/g, "oe")
-    .replace(/[üÜ]/g, "ue")
-    .replace(/[ß]/g, "ss")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
 export function CreateWebinarForm() {
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -62,18 +51,6 @@ export function CreateWebinarForm() {
               onChange={(e) => setTitle(e.target.value)}
               placeholder="z.B. Copilot Partner Masterclass – April"
               className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-dark-slate-600 mb-1">
-              Slug (URL)
-            </label>
-            <input
-              name="slug"
-              required
-              value={slugify(title)}
-              readOnly
-              className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg bg-dark-slate-50 text-dark-slate-500"
             />
           </div>
           <div>

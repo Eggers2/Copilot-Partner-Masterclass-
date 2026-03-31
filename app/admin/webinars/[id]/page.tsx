@@ -43,7 +43,6 @@ export default async function WebinarDetailPage({
         webinar={{
           id: webinar.id,
           title: webinar.title,
-          slug: webinar.slug,
           scheduledAt: webinar.scheduledAt.toISOString(),
           streamyardLink: webinar.streamyardLink,
           description: webinar.description,

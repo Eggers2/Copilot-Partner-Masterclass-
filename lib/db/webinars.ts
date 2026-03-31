@@ -57,16 +57,8 @@ export async function getWebinar(id: string) {
   });
 }
 
-export async function getWebinarBySlug(slug: string) {
-  return prisma.webinar.findUnique({
-    where: { slug },
-    include: { _count: { select: { registrations: true } } },
-  });
-}
-
 export async function createWebinar(data: {
   title: string;
-  slug: string;
   scheduledAt: Date;
   streamyardLink?: string | null;
   description?: string | null;
@@ -78,7 +70,6 @@ export async function updateWebinar(
   id: string,
   data: {
     title?: string;
-    slug?: string;
     scheduledAt?: Date;
     streamyardLink?: string | null;
     status?: WebinarStatus;
