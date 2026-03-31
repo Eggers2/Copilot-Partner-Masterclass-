@@ -2,6 +2,15 @@ import { prisma } from "@/lib/prisma";
 import type { WebinarStatus, RegistrationStatus } from "@prisma/client";
 
 export async function getWebinars() {
+  // Auto-close webinars that have already started
+  await prisma.webinar.updateMany({
+    where: {
+      status: "OPEN",
+      scheduledAt: { lte: new Date() },
+    },
+    data: { status: "CLOSED" },
+  });
+
   return prisma.webinar.findMany({
     orderBy: { scheduledAt: "desc" },
     include: { _count: { select: { registrations: true } } },
@@ -9,6 +18,15 @@ export async function getWebinars() {
 }
 
 export async function getOpenWebinars() {
+  // Auto-close webinars that have already started
+  await prisma.webinar.updateMany({
+    where: {
+      status: "OPEN",
+      scheduledAt: { lte: new Date() },
+    },
+    data: { status: "CLOSED" },
+  });
+
   return prisma.webinar.findMany({
     where: { status: "OPEN" },
     orderBy: { scheduledAt: "asc" },
