@@ -94,7 +94,6 @@ model LeadActivity {
 model Webinar {
   id              String               @id @default(cuid())
   title           String
-  slug            String?              @unique
   scheduledAt     DateTime             @map("scheduled_at")
   streamyardLink  String?              @map("streamyard_link")
   status          WebinarStatus        @default(PLANNED)
