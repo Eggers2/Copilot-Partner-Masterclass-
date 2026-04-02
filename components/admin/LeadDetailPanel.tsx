@@ -16,6 +16,10 @@ interface Lead {
   email: string;
   name: string | null;
   company: string | null;
+  street: string | null;
+  zip: string | null;
+  city: string | null;
+  website: string | null;
   phone: string | null;
   status: LeadStatus;
   source: LeadSource;
@@ -75,6 +79,48 @@ export function LeadDetailPanel({ lead }: { lead: Lead }) {
             <input
               name="company"
               defaultValue={lead.company ?? ""}
+              className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-dark-slate-600 mb-1">
+              Straße + Hausnummer
+            </label>
+            <input
+              name="street"
+              defaultValue={lead.street ?? ""}
+              className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-dark-slate-600 mb-1">
+              PLZ
+            </label>
+            <input
+              name="zip"
+              defaultValue={lead.zip ?? ""}
+              className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-dark-slate-600 mb-1">
+              Ort
+            </label>
+            <input
+              name="city"
+              defaultValue={lead.city ?? ""}
+              className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-dark-slate-600 mb-1">
+              Website
+            </label>
+            <input
+              name="website"
+              type="url"
+              defaultValue={lead.website ?? ""}
+              placeholder="https://..."
               className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none"
             />
           </div>

@@ -61,6 +61,10 @@ model Lead {
   email                String                @unique
   name                 String?
   company              String?
+  street               String?
+  zip                  String?
+  city                 String?
+  website              String?
   phone                String?
   status               LeadStatus            @default(NEW)
   source               LeadSource            @default(WEBSITE)

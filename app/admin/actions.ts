@@ -93,6 +93,10 @@ export async function updateLeadAction(
   await updateLead(id, {
     name: (formData.get("name") as string) || null,
     company: (formData.get("company") as string) || null,
+    street: (formData.get("street") as string) || null,
+    zip: (formData.get("zip") as string) || null,
+    city: (formData.get("city") as string) || null,
+    website: (formData.get("website") as string) || null,
     phone: (formData.get("phone") as string) || null,
     status: newStatus,
     source: formData.get("source") as LeadSource,
