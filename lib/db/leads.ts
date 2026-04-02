@@ -55,6 +55,10 @@ export async function updateLead(
   data: {
     name?: string | null;
     company?: string | null;
+    street?: string | null;
+    zip?: string | null;
+    city?: string | null;
+    website?: string | null;
     phone?: string | null;
     status?: LeadStatus;
     source?: LeadSource;

@@ -17,6 +17,10 @@ interface Lead {
   email: string;
   name: string | null;
   company: string | null;
+  street?: string | null;
+  zip?: string | null;
+  city?: string | null;
+  website?: string | null;
   phone?: string | null;
   status: LeadStatus;
   source: LeadSource;
@@ -126,11 +130,15 @@ export function LeadsTable({ leads }: LeadsTableProps) {
   }, [leads, statusFilter, sourceFilter, search, sortKey, sortDir]);
 
   const downloadCSV = () => {
-    const headers = ["Name", "E-Mail", "Firma", "Telefon", "Status", "Quelle", "Score", "Notizen", "Erstellt am", "Letzte Aktivität", "Follow-up Datum"];
+    const headers = ["Name", "E-Mail", "Firma", "Straße", "PLZ", "Ort", "Website", "Telefon", "Status", "Quelle", "Score", "Notizen", "Erstellt am", "Letzte Aktivität", "Follow-up Datum"];
     const rows = filtered.map((lead) => [
       lead.name ?? "",
       lead.email,
       lead.company ?? "",
+      lead.street ?? "",
+      lead.zip ?? "",
+      lead.city ?? "",
+      lead.website ?? "",
       lead.phone ?? "",
       LEAD_STATUS_CONFIG[lead.status].label,
       LEAD_SOURCE_CONFIG[lead.source].label,
