@@ -32,6 +32,11 @@ export async function getLeads(filters?: LeadFilters) {
     include: {
       _count: { select: { activities: true } },
       firstCallScore: { select: { totalScore: true } },
+      activities: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { createdAt: true },
+      },
     },
   });
 }
