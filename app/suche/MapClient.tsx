@@ -59,10 +59,16 @@ export default function MapClient() {
     if (mapRef.current || !mapContainerRef.current) return;
 
     const map = L.map(mapContainerRef.current, {
-      center: [48.5, 10.5],
+      center: [50.5, 10.3],
       zoom: 6,
       scrollWheelZoom: true,
     });
+
+    // Fit to DACH bounds: from Flensburg (54.8°N) to south of Switzerland (46°N)
+    map.fitBounds([
+      [54.9, 5.8],   // NW corner (north Germany, west border)
+      [46.3, 17.2],  // SE corner (south Austria, east border)
+    ]);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -211,7 +217,9 @@ export default function MapClient() {
           ref={mapContainerRef}
           style={{
             width: "100%",
-            height: "500px",
+            height: "min(75vh, 700px)",
+            maxWidth: 700,
+            margin: "0 auto",
             borderRadius: 12,
             overflow: "hidden",
             border: "1px solid #E8E8F0",
