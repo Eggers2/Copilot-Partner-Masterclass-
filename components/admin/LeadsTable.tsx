@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Trash2, Download } from "lucide-react";
+import { Search, Trash2, Download, ChevronUp, ChevronDown } from "lucide-react";
 import type { LeadStatus, LeadSource } from "@prisma/client";
 import { LeadStatusBadge } from "./LeadStatusBadge";
 import { FirstCallBadge } from "./FirstCallBadge";
@@ -29,8 +29,46 @@ interface Lead {
   firstCallScore: { totalScore: number } | null;
 }
 
+type SortKey = "lead" | "company" | "status" | "score" | "source" | "createdAt" | "lastActivityAt" | "followUpAt";
+type SortDir = "asc" | "desc";
+
 interface LeadsTableProps {
   leads: Lead[];
+}
+
+function compareValues(a: string | number | null | undefined, b: string | number | null | undefined, dir: SortDir): number {
+  const nullA = a == null || a === "";
+  const nullB = b == null || b === "";
+  if (nullA && nullB) return 0;
+  if (nullA) return 1;
+  if (nullB) return -1;
+  if (typeof a === "string" && typeof b === "string") {
+    const cmp = a.localeCompare(b, "de", { sensitivity: "base" });
+    return dir === "asc" ? cmp : -cmp;
+  }
+  const cmp = (a as number) - (b as number);
+  return dir === "asc" ? cmp : -cmp;
+}
+
+function getSortValue(lead: Lead, key: SortKey): string | number | null {
+  switch (key) {
+    case "lead":
+      return (lead.name || lead.email).toLowerCase();
+    case "company":
+      return lead.company?.toLowerCase() ?? null;
+    case "status":
+      return LEAD_STATUS_CONFIG[lead.status].label;
+    case "score":
+      return lead.firstCallScore?.totalScore ?? null;
+    case "source":
+      return LEAD_SOURCE_CONFIG[lead.source].label;
+    case "createdAt":
+      return lead.createdAt;
+    case "lastActivityAt":
+      return lead.lastActivityAt;
+    case "followUpAt":
+      return lead.followUpAt;
+  }
 }
 
 export function LeadsTable({ leads }: LeadsTableProps) {
@@ -40,6 +78,17 @@ export function LeadsTable({ leads }: LeadsTableProps) {
   const [sourceFilter, setSourceFilter] = useState<LeadSource | "">("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
 
   const handleDelete = (e: React.MouseEvent, lead: Lead) => {
     e.stopPropagation();
@@ -52,19 +101,29 @@ export function LeadsTable({ leads }: LeadsTableProps) {
     });
   };
 
-  const filtered = leads.filter((lead) => {
-    if (statusFilter && lead.status !== statusFilter) return false;
-    if (sourceFilter && lead.source !== sourceFilter) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      return (
-        lead.email.toLowerCase().includes(q) ||
-        lead.name?.toLowerCase().includes(q) ||
-        lead.company?.toLowerCase().includes(q)
+  const filtered = useMemo(() => {
+    let result = leads.filter((lead) => {
+      if (statusFilter && lead.status !== statusFilter) return false;
+      if (sourceFilter && lead.source !== sourceFilter) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        return (
+          lead.email.toLowerCase().includes(q) ||
+          lead.name?.toLowerCase().includes(q) ||
+          lead.company?.toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
+
+    if (sortKey) {
+      result = [...result].sort((a, b) =>
+        compareValues(getSortValue(a, sortKey), getSortValue(b, sortKey), sortDir)
       );
     }
-    return true;
-  });
+
+    return result;
+  }, [leads, statusFilter, sourceFilter, search, sortKey, sortDir]);
 
   const downloadCSV = () => {
     const headers = ["Name", "E-Mail", "Firma", "Telefon", "Status", "Quelle", "Score", "Notizen", "Erstellt am", "Letzte Aktivität", "Follow-up Datum"];
@@ -97,6 +156,24 @@ export function LeadsTable({ leads }: LeadsTableProps) {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  const SortIcon = ({ column }: { column: SortKey }) => {
+    if (sortKey !== column) {
+      return (
+        <span className="inline-flex flex-col ml-1 opacity-30">
+          <ChevronUp className="w-3 h-3 -mb-1" />
+          <ChevronDown className="w-3 h-3" />
+        </span>
+      );
+    }
+    return sortDir === "asc" ? (
+      <ChevronUp className="inline w-3 h-3 ml-1" />
+    ) : (
+      <ChevronDown className="inline w-3 h-3 ml-1" />
+    );
+  };
+
+  const thClass = "text-left px-6 py-3 text-xs font-semibold text-dark-slate-500 uppercase tracking-wider cursor-pointer select-none hover:text-dark-slate-700 transition-colors";
 
   return (
     <div className="bg-white rounded-2xl border border-dark-slate-100 shadow-sm overflow-hidden">
@@ -150,29 +227,29 @@ export function LeadsTable({ leads }: LeadsTableProps) {
         <table className="w-full">
           <thead>
             <tr className="bg-dark-slate-50 border-b border-dark-slate-100">
-              <th className="text-left px-6 py-3 text-xs font-semibold text-dark-slate-500 uppercase tracking-wider">
-                Lead
+              <th className={thClass} onClick={() => handleSort("lead")}>
+                Lead <SortIcon column="lead" />
               </th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-dark-slate-500 uppercase tracking-wider">
-                Firma
+              <th className={thClass} onClick={() => handleSort("company")}>
+                Firma <SortIcon column="company" />
               </th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-dark-slate-500 uppercase tracking-wider">
-                Status
+              <th className={thClass} onClick={() => handleSort("status")}>
+                Status <SortIcon column="status" />
               </th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-dark-slate-500 uppercase tracking-wider">
-                Score
+              <th className={thClass} onClick={() => handleSort("score")}>
+                Score <SortIcon column="score" />
               </th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-dark-slate-500 uppercase tracking-wider">
-                Quelle
+              <th className={thClass} onClick={() => handleSort("source")}>
+                Quelle <SortIcon column="source" />
               </th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-dark-slate-500 uppercase tracking-wider">
-                Datum
+              <th className={thClass} onClick={() => handleSort("createdAt")}>
+                Datum <SortIcon column="createdAt" />
               </th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-dark-slate-500 uppercase tracking-wider">
-                Letzte Aktivität
+              <th className={thClass} onClick={() => handleSort("lastActivityAt")}>
+                Letzte Aktivität <SortIcon column="lastActivityAt" />
               </th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-dark-slate-500 uppercase tracking-wider">
-                Follow-up
+              <th className={thClass} onClick={() => handleSort("followUpAt")}>
+                Follow-up <SortIcon column="followUpAt" />
               </th>
               <th className="text-right px-6 py-3 text-xs font-semibold text-dark-slate-500 uppercase tracking-wider">
                 Aktionen
