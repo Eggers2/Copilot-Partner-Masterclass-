@@ -23,6 +23,8 @@ interface Lead {
   score?: number;
   notes?: string | null;
   createdAt: string;
+  followUpAt: string | null;
+  lastActivityAt: string | null;
   _count: { activities: number };
   firstCallScore: { totalScore: number } | null;
 }
@@ -65,7 +67,7 @@ export function LeadsTable({ leads }: LeadsTableProps) {
   });
 
   const downloadCSV = () => {
-    const headers = ["Name", "E-Mail", "Firma", "Telefon", "Status", "Quelle", "Score", "Notizen", "Erstellt am"];
+    const headers = ["Name", "E-Mail", "Firma", "Telefon", "Status", "Quelle", "Score", "Notizen", "Erstellt am", "Letzte Aktivität", "Follow-up Datum"];
     const rows = filtered.map((lead) => [
       lead.name ?? "",
       lead.email,
@@ -76,6 +78,8 @@ export function LeadsTable({ leads }: LeadsTableProps) {
       String(lead.score ?? ""),
       lead.notes ?? "",
       new Date(lead.createdAt).toLocaleString("de-DE"),
+      lead.lastActivityAt ? new Date(lead.lastActivityAt).toLocaleString("de-DE") : "",
+      lead.followUpAt ? new Date(lead.followUpAt).toLocaleString("de-DE") : "",
     ]);
 
     const csvContent = [
@@ -164,6 +168,12 @@ export function LeadsTable({ leads }: LeadsTableProps) {
               <th className="text-left px-6 py-3 text-xs font-semibold text-dark-slate-500 uppercase tracking-wider">
                 Datum
               </th>
+              <th className="text-left px-6 py-3 text-xs font-semibold text-dark-slate-500 uppercase tracking-wider">
+                Letzte Aktivität
+              </th>
+              <th className="text-left px-6 py-3 text-xs font-semibold text-dark-slate-500 uppercase tracking-wider">
+                Follow-up
+              </th>
               <th className="text-right px-6 py-3 text-xs font-semibold text-dark-slate-500 uppercase tracking-wider">
                 Aktionen
               </th>
@@ -173,7 +183,7 @@ export function LeadsTable({ leads }: LeadsTableProps) {
             {filtered.length === 0 ? (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={9}
                   className="px-6 py-12 text-center text-dark-slate-400 text-sm"
                 >
                   Keine Leads gefunden.
@@ -223,6 +233,22 @@ export function LeadsTable({ leads }: LeadsTableProps) {
                   </td>
                   <td className="px-6 py-4 text-sm text-dark-slate-400">
                     {new Date(lead.createdAt).toLocaleDateString("de-DE")}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-dark-slate-400">
+                    {lead.lastActivityAt
+                      ? new Date(lead.lastActivityAt).toLocaleDateString("de-DE")
+                      : "–"}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-dark-slate-400">
+                    {lead.followUpAt
+                      ? new Date(lead.followUpAt).toLocaleString("de-DE", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "–"}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button
