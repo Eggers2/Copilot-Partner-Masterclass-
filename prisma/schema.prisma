@@ -66,6 +66,8 @@ model Lead {
   city                 String?
   website              String?
   phone                String?
+  latitude             Float?
+  longitude            Float?
   status               LeadStatus            @default(NEW)
   source               LeadSource            @default(WEBSITE)
   notes                String?
