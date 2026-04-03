@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Zap, LayoutDashboard, CheckSquare, Video } from "lucide-react";
+import { Zap, LayoutDashboard, CheckSquare, Video, ShoppingCart } from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
 import { logoutAction } from "./actions";
 
@@ -36,6 +36,7 @@ export default async function AdminLayout({
                 <NavLink href="/admin" icon={LayoutDashboard} label="Dashboard" />
                 <NavLink href="/admin/tasks" icon={CheckSquare} label="Follow-ups" />
                 <NavLink href="/admin/webinars" icon={Video} label="Webinare" />
+                <NavLink href="/admin/shop" icon={ShoppingCart} label="Online Shop" />
               </nav>
             </div>
             <form action={logoutAction}>
