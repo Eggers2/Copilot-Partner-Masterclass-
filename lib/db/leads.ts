@@ -207,7 +207,10 @@ export interface OrderLeadSyncData {
 export async function syncOrderWithLead(data: OrderLeadSyncData) {
   const normalizedEmail = data.email.toLowerCase().trim();
   const fullName = `${data.vorname.trim()} ${data.nachname.trim()}`;
-  const revenueInCents = Math.round(data.preisNetto * 100);
+  const jahresNetto = data.zahlungsmodell === "monatlich"
+    ? data.preisNetto * 12
+    : data.preisNetto;
+  const revenueInCents = Math.round(jahresNetto * 100);
 
   const activityContent =
     `Bestellung eingegangen: ${data.bestellNr} – ` +
