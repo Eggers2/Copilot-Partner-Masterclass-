@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { syncOrderWithLead } from "@/lib/db/leads";
 
 const PACKAGES = {
   starter: { label: "Starter", users: 3, yearly: 8900, monthly: 890 },
@@ -257,6 +258,25 @@ export async function POST(request: NextRequest) {
         throw err;
       }
     }
+
+    // Lead-Datenbank Sync: fire-and-forget
+    syncOrderWithLead({
+      email: email.toLowerCase().trim(),
+      vorname: vorname.trim(),
+      nachname: nachname.trim(),
+      firma: firma.trim(),
+      strasse: strasse.trim(),
+      plz: plz.trim(),
+      ort: ort.trim(),
+      telefon: telefon?.trim() || null,
+      position: position?.trim() || null,
+      paket: pkg.label,
+      zahlungsmodell,
+      bestellNr,
+      preisNetto,
+    }).catch((err) =>
+      console.error("[OrderSync] Lead-Sync fehlgeschlagen:", err)
+    );
 
     // N8N Webhook: fire-and-forget
     const webhookUrl = process.env.N8N_WEBHOOK_URL_bestellen;
