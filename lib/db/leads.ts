@@ -181,6 +181,111 @@ export async function upsertFirstCallScore(leadId: string, data: FirstCallScoreI
   });
 }
 
+// ─── ORDER → LEAD SYNC ──────────────────────────────
+
+export interface OrderLeadSyncData {
+  email: string;
+  vorname: string;
+  nachname: string;
+  firma: string;
+  strasse: string;
+  plz: string;
+  ort: string;
+  telefon?: string | null;
+  position?: string | null;
+  paket: string;
+  zahlungsmodell: string;
+  bestellNr: string;
+  preisNetto: number;
+}
+
+/**
+ * Synchronisiert eine Bestellung mit der Lead-Datenbank.
+ * - Lead existiert (per E-Mail): Kontaktdaten aktualisieren, Status → WON, Aktivität loggen
+ * - Lead existiert nicht: Neuen Lead anlegen mit Status WON, Aktivität loggen
+ */
+export async function syncOrderWithLead(data: OrderLeadSyncData) {
+  const normalizedEmail = data.email.toLowerCase().trim();
+  const fullName = `${data.vorname.trim()} ${data.nachname.trim()}`;
+  const revenueInCents = Math.round(data.preisNetto * 100);
+
+  const activityContent =
+    `Bestellung eingegangen: ${data.bestellNr} – ` +
+    `Paket: ${data.paket}, Zahlungsmodell: ${data.zahlungsmodell}, ` +
+    `Firma: ${data.firma}, Ansprechpartner: ${fullName}, ` +
+    `Netto: ${(data.preisNetto / 100).toFixed(2)} €`;
+
+  const existingLead = await prisma.lead.findUnique({
+    where: { email: normalizedEmail },
+  });
+
+  if (existingLead) {
+    const oldStatus = existingLead.status;
+
+    await prisma.lead.update({
+      where: { id: existingLead.id },
+      data: {
+        name: fullName,
+        company: data.firma.trim(),
+        street: data.strasse.trim(),
+        zip: data.plz.trim(),
+        city: data.ort.trim(),
+        phone: data.telefon?.trim() || existingLead.phone,
+        status: "WON",
+        revenue: existingLead.revenue + revenueInCents,
+      },
+    });
+
+    // Aktivität: Status-Änderung
+    if (oldStatus !== "WON") {
+      await addActivity(existingLead.id, {
+        type: "STATUS_CHANGE",
+        content: `Status geändert: ${oldStatus} → WON (durch Bestellung ${data.bestellNr})`,
+        oldValue: oldStatus,
+        newValue: "WON",
+      });
+    }
+
+    // Aktivität: Bestellung
+    await addActivity(existingLead.id, {
+      type: "NOTE",
+      content: activityContent,
+    });
+
+    console.log(`[OrderSync] Lead aktualisiert: ${existingLead.id} (${normalizedEmail})`);
+  } else {
+    const newLead = await prisma.lead.create({
+      data: {
+        email: normalizedEmail,
+        name: fullName,
+        company: data.firma.trim(),
+        street: data.strasse.trim(),
+        zip: data.plz.trim(),
+        city: data.ort.trim(),
+        phone: data.telefon?.trim() || null,
+        status: "WON",
+        source: "WEBSITE",
+        revenue: revenueInCents,
+      },
+    });
+
+    // Aktivität: Neuer Lead durch Bestellung
+    await addActivity(newLead.id, {
+      type: "STATUS_CHANGE",
+      content: `Lead neu angelegt durch Bestellung ${data.bestellNr} – Status: WON`,
+      oldValue: null,
+      newValue: "WON",
+    });
+
+    await addActivity(newLead.id, {
+      type: "NOTE",
+      content: activityContent,
+    });
+
+    console.log(`[OrderSync] Neuer Lead angelegt: ${newLead.id} (${normalizedEmail})`);
+  }
+}
+
 export async function getFollowUpTasks() {
   return prisma.lead.findMany({
     where: {
