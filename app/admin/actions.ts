@@ -607,3 +607,23 @@ function isAttendedStatus(status: string): boolean {
   const s = status.toLowerCase().trim();
   return s === "live" || s === "attended" || s === "attended live" || s === "watched on-demand" || s === "watched on demand";
 }
+
+// ─── BESTELLUNGEN / ONLINE SHOP ──────────────────────
+
+export async function deleteBestellungAction(id: number): Promise<void> {
+  await requireAuth();
+  await prisma.bestellung.delete({ where: { id } });
+  revalidatePath("/admin/shop");
+}
+
+export async function updateBestellungStatusAction(
+  id: number,
+  status: string
+): Promise<void> {
+  await requireAuth();
+  await prisma.bestellung.update({
+    where: { id },
+    data: { status },
+  });
+  revalidatePath("/admin/shop");
+}
