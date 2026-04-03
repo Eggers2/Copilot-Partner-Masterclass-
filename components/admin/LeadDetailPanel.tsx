@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useActionState } from "react";
+import { useRouter } from "next/navigation";
 import type { LeadStatus, LeadSource } from "@prisma/client";
-import { Save } from "lucide-react";
+import { Save, Trash2 } from "lucide-react";
 import { LeadStatusBadge } from "./LeadStatusBadge";
 import {
   LEAD_STATUS_CONFIG,
   LEAD_SOURCE_CONFIG,
 } from "@/lib/constants/lead-config";
-import { updateLeadAction } from "@/app/admin/actions";
+import { updateLeadAction, deleteLeadAction } from "@/app/admin/actions";
 
 interface Lead {
   id: string;
@@ -45,6 +46,17 @@ function SubmitButton() {
 export function LeadDetailPanel({ lead }: { lead: Lead }) {
   const [state, formAction] = useActionState(updateLeadAction, null);
   const [selectedStatus, setSelectedStatus] = useState<LeadStatus>(lead.status);
+  const [isDeleting, startTransition] = useTransition();
+  const router = useRouter();
+
+  const handleDelete = () => {
+    const displayName = lead.name || lead.email;
+    if (!confirm(`Möchten Sie den Lead "${displayName}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) return;
+    startTransition(async () => {
+      await deleteLeadAction(lead.id);
+      router.push("/admin");
+    });
+  };
 
   return (
     <div className="bg-white rounded-2xl border border-dark-slate-100 p-6 shadow-sm">
@@ -235,6 +247,17 @@ export function LeadDetailPanel({ lead }: { lead: Lead }) {
           )}
         </div>
       </form>
+
+      <div className="mt-6 pt-6 border-t border-dark-slate-100">
+        <button
+          onClick={handleDelete}
+          disabled={isDeleting}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
+        >
+          <Trash2 className="w-4 h-4" />
+          {isDeleting ? "Wird gelöscht..." : "Lead löschen"}
+        </button>
+      </div>
     </div>
   );
 }
