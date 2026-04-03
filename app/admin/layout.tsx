@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Zap, LayoutDashboard, CheckSquare, Video, ShoppingCart } from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
 import { logoutAction } from "./actions";
+import { prisma } from "@/lib/prisma";
 
 export default async function AdminLayout({
   children,
@@ -13,6 +14,8 @@ export default async function AdminLayout({
   if (!authed) {
     return <>{children}</>;
   }
+
+  const neuCount = await prisma.bestellung.count({ where: { status: "neu" } });
 
   return (
     <div className="min-h-screen bg-dark-slate-50">
@@ -36,7 +39,7 @@ export default async function AdminLayout({
                 <NavLink href="/admin" icon={LayoutDashboard} label="Dashboard" />
                 <NavLink href="/admin/tasks" icon={CheckSquare} label="Follow-ups" />
                 <NavLink href="/admin/webinars" icon={Video} label="Webinare" />
-                <NavLink href="/admin/shop" icon={ShoppingCart} label="Online Shop" />
+                <NavLink href="/admin/shop" icon={ShoppingCart} label="Online Shop" badge={neuCount} />
               </nav>
             </div>
             <form action={logoutAction}>
@@ -62,18 +65,25 @@ function NavLink({
   href,
   icon: Icon,
   label,
+  badge,
 }: {
   href: string;
   icon: typeof LayoutDashboard;
   label: string;
+  badge?: number;
 }) {
   return (
     <Link
       href={href}
-      className="flex items-center gap-2 px-3 py-2 text-sm text-dark-slate-400 hover:text-white hover:bg-dark-slate-800 rounded-lg transition-all"
+      className="relative flex items-center gap-2 px-3 py-2 text-sm text-dark-slate-400 hover:text-white hover:bg-dark-slate-800 rounded-lg transition-all"
     >
       <Icon className="w-4 h-4" />
       {label}
+      {badge != null && badge > 0 && (
+        <span className="ml-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-red-500 rounded-full animate-pulse">
+          {badge}
+        </span>
+      )}
     </Link>
   );
 }
