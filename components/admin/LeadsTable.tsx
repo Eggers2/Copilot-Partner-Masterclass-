@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo, useTransition } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Trash2, Download, ChevronUp, ChevronDown } from "lucide-react";
+import { Search, Download, ChevronUp, ChevronDown } from "lucide-react";
 import type { LeadStatus, LeadSource } from "@prisma/client";
 import { LeadStatusBadge } from "./LeadStatusBadge";
 import { FirstCallBadge } from "./FirstCallBadge";
@@ -10,7 +10,7 @@ import {
   LEAD_STATUS_CONFIG,
   LEAD_SOURCE_CONFIG,
 } from "@/lib/constants/lead-config";
-import { deleteLeadAction } from "@/app/admin/actions";
+
 
 interface Lead {
   id: string;
@@ -80,8 +80,6 @@ export function LeadsTable({ leads }: LeadsTableProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "">("");
   const [sourceFilter, setSourceFilter] = useState<LeadSource | "">("");
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
@@ -92,17 +90,6 @@ export function LeadsTable({ leads }: LeadsTableProps) {
       setSortKey(key);
       setSortDir("asc");
     }
-  };
-
-  const handleDelete = (e: React.MouseEvent, lead: Lead) => {
-    e.stopPropagation();
-    const displayName = lead.name || lead.email;
-    if (!confirm(`Möchten Sie den Lead "${displayName}" wirklich löschen?`)) return;
-    setDeletingId(lead.id);
-    startTransition(async () => {
-      await deleteLeadAction(lead.id);
-      setDeletingId(null);
-    });
   };
 
   const filtered = useMemo(() => {
@@ -259,16 +246,13 @@ export function LeadsTable({ leads }: LeadsTableProps) {
               <th className={thClass} onClick={() => handleSort("followUpAt")}>
                 Follow-up <SortIcon column="followUpAt" />
               </th>
-              <th className="text-right px-6 py-3 text-xs font-semibold text-dark-slate-500 uppercase tracking-wider">
-                Aktionen
-              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-dark-slate-50">
             {filtered.length === 0 ? (
               <tr>
                 <td
-                  colSpan={9}
+                  colSpan={8}
                   className="px-6 py-12 text-center text-dark-slate-400 text-sm"
                 >
                   Keine Leads gefunden.
@@ -334,16 +318,6 @@ export function LeadsTable({ leads }: LeadsTableProps) {
                           minute: "2-digit",
                         })
                       : "–"}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={(e) => handleDelete(e, lead)}
-                      disabled={deletingId === lead.id}
-                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-dark-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
-                      title="Lead löschen"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
                   </td>
                 </tr>
               ))
