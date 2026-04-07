@@ -792,6 +792,8 @@ export default function LandingPage() {
                 <li><a href="https://next-skills.de" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-[#00C896] transition-colors">next-skills.de</a></li>
                 <li><a href="https://www.linkedin.com/in/teams-pro/" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-[#00C896] transition-colors">LinkedIn</a></li>
                 <li><a href="https://www.youtube.com/@alexandereggers" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-[#00C896] transition-colors">YouTube</a></li>
+                <li><a href="/impressum" className="text-white/50 hover:text-[#00C896] transition-colors">Impressum</a></li>
+                <li><a href="/agb" className="text-white/50 hover:text-[#00C896] transition-colors">AGB</a></li>
               </ul>
             </div>
           </div>
