@@ -28,7 +28,7 @@ export async function GET() {
     frames: [
       {
         text: `${formatted} EUR`,
-        icon: "i34",
+        icon: "34",
       },
     ],
   });
