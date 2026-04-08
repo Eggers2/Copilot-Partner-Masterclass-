@@ -19,16 +19,10 @@ export async function GET() {
   const shopTotal = Number(shopRevenue._sum.preisNetto ?? 0);
   const totalRevenue = leadTotal + shopTotal;
 
-  const formatted = totalRevenue.toLocaleString("de-DE", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  });
-
   return NextResponse.json({
     frames: [
       {
-        text: `${formatted} EUR`,
-        icon: "34",
+        text: String(Math.round(totalRevenue)),
       },
     ],
   });
