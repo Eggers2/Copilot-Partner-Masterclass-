@@ -78,6 +78,12 @@ export function FirstCallSection({ leadId, existingScore }: FirstCallSectionProp
                 </span>
               </div>
             )}
+            {existingScore.description && (
+              <div className="col-span-2">
+                <span className="text-dark-slate-400">Kurzbeschreibung:</span>{" "}
+                <span className="text-dark-slate-700">{existingScore.description}</span>
+              </div>
+            )}
             {existingScore.painPoint && (
               <div className="col-span-2">
                 <span className="text-dark-slate-400">Kernschmerz:</span>{" "}

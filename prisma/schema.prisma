@@ -260,6 +260,7 @@ model FirstCallScore {
   totalScore         Int       @default(8) @map("total_score")
 
   // Gesprächsnotizen
+  description        String?
   painPoint          String?   @map("pain_point")
   teamSize           String?   @map("team_size")
   recommendedPackage String?   @map("recommended_package")

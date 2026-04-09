@@ -21,6 +21,7 @@ export interface SerializedFirstCallScore {
   mindset: number;
   msPartnerStatus: number;
   totalScore: number;
+  description: string | null;
   painPoint: string | null;
   teamSize: string | null;
   recommendedPackage: string | null;
@@ -190,6 +191,20 @@ export function FirstCallModal({
               </h3>
 
               <div className="space-y-4">
+                {/* Kurzbeschreibung */}
+                <div>
+                  <label className="block text-sm font-medium text-dark-slate-600 mb-1">
+                    Kurzbeschreibung
+                  </label>
+                  <textarea
+                    name="description"
+                    rows={3}
+                    defaultValue={existingScore?.description ?? ""}
+                    className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none resize-none"
+                    placeholder="Zusammenfassung des Gesprächs für den Follow-up Termin"
+                  />
+                </div>
+
                 {/* Kernschmerz */}
                 <div>
                   <label className="block text-sm font-medium text-dark-slate-600 mb-1">

@@ -156,6 +156,7 @@ export interface FirstCallScoreInput {
   urgency: number;
   mindset: number;
   msPartnerStatus: number;
+  description?: string | null;
   painPoint?: string | null;
   teamSize?: string | null;
   recommendedPackage?: string | null;

@@ -179,6 +179,7 @@ export async function saveFirstCallScoreAction(
     urgency: parseScore("urgency"),
     mindset: parseScore("mindset"),
     msPartnerStatus: parseScore("msPartnerStatus"),
+    description: (formData.get("description") as string) || null,
     painPoint: (formData.get("painPoint") as string) || null,
     teamSize: (formData.get("teamSize") as string) || null,
     recommendedPackage: (formData.get("recommendedPackage") as string) || null,
