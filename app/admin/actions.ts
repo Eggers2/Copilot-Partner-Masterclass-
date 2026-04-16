@@ -90,12 +90,26 @@ export async function updateLeadAction(
   const revenueEuro = parseFloat(revenueRaw);
   const revenueCents = !isNaN(revenueEuro) ? Math.round(revenueEuro * 100) : 0;
 
+  const street = (formData.get("street") as string) || null;
+  const zip = (formData.get("zip") as string) || null;
+  const city = (formData.get("city") as string) || null;
+
+  const currentAddress = await prisma.lead.findUnique({
+    where: { id },
+    select: { street: true, zip: true, city: true },
+  });
+
+  const addressChanged =
+    currentAddress?.street !== street ||
+    currentAddress?.zip !== zip ||
+    currentAddress?.city !== city;
+
   await updateLead(id, {
     name: (formData.get("name") as string) || null,
     company: (formData.get("company") as string) || null,
-    street: (formData.get("street") as string) || null,
-    zip: (formData.get("zip") as string) || null,
-    city: (formData.get("city") as string) || null,
+    street,
+    zip,
+    city,
     website: (formData.get("website") as string) || null,
     phone: (formData.get("phone") as string) || null,
     status: newStatus,
@@ -104,6 +118,7 @@ export async function updateLeadAction(
     score: parseInt(formData.get("score") as string) || 0,
     revenue: newStatus === "WON" ? revenueCents : undefined,
     followUpAt: followUpAtRaw ? new Date(followUpAtRaw) : null,
+    ...(addressChanged ? { latitude: null, longitude: null } : {}),
   });
 
   if (currentLead && currentLead.status !== newStatus) {

@@ -66,6 +66,8 @@ export async function updateLead(
     score?: number;
     revenue?: number;
     followUpAt?: Date | null;
+    latitude?: number | null;
+    longitude?: number | null;
   }
 ) {
   return prisma.lead.update({ where: { id }, data });
@@ -226,6 +228,11 @@ export async function syncOrderWithLead(data: OrderLeadSyncData) {
   if (existingLead) {
     const oldStatus = existingLead.status;
 
+    const addressChanged =
+      existingLead.street !== data.strasse.trim() ||
+      existingLead.zip !== data.plz.trim() ||
+      existingLead.city !== data.ort.trim();
+
     await prisma.lead.update({
       where: { id: existingLead.id },
       data: {
@@ -237,6 +244,7 @@ export async function syncOrderWithLead(data: OrderLeadSyncData) {
         phone: data.telefon?.trim() || existingLead.phone,
         status: "WON",
         revenue: existingLead.revenue + revenueInCents,
+        ...(addressChanged ? { latitude: null, longitude: null } : {}),
       },
     });
 
