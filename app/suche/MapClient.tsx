@@ -78,7 +78,13 @@ export default function MapClient() {
     markersRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
 
+    const handleResize = () => {
+      map.invalidateSize();
+    };
+    window.addEventListener("resize", handleResize);
+
     return () => {
+      window.removeEventListener("resize", handleResize);
       map.remove();
       mapRef.current = null;
     };
@@ -212,13 +218,13 @@ export default function MapClient() {
       </section>
 
       {/* Map */}
-      <section style={{ padding: "32px 24px", maxWidth: 1160, margin: "0 auto" }}>
+      <section style={{ padding: "32px 24px", maxWidth: 1300, margin: "0 auto" }}>
         <div
           ref={mapContainerRef}
           style={{
             width: "100%",
-            height: "min(75vh, 700px)",
-            maxWidth: 700,
+            height: "clamp(420px, 70vh, 820px)",
+            maxWidth: 1240,
             margin: "0 auto",
             borderRadius: 12,
             overflow: "hidden",
