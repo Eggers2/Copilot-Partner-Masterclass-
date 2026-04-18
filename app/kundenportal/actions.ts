@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import {
   requestMagicLink,
   requireCustomerSession,
+  resolveAppBaseUrl,
   setCustomerSession,
   clearCustomerSession,
 } from "@/lib/auth/customer";
@@ -34,20 +34,11 @@ interface UpdateKundeBestellungInput {
   teilnehmer: TeilnehmerInput[];
 }
 
-async function resolveBaseUrl(): Promise<string> {
-  const envBase = process.env.APP_BASE_URL?.trim();
-  if (envBase) return envBase.replace(/\/$/, "");
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
-  const proto = h.get("x-forwarded-proto") ?? "https";
-  return `${proto}://${host}`;
-}
-
 export async function requestLinkAction(formData: FormData): Promise<void> {
   const email = (formData.get("email") as string | null)?.trim() ?? "";
   if (!email) redirect("/kundenportal?error=invalid");
 
-  const baseUrl = await resolveBaseUrl();
+  const baseUrl = await resolveAppBaseUrl();
   await requestMagicLink(email, baseUrl);
   redirect("/kundenportal/check-email");
 }
