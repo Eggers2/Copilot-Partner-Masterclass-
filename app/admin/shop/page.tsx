@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import { Database } from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
 import { getBestellungen, getShopKpis } from "@/lib/db/bestellungen";
 import { ShopKpiCards } from "@/components/admin/ShopKpiCards";
@@ -15,11 +17,20 @@ export default async function ShopDashboard() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-dark-slate-900">Online Shop</h1>
-        <p className="text-dark-slate-500 text-sm mt-1">
-          Alle Bestellungen aus dem Online-Shop – unabhängig von der Lead-Liste
-        </p>
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-dark-slate-900">Online Shop</h1>
+          <p className="text-dark-slate-500 text-sm mt-1">
+            Alle Bestellungen aus dem Online-Shop – unabhängig von der Lead-Liste
+          </p>
+        </div>
+        <Link
+          href="/admin/shop/backfill"
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-[#030386] bg-white border border-[#030386] hover:bg-[#030386] hover:text-white rounded-lg transition-colors shrink-0"
+        >
+          <Database className="w-4 h-4" />
+          Leads → Bestellungen
+        </Link>
       </div>
 
       {/* KPI Cards */}

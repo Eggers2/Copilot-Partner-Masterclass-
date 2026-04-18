@@ -3,10 +3,15 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
 import { getLead, getFirstCallScore } from "@/lib/db/leads";
+import {
+  detectBestellungFromLead,
+  hasBestellungForLead,
+} from "@/lib/db/bestellungen";
 import { LeadDetailPanel } from "@/components/admin/LeadDetailPanel";
 import { FirstCallSection } from "@/components/admin/FirstCallSection";
 import { ActivityTimeline } from "@/components/admin/ActivityTimeline";
 import { AddActivityForm } from "@/components/admin/AddActivityForm";
+import { ConvertToBestellungButton } from "@/components/admin/ConvertToBestellungButton";
 
 export default async function LeadDetailPage({
   params,
@@ -23,6 +28,17 @@ export default async function LeadDetailPage({
   ]);
 
   if (!lead) notFound();
+
+  const [hasBestellung, detection] = await Promise.all([
+    hasBestellungForLead(id),
+    detectBestellungFromLead(id),
+  ]);
+  const missing: string[] = [];
+  if (!lead.company) missing.push("firma");
+  if (!lead.street) missing.push("strasse");
+  if (!lead.zip) missing.push("plz");
+  if (!lead.city) missing.push("ort");
+  if (!lead.name) missing.push("name");
 
   const serializedLead = {
     ...lead,
@@ -65,6 +81,25 @@ export default async function LeadDetailPage({
         <div className="lg:col-span-3 space-y-6">
           <LeadDetailPanel lead={serializedLead} />
           <FirstCallSection leadId={lead.id} existingScore={serializedFirstCallScore} />
+          {lead.status === "WON" && (
+            <ConvertToBestellungButton
+              leadId={lead.id}
+              leadEmail={lead.email}
+              hasBestellung={hasBestellung}
+              paketHint={detection.paket}
+              zahlungsmodellHint={detection.zahlungsmodell}
+              confidence={detection.confidence}
+              evidence={detection.evidence}
+              placeholders={missing}
+              addressPreview={{
+                firma: lead.company,
+                strasse: lead.street,
+                plz: lead.zip,
+                ort: lead.city,
+                name: lead.name,
+              }}
+            />
+          )}
           <AddActivityForm leadId={lead.id} />
         </div>
         <div className="lg:col-span-2">
