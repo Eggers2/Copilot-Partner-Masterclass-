@@ -11,7 +11,8 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate deploy",
     "db:studio": "prisma studio",
-    "db:seed-tasks": "npx tsx prisma/seed-tasks.ts"
+    "db:seed-tasks": "npx tsx prisma/seed-tasks.ts",
+    "migrate:leads-to-orders": "tsx scripts/migrate-leads-to-bestellungen.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
