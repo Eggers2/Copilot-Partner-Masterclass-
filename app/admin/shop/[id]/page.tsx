@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { BestellungEditForm } from "@/components/admin/BestellungEditForm";
+import { SendCustomerMagicLinkButton } from "@/components/admin/SendCustomerMagicLinkButton";
 
 export default async function BestellungDetailPage({
   params,
@@ -38,17 +39,23 @@ export default async function BestellungDetailPage({
         </Link>
       </div>
 
-      <div className="mb-8">
-        <p className="text-xs font-mono text-dark-slate-400 mb-1">
-          Bestell-Nr: {bestellung.bestellNr}
-        </p>
-        <h1 className="text-2xl font-bold text-dark-slate-900">
-          Bestellung bearbeiten
-        </h1>
-        <p className="text-dark-slate-500 text-sm mt-1">
-          Alle Felder lassen sich anpassen. Je nach Paket können hier die
-          Teilnehmer mit Namen und E-Mail eingetragen werden.
-        </p>
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-mono text-dark-slate-400 mb-1">
+            Bestell-Nr: {bestellung.bestellNr}
+          </p>
+          <h1 className="text-2xl font-bold text-dark-slate-900">
+            Bestellung bearbeiten
+          </h1>
+          <p className="text-dark-slate-500 text-sm mt-1">
+            Alle Felder lassen sich anpassen. Je nach Paket können hier die
+            Teilnehmer mit Namen und E-Mail eingetragen werden.
+          </p>
+        </div>
+        <SendCustomerMagicLinkButton
+          bestellungId={bestellung.id}
+          kundenEmail={bestellung.email}
+        />
       </div>
 
       <BestellungEditForm

@@ -176,6 +176,19 @@ model BestellungTeilnehmer {
   @@map("bestellung_teilnehmer")
 }
 
+model KundenMagicLink {
+  id         Int      @id @default(autoincrement())
+  tokenHash  String   @unique @map("token_hash")
+  email      String
+  ablaufAm   DateTime @map("ablauf_am")
+  eingeloest Boolean  @default(false)
+  erstelltAm DateTime @default(now()) @map("erstellt_am")
+
+  @@index([email])
+  @@index([ablaufAm])
+  @@map("kunden_magic_links")
+}
+
 // ==========================================
 // Kanban Board Models (for /tasks route)
 // ==========================================

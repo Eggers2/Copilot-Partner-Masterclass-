@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { setAuthCookie, clearAuthCookie, requireAuth } from "@/lib/auth";
+import { requestMagicLink } from "@/lib/auth/customer";
+import { headers } from "next/headers";
 
 /**
  * Parses a datetime-local string (e.g. "2026-03-31T17:00") as Europe/Berlin time.
@@ -756,5 +758,31 @@ export async function updateBestellungAction(
   revalidatePath("/admin/shop");
   revalidatePath(`/admin/shop/${id}`);
 
+  return { success: true };
+}
+
+export async function sendCustomerMagicLinkAction(
+  bestellungId: number
+): Promise<{ success?: boolean; error?: string }> {
+  await requireAuth();
+
+  const bestellung = await prisma.bestellung.findUnique({
+    where: { id: bestellungId },
+    select: { email: true },
+  });
+  if (!bestellung?.email) return { error: "Keine E-Mail hinterlegt." };
+
+  const envBase = process.env.APP_BASE_URL?.trim();
+  let baseUrl: string;
+  if (envBase) {
+    baseUrl = envBase.replace(/\/$/, "");
+  } else {
+    const h = await headers();
+    const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+    const proto = h.get("x-forwarded-proto") ?? "https";
+    baseUrl = `${proto}://${host}`;
+  }
+
+  await requestMagicLink(bestellung.email, baseUrl);
   return { success: true };
 }
