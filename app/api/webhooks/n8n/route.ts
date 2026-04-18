@@ -13,9 +13,31 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { event, email, data } = body;
 
-  if (!email || !event) {
+  if (!event) {
     return NextResponse.json(
-      { error: "Missing required fields: event, email" },
+      { error: "Missing required field: event" },
+      { status: 400 }
+    );
+  }
+
+  if (event === "teams_guest_invited") {
+    const teilnehmerId = data?.teilnehmerId;
+    if (!teilnehmerId || typeof teilnehmerId !== "number") {
+      return NextResponse.json(
+        { error: "Missing or invalid data.teilnehmerId" },
+        { status: 400 }
+      );
+    }
+    await prisma.bestellungTeilnehmer.update({
+      where: { id: teilnehmerId },
+      data: { teamsEingeladenAm: new Date() },
+    });
+    return NextResponse.json({ success: true });
+  }
+
+  if (!email) {
+    return NextResponse.json(
+      { error: "Missing required field: email" },
       { status: 400 }
     );
   }
