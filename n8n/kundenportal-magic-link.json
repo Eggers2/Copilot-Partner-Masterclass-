@@ -1,0 +1,246 @@
+{
+  "name": "Kundenportal – Magic Link",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "kundenportal-magic-link",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": false
+        }
+      },
+      "id": "b0f1b8a1-0001-4c01-9f1a-aaaaaaaaaaaa",
+      "name": "Webhook Magic Link",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        320
+      ],
+      "webhookId": "kundenportal-magic-link"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-typ",
+              "leftValue": "={{ $json.body.typ }}",
+              "rightValue": "kundenportal_login",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "cond-email",
+              "leftValue": "={{ $json.body.email }}",
+              "rightValue": "@",
+              "operator": {
+                "type": "string",
+                "operation": "contains",
+                "name": "filter.operator.contains"
+              }
+            },
+            {
+              "id": "cond-link",
+              "leftValue": "={{ $json.body.link_url }}",
+              "rightValue": "https",
+              "operator": {
+                "type": "string",
+                "operation": "startsWith",
+                "name": "filter.operator.startsWith"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b0f1b8a1-0002-4c01-9f1a-bbbbbbbbbbbb",
+      "name": "Payload gültig?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        480,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a-email",
+              "name": "email",
+              "value": "={{ $json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "a-link",
+              "name": "link_url",
+              "value": "={{ $json.body.link_url }}",
+              "type": "string"
+            },
+            {
+              "id": "a-subject",
+              "name": "subject",
+              "value": "Dein Login zum Next Skills Kundenportal",
+              "type": "string"
+            },
+            {
+              "id": "a-html",
+              "name": "html_body",
+              "value": "=<div style=\"font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #0F172A;\">\n  <div style=\"padding: 16px 0; border-bottom: 1px solid #E2E8F0;\">\n    <h1 style=\"margin: 0; font-size: 20px; color: #030386;\">Dein Login zum Kundenportal</h1>\n  </div>\n  <div style=\"padding: 24px 0; line-height: 1.6; font-size: 15px;\">\n    <p>Hallo,</p>\n    <p>du hast einen Login-Link für das <strong>Next Skills Kundenportal</strong> angefordert. Mit diesem Link kannst du deine Firmenadresse, Ansprechpartner-Daten und Teilnehmer pflegen.</p>\n    <p style=\"margin: 32px 0;\">\n      <a href=\"{{ $json.body.link_url }}\" style=\"background: #030386; color: #FFFFFF; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;\">Jetzt einloggen</a>\n    </p>\n    <p style=\"font-size: 14px; color: #64748B;\">Der Link ist <strong>30 Minuten</strong> gültig und funktioniert nur einmal.</p>\n    <p style=\"font-size: 14px; color: #64748B;\">Wenn du keinen Login angefordert hast, kannst du diese E-Mail einfach ignorieren.</p>\n    <p style=\"font-size: 12px; color: #94A3B8; word-break: break-all; margin-top: 32px;\">Funktioniert der Button nicht? Kopiere diese Adresse in deinen Browser:<br>{{ $json.body.link_url }}</p>\n  </div>\n  <div style=\"padding-top: 16px; border-top: 1px solid #E2E8F0; font-size: 12px; color: #94A3B8;\">\n    Next Skills · Copilot Partner Masterclass\n  </div>\n</div>",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b0f1b8a1-0003-4c01-9f1a-cccccccccccc",
+      "name": "Mail-Inhalt vorbereiten",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        720,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "={{ $json.subject }}",
+        "bodyContent": "={{ $json.html_body }}",
+        "bodyContentType": "html",
+        "toRecipients": "={{ $json.email }}",
+        "additionalFields": {}
+      },
+      "id": "b0f1b8a1-0004-4c01-9f1a-dddddddddddd",
+      "name": "Login-Mail senden (Outlook)",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        960,
+        240
+      ],
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "REPLACE_WITH_OUTLOOK_CREDENTIAL_ID",
+          "name": "Microsoft Outlook account"
+        }
+      },
+      "notes": "Falls du Gmail oder SMTP nutzt: Node löschen und durch Gmail-/Email-Send-Node ersetzen. Empfänger: {{ $json.email }}, Betreff: {{ $json.subject }}, Body (HTML): {{ $json.html_body }}"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"ok\": true,\n  \"message\": \"Magic Link verarbeitet\"\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "b0f1b8a1-0005-4c01-9f1a-eeeeeeeeeeee",
+      "name": "Antwort OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1200,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"ok\": false,\n  \"error\": \"Ungültige Payload. Erwartet: typ=kundenportal_login, email, link_url\"\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "b0f1b8a1-0006-4c01-9f1a-ffffffffffff",
+      "name": "Antwort Fehler",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        440
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Magic Link": {
+      "main": [
+        [
+          {
+            "node": "Payload gültig?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payload gültig?": {
+      "main": [
+        [
+          {
+            "node": "Mail-Inhalt vorbereiten",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Antwort Fehler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mail-Inhalt vorbereiten": {
+      "main": [
+        [
+          {
+            "node": "Login-Mail senden (Outlook)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Login-Mail senden (Outlook)": {
+      "main": [
+        [
+          {
+            "node": "Antwort OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "active": false,
+  "versionId": "1",
+  "triggerCount": 0,
+  "tags": [
+    {
+      "name": "Kundenportal"
+    }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
