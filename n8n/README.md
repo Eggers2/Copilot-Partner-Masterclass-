@@ -51,26 +51,26 @@ Der `typ`-Parameter erlaubt später zusätzliche Mails über denselben Webhook (
 
 Datei: `teams-guest-invite.json`
 
-Verarbeitet den Webhook `N8N_WEBHOOK_URL_teams_guest` aus `lib/webhooks/teamsGuest.ts`. Für jeden `BestellungTeilnehmer` mit ausgefüllter E-Mail wird eine Microsoft-Gast-Einladung erzeugt und die Person direkt dem Ziel-Team hinzugefügt. Anschließend meldet der Workflow den Erfolg via Callback an die App zurück, damit `teams_eingeladen_am` gesetzt wird und kein Teilnehmer mehrfach eingeladen wird.
+Verarbeitet den Webhook `N8N_WEBHOOK_URL_teams_guest` aus `lib/webhooks/teamsGuest.ts`. Für jeden `BestellungTeilnehmer` mit ausgefüllter E-Mail wird eine Microsoft-Gast-Einladung erzeugt und die Person der M365-Gruppe hinzugefügt, die das Ziel-Team trägt (Team-Mitgliedschaft wird daraus automatisch synchronisiert). Anschließend meldet der Workflow den Erfolg via Callback an die App zurück, damit `teams_eingeladen_am` gesetzt wird und kein Teilnehmer mehrfach eingeladen wird.
 
 ### Voraussetzungen (einmalig)
 
 1. **Azure AD App Registration**:
    - App registrieren im Azure-Portal
-   - Application Permissions hinzufügen:
-     - `User.Invite.All`
-     - `TeamMember.ReadWrite.All`
-   - **Admin Consent** erteilen
+   - Application Permissions hinzufügen (beide als **Application**, nicht Delegated):
+     - `User.Invite.All` (für Gast-Einladung)
+     - `GroupMember.ReadWrite.All` (für Hinzufügen zur M365-Gruppe)
+   - **Admin Consent** für beide Permissions erteilen (grüner Haken in der Status-Spalte)
    - Client Secret erzeugen
 2. **Teams-Einstellungen**: Im Ziel-Team "Gastzugriff" aktivieren
-3. **Team-ID** ermitteln (Teams → Team → "Link zum Team abrufen" → GUID aus URL extrahieren, Parameter `groupId`)
+3. **Group-ID** ermitteln (Teams → Team → "Link zum Team abrufen" → GUID aus URL extrahieren, Parameter `groupId`). Diese ID ist **identisch zur Team-ID** – Teams sind M365-Gruppen.
 
 ### Import
 
 1. In n8n: **Workflows → Import from File** → `teams-guest-invite.json`
 2. Workflow öffnen und folgende Platzhalter ersetzen:
-   - `REPLACE_WITH_GRAPH_OAUTH_CREDENTIAL_ID` → OAuth2-Credential für die Azure-App (Grant Type: Client Credentials, Scope: `https://graph.microsoft.com/.default`)
-   - `REPLACE_WITH_TEAM_ID` → GUID des Ziel-Teams
+   - `REPLACE_WITH_GRAPH_OAUTH_CREDENTIAL_ID` → OAuth2-Credential für die Azure-App. **Wichtig**: Nicht die vorgefertigte „Microsoft OAuth2 API"-Credential nutzen (die erwartet User-Login mit Refresh-Token), sondern eine generische **OAuth2 API**-Credential anlegen mit Grant Type `Client Credentials`, Access Token URL `https://login.microsoftonline.com/<TENANT_ID>/oauth2/v2.0/token`, Scope `https://graph.microsoft.com/.default`, Authentication `Body`. Im HTTP-Request-Node dann *Authentication = Generic Credential Type → OAuth2 API* auswählen.
+   - `REPLACE_WITH_GROUP_ID` → GUID der M365-Gruppe (= Team-ID)
    - `REPLACE_WITH_APP_BASE_URL` → z.B. `https://www.copilotberater.de`
    - `REPLACE_WITH_N8N_WEBHOOK_SECRET` → gleicher Wert wie `N8N_WEBHOOK_SECRET` in Railway
 3. Webhook-URL aus dem ersten Node kopieren (Production URL) und in Railway setzen:
@@ -78,6 +78,18 @@ Verarbeitet den Webhook `N8N_WEBHOOK_URL_teams_guest` aus `lib/webhooks/teamsGue
    N8N_WEBHOOK_URL_teams_guest=https://<dein-n8n-host>/webhook/teams-guest-invite
    ```
 4. Workflow **aktivieren** (Toggle oben rechts)
+
+### Warum Groups- statt Teams-Endpoint?
+
+Der Workflow ruft `POST /groups/{id}/members/$ref` auf, nicht `POST /teams/{id}/members`. Grund: der Teams-Endpoint setzt voraus, dass der Nutzer bereits Mitglied der darunterliegenden M365-Gruppe ist – ein frisch per `/invitations` erzeugter Gast ist das nicht und bekommt sonst **403 AccessDenied**. Der Groups-Endpoint akzeptiert Gäste direkt, Teams-Mitgliedschaft wird anschließend automatisch synchronisiert.
+
+### Troubleshooting
+
+- **403 AccessDenied auf den Graph-Call** → Permission `GroupMember.ReadWrite.All` fehlt, ist als Delegated statt Application gesetzt, oder Admin-Consent wurde nach dem Hinzufügen nicht gegeben. Status-Spalte in Azure muss grün sein.
+- **401 Unauthorized** → altes Token im n8n-Cache (Permissions wurden nach erstem Test geändert). Fix: OAuth2-Credential in n8n kurz öffnen und **Save** erneut drücken, oder die Credential löschen und neu anlegen → erzwingt Token-Refresh.
+- **"refreshToken is required"** → falscher Credential-Typ gewählt. Nutze generische **OAuth2 API** mit Grant Type *Client Credentials*, nicht die vorgefertigte „Microsoft OAuth2 API" (= Authorization-Code-Flow für User-Login).
+- **409 Conflict auf Group-Member-Call** → Nutzer ist bereits Mitglied. Der Node ist mit *Continue On Fail* konfiguriert, Callback läuft trotzdem.
+- **Callback gibt 401 zurück** → `x-webhook-secret` in n8n stimmt nicht mit `N8N_WEBHOOK_SECRET` in Railway überein (oder Railway-Wert ist leer – dann dort einen starken Zufallswert setzen).
 
 ### Erwartete Payload (von der App)
 

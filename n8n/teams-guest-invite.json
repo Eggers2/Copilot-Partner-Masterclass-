@@ -170,16 +170,16 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://graph.microsoft.com/v1.0/teams/REPLACE_WITH_TEAM_ID/members",
+        "url": "=https://graph.microsoft.com/v1.0/groups/REPLACE_WITH_GROUP_ID/members/$ref",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "microsoftOAuth2Api",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"@odata.type\": \"#microsoft.graph.aadUserConversationMember\",\n  \"roles\": [\"guest\"],\n  \"user@odata.bind\": \"https://graph.microsoft.com/v1.0/users('{{ $json.invited_user_id }}')\"\n}",
+        "jsonBody": "={\n  \"@odata.id\": \"https://graph.microsoft.com/v1.0/directoryObjects/{{ $json.invited_user_id }}\"\n}",
         "options": {}
       },
       "id": "c0f2c8a1-0006-4c01-9f1a-666666666666",
-      "name": "Graph: Team-Mitglied hinzufügen",
+      "name": "Graph: Gruppen-Mitglied hinzufügen",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [1400, 240],
@@ -190,7 +190,7 @@
         }
       },
       "onError": "continueRegularOutput",
-      "notes": "Azure-App benötigt zusätzlich 'TeamMember.ReadWrite.All'. REPLACE_WITH_TEAM_ID durch die GUID des Ziel-Teams ersetzen. 'Continue On Fail' ist aktiviert, damit 409 (bereits Mitglied) den Callback nicht blockiert."
+      "notes": "Azure-App benötigt zusätzlich 'GroupMember.ReadWrite.All' (Application, Admin-Consent). REPLACE_WITH_GROUP_ID = GUID der M365-Gruppe, die das Ziel-Team trägt – identisch zur Team-ID. Die Team-Mitgliedschaft wird automatisch aus der Gruppenmitgliedschaft synchronisiert. Wir nutzen bewusst NICHT /teams/{id}/members, da das für frisch eingeladene Gäste 403 AccessDenied liefert (Gast ist noch kein Gruppen-Member). 'Continue On Fail' ist aktiviert, damit 409 (bereits Mitglied) den Callback nicht blockiert."
     },
     {
       "parameters": {
@@ -306,14 +306,14 @@
       "main": [
         [
           {
-            "node": "Graph: Team-Mitglied hinzufügen",
+            "node": "Graph: Gruppen-Mitglied hinzufügen",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Graph: Team-Mitglied hinzufügen": {
+    "Graph: Gruppen-Mitglied hinzufügen": {
       "main": [
         [
           {
