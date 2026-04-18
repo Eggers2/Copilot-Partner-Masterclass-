@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { prisma } from "@/lib/prisma";
@@ -7,6 +7,30 @@ import { fireMagicLinkWebhook } from "@/lib/webhooks/magicLink";
 const COOKIE_NAME = "kundenportal-session";
 const TOKEN_TTL_MINUTES = 30;
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 Tage
+const PRODUCTION_BASE_URL = "https://www.copilotberater.de";
+
+/**
+ * Ermittelt die Basis-URL für Magic-Links.
+ * Priorität: APP_BASE_URL > x-forwarded-host > host. In Production wird ein
+ * lokal wirkender Host (localhost/127.0.0.1) verworfen, damit E-Mail-Links
+ * niemals auf eine Dev-Umgebung zeigen.
+ */
+export async function resolveAppBaseUrl(): Promise<string> {
+  const envBase = process.env.APP_BASE_URL?.trim();
+  if (envBase) return envBase.replace(/\/$/, "");
+
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  const proto = h.get("x-forwarded-proto") ?? "https";
+
+  const looksLocal = !host || /^(localhost|127\.0\.0\.1|0\.0\.0\.0)(:|$)/i.test(host);
+  if (looksLocal) {
+    if (process.env.NODE_ENV === "production") return PRODUCTION_BASE_URL;
+    return `${proto}://${host ?? "localhost:3000"}`;
+  }
+
+  return `${proto}://${host}`;
+}
 
 export interface CustomerSession {
   email: string;
