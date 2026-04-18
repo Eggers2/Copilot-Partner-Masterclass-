@@ -168,6 +168,7 @@ model BestellungTeilnehmer {
   vorname      String     @default("")
   nachname     String     @default("")
   email        String     @default("")
+  teamsEingeladenAm DateTime? @map("teams_eingeladen_am")
   erstelltAm   DateTime   @default(now()) @map("erstellt_am")
   aktualisiertAm DateTime @updatedAt @map("aktualisiert_am")
 

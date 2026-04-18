@@ -10,6 +10,7 @@ import {
   setCustomerSession,
   clearCustomerSession,
 } from "@/lib/auth/customer";
+import { fireTeamsGuestWebhook } from "@/lib/webhooks/teamsGuest";
 
 interface TeilnehmerInput {
   position: number;
@@ -119,6 +120,28 @@ export async function updateKundeBestellungAction(
       });
     }
   });
+
+  const bestellung = await prisma.bestellung.findUnique({
+    where: { id: bestellungId },
+    select: { bestellNr: true },
+  });
+  const toInvite = await prisma.bestellungTeilnehmer.findMany({
+    where: {
+      bestellungId,
+      teamsEingeladenAm: null,
+      NOT: { email: "" },
+    },
+    select: { id: true, vorname: true, nachname: true, email: true },
+  });
+  for (const t of toInvite) {
+    fireTeamsGuestWebhook({
+      teilnehmerId: t.id,
+      bestellNr: bestellung?.bestellNr ?? "",
+      vorname: t.vorname,
+      nachname: t.nachname,
+      email: t.email,
+    });
+  }
 
   if (newEmail !== session.email) {
     await setCustomerSession(newEmail);

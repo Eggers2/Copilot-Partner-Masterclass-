@@ -31,6 +31,7 @@ function parseBerlinDate(dateTimeLocal: string): Date {
   return cest; // fallback to summer time
 }
 import { updateLead, addActivity, upsertFirstCallScore } from "@/lib/db/leads";
+import { fireTeamsGuestWebhook } from "@/lib/webhooks/teamsGuest";
 import {
   createWebinar,
   updateWebinar,
@@ -753,6 +754,28 @@ export async function updateBestellungAction(
       });
     }
   });
+
+  const bestellung = await prisma.bestellung.findUnique({
+    where: { id },
+    select: { bestellNr: true },
+  });
+  const toInvite = await prisma.bestellungTeilnehmer.findMany({
+    where: {
+      bestellungId: id,
+      teamsEingeladenAm: null,
+      NOT: { email: "" },
+    },
+    select: { id: true, vorname: true, nachname: true, email: true },
+  });
+  for (const t of toInvite) {
+    fireTeamsGuestWebhook({
+      teilnehmerId: t.id,
+      bestellNr: bestellung?.bestellNr ?? "",
+      vorname: t.vorname,
+      nachname: t.nachname,
+      email: t.email,
+    });
+  }
 
   revalidatePath("/admin/shop");
   revalidatePath(`/admin/shop/${id}`);

@@ -1,0 +1,357 @@
+{
+  "name": "Teams – Gast-Einladung",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "teams-guest-invite",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": false
+        }
+      },
+      "id": "c0f2c8a1-0001-4c01-9f1a-111111111111",
+      "name": "Webhook Teams-Gast",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [200, 320],
+      "webhookId": "teams-guest-invite"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-typ",
+              "leftValue": "={{ $json.body.typ }}",
+              "rightValue": "teams_guest_invite",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "cond-email",
+              "leftValue": "={{ $json.body.email }}",
+              "rightValue": "@",
+              "operator": {
+                "type": "string",
+                "operation": "contains",
+                "name": "filter.operator.contains"
+              }
+            },
+            {
+              "id": "cond-teilnehmer-id",
+              "leftValue": "={{ $json.body.teilnehmer_id }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt",
+                "name": "filter.operator.gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c0f2c8a1-0002-4c01-9f1a-222222222222",
+      "name": "Payload gültig?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [440, 320]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b-email",
+              "name": "email",
+              "value": "={{ $json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "b-display-name",
+              "name": "display_name",
+              "value": "={{ $json.body.display_name }}",
+              "type": "string"
+            },
+            {
+              "id": "b-redirect",
+              "name": "invite_redirect_url",
+              "value": "={{ $json.body.invite_redirect_url }}",
+              "type": "string"
+            },
+            {
+              "id": "b-teilnehmer-id",
+              "name": "teilnehmer_id",
+              "value": "={{ $json.body.teilnehmer_id }}",
+              "type": "number"
+            },
+            {
+              "id": "b-bestell-nr",
+              "name": "bestell_nr",
+              "value": "={{ $json.body.bestell_nr }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c0f2c8a1-0003-4c01-9f1a-333333333333",
+      "name": "Felder extrahieren",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [680, 240]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.microsoft.com/v1.0/invitations",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "microsoftOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"invitedUserEmailAddress\": \"{{ $json.email }}\",\n  \"invitedUserDisplayName\": \"{{ $json.display_name }}\",\n  \"inviteRedirectUrl\": \"{{ $json.invite_redirect_url }}\",\n  \"sendInvitationMessage\": true\n}",
+        "options": {}
+      },
+      "id": "c0f2c8a1-0004-4c01-9f1a-444444444444",
+      "name": "Graph: Gast-Einladung",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [920, 240],
+      "credentials": {
+        "microsoftOAuth2Api": {
+          "id": "REPLACE_WITH_GRAPH_OAUTH_CREDENTIAL_ID",
+          "name": "Microsoft Graph (Azure App)"
+        }
+      },
+      "notes": "Azure-App benötigt Application Permission 'User.Invite.All' + Admin-Consent. OAuth-Credential: Grant Type 'Client Credentials', Scope 'https://graph.microsoft.com/.default'. Die API ist idempotent – für bereits eingeladene Gäste wird der bestehende User zurückgegeben."
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c-user-id",
+              "name": "invited_user_id",
+              "value": "={{ $json.invitedUser.id }}",
+              "type": "string"
+            },
+            {
+              "id": "c-email",
+              "name": "email",
+              "value": "={{ $('Felder extrahieren').item.json.email }}",
+              "type": "string"
+            },
+            {
+              "id": "c-teilnehmer-id",
+              "name": "teilnehmer_id",
+              "value": "={{ $('Felder extrahieren').item.json.teilnehmer_id }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c0f2c8a1-0005-4c01-9f1a-555555555555",
+      "name": "User-ID merken",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1160, 240]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.microsoft.com/v1.0/teams/REPLACE_WITH_TEAM_ID/members",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "microsoftOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"@odata.type\": \"#microsoft.graph.aadUserConversationMember\",\n  \"roles\": [\"guest\"],\n  \"user@odata.bind\": \"https://graph.microsoft.com/v1.0/users('{{ $json.invited_user_id }}')\"\n}",
+        "options": {}
+      },
+      "id": "c0f2c8a1-0006-4c01-9f1a-666666666666",
+      "name": "Graph: Team-Mitglied hinzufügen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1400, 240],
+      "credentials": {
+        "microsoftOAuth2Api": {
+          "id": "REPLACE_WITH_GRAPH_OAUTH_CREDENTIAL_ID",
+          "name": "Microsoft Graph (Azure App)"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "notes": "Azure-App benötigt zusätzlich 'TeamMember.ReadWrite.All'. REPLACE_WITH_TEAM_ID durch die GUID des Ziel-Teams ersetzen. 'Continue On Fail' ist aktiviert, damit 409 (bereits Mitglied) den Callback nicht blockiert."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=REPLACE_WITH_APP_BASE_URL/api/webhooks/n8n",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-webhook-secret",
+              "value": "REPLACE_WITH_N8N_WEBHOOK_SECRET"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"event\": \"teams_guest_invited\",\n  \"email\": \"{{ $('User-ID merken').item.json.email }}\",\n  \"data\": { \"teilnehmerId\": {{ $('User-ID merken').item.json.teilnehmer_id }} }\n}",
+        "options": {}
+      },
+      "id": "c0f2c8a1-0007-4c01-9f1a-777777777777",
+      "name": "Callback an App",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1640, 240],
+      "notes": "Meldet der App, dass die Einladung erfolgreich war. Die App setzt daraufhin teams_eingeladen_am, damit kein Duplikat-Call entsteht."
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"ok\": true,\n  \"message\": \"Teams-Gast eingeladen\"\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "c0f2c8a1-0008-4c01-9f1a-888888888888",
+      "name": "Antwort OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1880, 240]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"ok\": false,\n  \"error\": \"Ungültige Payload. Erwartet: typ=teams_guest_invite, email, teilnehmer_id>0\"\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "c0f2c8a1-0009-4c01-9f1a-999999999999",
+      "name": "Antwort Fehler",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [680, 440]
+    }
+  ],
+  "connections": {
+    "Webhook Teams-Gast": {
+      "main": [
+        [
+          {
+            "node": "Payload gültig?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payload gültig?": {
+      "main": [
+        [
+          {
+            "node": "Felder extrahieren",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Antwort Fehler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Felder extrahieren": {
+      "main": [
+        [
+          {
+            "node": "Graph: Gast-Einladung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Graph: Gast-Einladung": {
+      "main": [
+        [
+          {
+            "node": "User-ID merken",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "User-ID merken": {
+      "main": [
+        [
+          {
+            "node": "Graph: Team-Mitglied hinzufügen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Graph: Team-Mitglied hinzufügen": {
+      "main": [
+        [
+          {
+            "node": "Callback an App",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Callback an App": {
+      "main": [
+        [
+          {
+            "node": "Antwort OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "active": false,
+  "versionId": "1",
+  "triggerCount": 0,
+  "tags": [
+    {
+      "name": "Shop"
+    },
+    {
+      "name": "Teams"
+    }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
