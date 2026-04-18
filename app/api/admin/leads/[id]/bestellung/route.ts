@@ -52,8 +52,9 @@ export async function POST(
       return NextResponse.json({ error: err.message }, { status: 400 });
     }
     console.error("Bestellung-from-Lead error:", err);
+    const detail = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
-      { error: "Interner Fehler beim Anlegen der Bestellung." },
+      { error: `Interner Fehler beim Anlegen der Bestellung: ${detail}` },
       { status: 500 }
     );
   }

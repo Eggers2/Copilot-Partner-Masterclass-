@@ -160,18 +160,25 @@ export async function POST(request: NextRequest) {
 
     // Generate bestellNr with retry for race conditions
     let bestellNr = "";
-    let retries = 3;
+    const year = new Date().getFullYear();
+    const prefix = `NS-${year}-`;
+
+    const last = await prisma.bestellung.findFirst({
+      where: { bestellNr: { startsWith: prefix } },
+      orderBy: { bestellNr: "desc" },
+      select: { bestellNr: true },
+    });
+    let nextNum = 1;
+    if (last) {
+      const m = last.bestellNr.slice(prefix.length).match(/^(\d+)/);
+      if (m) nextNum = parseInt(m[1], 10) + 1;
+    }
+
+    let retries = 10;
 
     while (retries > 0) {
       try {
-        const year = new Date().getFullYear();
-        const prefix = `NS-${year}-`;
-
-        const count = await prisma.bestellung.count({
-          where: { bestellNr: { startsWith: prefix } },
-        });
-
-        bestellNr = `${prefix}${String(count + 1).padStart(4, "0")}`;
+        bestellNr = `${prefix}${String(nextNum).padStart(4, "0")}`;
 
         await prisma.bestellung.create({
           data: {
@@ -209,6 +216,7 @@ export async function POST(request: NextRequest) {
           err.code === "P2002"
         ) {
           retries--;
+          nextNum++;
           if (retries === 0) throw err;
           continue; // Retry with next number
         }

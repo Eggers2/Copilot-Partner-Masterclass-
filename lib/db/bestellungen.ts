@@ -279,6 +279,17 @@ export interface CreateOverrides {
   zahlungsmodell?: Zahlungsmodell;
 }
 
+async function nextBestellNrNumber(prefix: string): Promise<number> {
+  const last = await prisma.bestellung.findFirst({
+    where: { bestellNr: { startsWith: prefix } },
+    orderBy: { bestellNr: "desc" },
+    select: { bestellNr: true },
+  });
+  if (!last) return 1;
+  const match = last.bestellNr.slice(prefix.length).match(/^(\d+)/);
+  return match ? parseInt(match[1], 10) + 1 : 1;
+}
+
 export async function hasBestellungForLead(leadId: string): Promise<boolean> {
   const lead = await prisma.lead.findUnique({
     where: { id: leadId },
@@ -360,15 +371,13 @@ export async function createBestellungFromLead(
     calculateMwst(land, undefined, preisNetto);
 
   let bestellNr = "";
-  let retries = 3;
+  const year = new Date().getFullYear();
+  const prefix = `NS-${year}-`;
+  let nextNum = await nextBestellNrNumber(prefix);
+  let retries = 10;
   while (retries > 0) {
     try {
-      const year = new Date().getFullYear();
-      const prefix = `NS-${year}-`;
-      const count = await prisma.bestellung.count({
-        where: { bestellNr: { startsWith: prefix } },
-      });
-      bestellNr = `${prefix}${String(count + 1).padStart(4, "0")}`;
+      bestellNr = `${prefix}${String(nextNum).padStart(4, "0")}`;
 
       await prisma.bestellung.create({
         data: {
@@ -400,6 +409,7 @@ export async function createBestellungFromLead(
     } catch (err: unknown) {
       if (err && typeof err === "object" && "code" in err && err.code === "P2002") {
         retries--;
+        nextNum++;
         if (retries === 0) throw err;
         continue;
       }
