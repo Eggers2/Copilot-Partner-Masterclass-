@@ -155,8 +155,25 @@ model Bestellung {
   status               String   @default("neu")
   erstelltAm           DateTime @default(now()) @map("erstellt_am")
   aktualisiertAm       DateTime @updatedAt @map("aktualisiert_am")
+  teilnehmer           BestellungTeilnehmer[]
 
   @@map("bestellungen")
+}
+
+model BestellungTeilnehmer {
+  id           Int        @id @default(autoincrement())
+  bestellungId Int        @map("bestellung_id")
+  bestellung   Bestellung @relation(fields: [bestellungId], references: [id], onDelete: Cascade)
+  position     Int
+  vorname      String     @default("")
+  nachname     String     @default("")
+  email        String     @default("")
+  erstelltAm   DateTime   @default(now()) @map("erstellt_am")
+  aktualisiertAm DateTime @updatedAt @map("aktualisiert_am")
+
+  @@unique([bestellungId, position])
+  @@index([bestellungId])
+  @@map("bestellung_teilnehmer")
 }
 
 // ==========================================

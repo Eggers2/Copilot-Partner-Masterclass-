@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useTransition } from "react";
+import Link from "next/link";
 import {
   Search,
   Download,
@@ -10,6 +11,7 @@ import {
   CheckCircle,
   Clock,
   CircleDot,
+  Pencil,
 } from "lucide-react";
 import {
   deleteBestellungAction,
@@ -374,8 +376,12 @@ export function BestellungenTable({
                       </span>
                     </td>
                     <td className="px-4 py-4">
-                      <div>
-                        <p className="text-sm font-medium text-dark-slate-900">
+                      <Link
+                        href={`/admin/shop/${b.id}`}
+                        className="block group"
+                        title="Bestellung bearbeiten"
+                      >
+                        <p className="text-sm font-medium text-dark-slate-900 group-hover:text-[#030386] group-hover:underline">
                           {b.firma}
                         </p>
                         <p className="text-xs text-dark-slate-500">
@@ -386,7 +392,7 @@ export function BestellungenTable({
                             {b.anmerkungen}
                           </p>
                         )}
-                      </div>
+                      </Link>
                     </td>
                     <td className="px-4 py-4">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#E3ECF8] text-[#030386]">
@@ -455,13 +461,22 @@ export function BestellungenTable({
                           </button>
                         </div>
                       ) : (
-                        <button
-                          onClick={() => setDeleteConfirm(b.id)}
-                          className="p-1.5 text-dark-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Bestellung löschen"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <Link
+                            href={`/admin/shop/${b.id}`}
+                            className="p-1.5 text-dark-slate-400 hover:text-[#030386] hover:bg-[#E3ECF8]/60 rounded-lg transition-colors"
+                            title="Bestellung bearbeiten"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Link>
+                          <button
+                            onClick={() => setDeleteConfirm(b.id)}
+                            className="p-1.5 text-dark-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Bestellung löschen"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>

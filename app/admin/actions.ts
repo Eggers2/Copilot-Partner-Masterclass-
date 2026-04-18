@@ -643,3 +643,118 @@ export async function updateBestellungStatusAction(
   });
   revalidatePath("/admin/shop");
 }
+
+interface TeilnehmerInput {
+  position: number;
+  vorname: string;
+  nachname: string;
+  email: string;
+}
+
+interface UpdateBestellungInput {
+  paket: string;
+  userAnzahl: number;
+  zahlungsmodell: string;
+  firma: string;
+  strasse: string;
+  plz: string;
+  ort: string;
+  land: string;
+  ustId: string | null;
+  vorname: string;
+  nachname: string;
+  email: string;
+  telefon: string | null;
+  position: string | null;
+  anmerkungen: string | null;
+  status: string;
+  teilnehmer: TeilnehmerInput[];
+}
+
+export async function updateBestellungAction(
+  id: number,
+  input: UpdateBestellungInput
+): Promise<{ success?: boolean; error?: string }> {
+  await requireAuth();
+
+  if (!input.firma?.trim() || !input.email?.trim()) {
+    return { error: "Firma und E-Mail sind erforderlich." };
+  }
+
+  const { PACKAGES, isPaketKey, isZahlungsmodell, getPreisNetto, calculateMwst } =
+    await import("@/lib/packages");
+
+  if (!isPaketKey(input.paket) || !isZahlungsmodell(input.zahlungsmodell)) {
+    return { error: "Paket oder Zahlungsmodell ungültig." };
+  }
+
+  const pkg = PACKAGES[input.paket];
+  const preisNetto = getPreisNetto(input.paket, input.zahlungsmodell);
+  const { mwstSatz, mwstBetrag, preisBrutto, reverseCharge, reverseChargeHinweis } =
+    calculateMwst(input.land, input.ustId ?? undefined, preisNetto);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.bestellung.update({
+      where: { id },
+      data: {
+        paket: input.paket,
+        userAnzahl: pkg.users,
+        zahlungsmodell: input.zahlungsmodell,
+        preisNetto,
+        mwstSatz,
+        mwstBetrag,
+        reverseCharge,
+        reverseChargeHinweis: reverseChargeHinweis || null,
+        preisBrutto,
+        firma: input.firma.trim(),
+        strasse: input.strasse.trim(),
+        plz: input.plz.trim(),
+        ort: input.ort.trim(),
+        land: input.land,
+        ustId: input.ustId?.trim() || null,
+        vorname: input.vorname.trim(),
+        nachname: input.nachname.trim(),
+        email: input.email.trim().toLowerCase(),
+        telefon: input.telefon?.trim() || null,
+        position: input.position?.trim() || null,
+        anmerkungen: input.anmerkungen?.trim() || null,
+        status: input.status,
+      },
+    });
+
+    await tx.bestellungTeilnehmer.deleteMany({
+      where: { bestellungId: id, position: { gte: pkg.users } },
+    });
+
+    for (let i = 0; i < pkg.users; i++) {
+      const t = input.teilnehmer.find((x) => x.position === i) ?? {
+        position: i,
+        vorname: "",
+        nachname: "",
+        email: "",
+      };
+      await tx.bestellungTeilnehmer.upsert({
+        where: {
+          bestellungId_position: { bestellungId: id, position: i },
+        },
+        create: {
+          bestellungId: id,
+          position: i,
+          vorname: t.vorname.trim(),
+          nachname: t.nachname.trim(),
+          email: t.email.trim().toLowerCase(),
+        },
+        update: {
+          vorname: t.vorname.trim(),
+          nachname: t.nachname.trim(),
+          email: t.email.trim().toLowerCase(),
+        },
+      });
+    }
+  });
+
+  revalidatePath("/admin/shop");
+  revalidatePath(`/admin/shop/${id}`);
+
+  return { success: true };
+}
