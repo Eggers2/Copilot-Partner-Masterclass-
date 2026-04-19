@@ -94,6 +94,14 @@ export async function updateKundeBestellungAction(
       },
     });
 
+    const existingTeilnehmer = await tx.bestellungTeilnehmer.findMany({
+      where: { bestellungId },
+      select: { position: true, email: true },
+    });
+    const existingEmailByPosition = new Map(
+      existingTeilnehmer.map((e) => [e.position, e.email])
+    );
+
     for (let i = 0; i < slotCount; i++) {
       const t = input.teilnehmer.find((x) => x.position === i) ?? {
         position: i,
@@ -101,6 +109,11 @@ export async function updateKundeBestellungAction(
         nachname: "",
         email: "",
       };
+      const newTeilnehmerEmail = t.email.trim().toLowerCase();
+      const previousEmail = existingEmailByPosition.get(i);
+      const emailChanged =
+        previousEmail !== undefined && previousEmail !== newTeilnehmerEmail;
+
       await tx.bestellungTeilnehmer.upsert({
         where: {
           bestellungId_position: { bestellungId, position: i },
@@ -110,12 +123,15 @@ export async function updateKundeBestellungAction(
           position: i,
           vorname: t.vorname.trim(),
           nachname: t.nachname.trim(),
-          email: t.email.trim().toLowerCase(),
+          email: newTeilnehmerEmail,
         },
         update: {
           vorname: t.vorname.trim(),
           nachname: t.nachname.trim(),
-          email: t.email.trim().toLowerCase(),
+          email: newTeilnehmerEmail,
+          // E-Mail-Wechsel setzt den Einladungsstatus zurück, damit der
+          // n8n-Webhook die neue Adresse erneut als Teams-Gast einlädt.
+          ...(emailChanged ? { teamsEingeladenAm: null } : {}),
         },
       });
     }
