@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Zap, ShoppingBag } from "lucide-react";
+import { Zap, ShoppingBag, Mail } from "lucide-react";
 import { getCustomerSession } from "@/lib/auth/customer";
 import { logoutCustomerAction } from "./actions";
 
@@ -40,6 +40,13 @@ export default async function KundenportalLayout({
                 >
                   <ShoppingBag className="w-4 h-4" />
                   Meine Bestellungen
+                </Link>
+                <Link
+                  href="/kundenportal/newsletter"
+                  className="hidden sm:flex items-center gap-2 px-3 py-2 text-sm text-dark-slate-400 hover:text-white hover:bg-dark-slate-800 rounded-lg transition-all"
+                >
+                  <Mail className="w-4 h-4" />
+                  Newsletter-Archiv
                 </Link>
                 <span className="hidden md:inline text-xs text-dark-slate-500 font-mono">
                   {session.email}

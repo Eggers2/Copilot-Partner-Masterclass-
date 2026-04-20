@@ -1,0 +1,273 @@
+{
+  "name": "Newsletter – Versand (Outlook Draft, BCC)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "newsletter-send",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": false
+        }
+      },
+      "id": "nlsend-0001-0000-0000-0000-000000000001",
+      "name": "Webhook Newsletter",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        320
+      ],
+      "webhookId": "newsletter-send"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-typ",
+              "leftValue": "={{ $json.body.typ }}",
+              "rightValue": "newsletter",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "cond-subject",
+              "leftValue": "={{ $json.body.subject }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "name": "filter.operator.notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "cond-html",
+              "leftValue": "={{ $json.body.html }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "name": "filter.operator.notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "cond-bcc",
+              "leftValue": "={{ Array.isArray($json.body.bcc) && $json.body.bcc.length > 0 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "name": "filter.operator.true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "nlsend-0002-0000-0000-0000-000000000002",
+      "name": "Payload gültig?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        480,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a-subject",
+              "name": "subject",
+              "value": "={{ $json.body.subject }}",
+              "type": "string"
+            },
+            {
+              "id": "a-html",
+              "name": "html_body",
+              "value": "={{ $json.body.html }}",
+              "type": "string"
+            },
+            {
+              "id": "a-to",
+              "name": "to_email",
+              "value": "={{ $json.body.absender || $env.NEWSLETTER_SENDER_EMAIL || 'info@copilotberater.de' }}",
+              "type": "string"
+            },
+            {
+              "id": "a-bcc",
+              "name": "bcc_emails",
+              "value": "={{ ($json.body.bcc || []).join(';') }}",
+              "type": "string"
+            },
+            {
+              "id": "a-test",
+              "name": "test_mail",
+              "value": "={{ !!$json.body.test_mail }}",
+              "type": "boolean"
+            },
+            {
+              "id": "a-id",
+              "name": "newsletter_id",
+              "value": "={{ $json.body.newsletter_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "nlsend-0003-0000-0000-0000-000000000003",
+      "name": "Mail-Inhalt vorbereiten",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        720,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "operation": "create",
+        "subject": "={{ $json.subject }}",
+        "bodyContent": "={{ $json.html_body }}",
+        "bodyContentType": "html",
+        "toRecipients": "={{ $json.to_email }}",
+        "additionalFields": {
+          "bccRecipients": "={{ $json.bcc_emails }}"
+        }
+      },
+      "id": "nlsend-0004-0000-0000-0000-000000000004",
+      "name": "Outlook Draft anlegen",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        960,
+        240
+      ],
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "REPLACE_WITH_OUTLOOK_CREDENTIAL_ID",
+          "name": "Microsoft Outlook account"
+        }
+      },
+      "notes": "Legt einen Outlook-Draft mit allen Empfängern in BCC an. Du öffnest den Draft manuell in Outlook und klickst dort 'Senden'. Wenn du direkt senden willst, ersetze 'draft/create' durch 'message/send'."
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"ok\": true,\n  \"message\": \"Newsletter-Draft in Outlook angelegt\",\n  \"newsletter_id\": \"{{ $json.newsletter_id }}\"\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "nlsend-0005-0000-0000-0000-000000000005",
+      "name": "Antwort OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1200,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"ok\": false,\n  \"error\": \"Ungültige Payload. Erwartet: typ=newsletter, subject, html, bcc[]\"\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "nlsend-0006-0000-0000-0000-000000000006",
+      "name": "Antwort Fehler",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        440
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Newsletter": {
+      "main": [
+        [
+          {
+            "node": "Payload gültig?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payload gültig?": {
+      "main": [
+        [
+          {
+            "node": "Mail-Inhalt vorbereiten",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Antwort Fehler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mail-Inhalt vorbereiten": {
+      "main": [
+        [
+          {
+            "node": "Outlook Draft anlegen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Outlook Draft anlegen": {
+      "main": [
+        [
+          {
+            "node": "Antwort OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "active": false,
+  "versionId": "1",
+  "triggerCount": 0,
+  "tags": [
+    {
+      "name": "Newsletter"
+    }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
