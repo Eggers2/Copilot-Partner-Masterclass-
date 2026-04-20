@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth";
 import {
   createDraft,
+  deleteNewsletter,
   getNewsletter,
   isoWeek,
   markFailed,
@@ -56,6 +57,16 @@ export async function createDraftAction() {
 
   revalidatePath("/admin/newsletter");
   redirect(`/admin/newsletter/${draft.id}`);
+}
+
+export async function deleteNewsletterAction(id: string) {
+  await requireAuth();
+  const nl = await getNewsletter(id);
+  if (!nl) return { ok: false, error: "Newsletter nicht gefunden" };
+  await deleteNewsletter(id);
+  revalidatePath("/admin/newsletter");
+  revalidatePath("/kundenportal/newsletter");
+  return { ok: true };
 }
 
 export async function fetchMoreNewsAction(id: string) {
