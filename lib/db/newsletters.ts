@@ -14,8 +14,14 @@ export function isoWeek(date: Date): { kw: number; jahr: number } {
 }
 
 export async function nextAusgabeNr(): Promise<number> {
-  const count = await prisma.newsletter.count();
-  return count + 1;
+  const max = await prisma.newsletter.aggregate({
+    _max: { ausgabeNr: true },
+  });
+  return (max._max.ausgabeNr ?? 0) + 1;
+}
+
+export async function deleteNewsletter(id: string) {
+  return prisma.newsletter.delete({ where: { id } });
 }
 
 export async function listNewsletters() {

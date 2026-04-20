@@ -12,12 +12,14 @@ const WEB_SEARCH_NEWS = {
   type: "web_search_20260209" as const,
   name: "web_search" as const,
   max_uses: 2,
+  allowed_callers: ["direct" as const],
 };
 
 const WEB_SEARCH_ZAHL = {
   type: "web_search_20260209" as const,
   name: "web_search" as const,
   max_uses: 1,
+  allowed_callers: ["direct" as const],
 };
 
 const ALLOWED_BADGES: NewsBadge[] = [
