@@ -8,10 +8,16 @@ import type {
   NewsBadge,
 } from "./types";
 
-const WEB_SEARCH_TOOL = {
+const WEB_SEARCH_NEWS = {
   type: "web_search_20260209" as const,
   name: "web_search" as const,
-  max_uses: 3,
+  max_uses: 2,
+};
+
+const WEB_SEARCH_ZAHL = {
+  type: "web_search_20260209" as const,
+  name: "web_search" as const,
+  max_uses: 1,
 };
 
 const ALLOWED_BADGES: NewsBadge[] = [
@@ -129,7 +135,7 @@ Antworte ausschließlich mit einem JSON-Array nach dieser Struktur:
         cache_control: { type: "ephemeral" },
       },
     ],
-    tools: [WEB_SEARCH_TOOL],
+    tools: [WEB_SEARCH_NEWS],
     messages: [{ role: "user", content: userPrompt }],
   });
 
@@ -222,7 +228,7 @@ Antworte ausschließlich mit JSON:
         cache_control: { type: "ephemeral" },
       },
     ],
-    tools: [WEB_SEARCH_TOOL],
+    tools: [WEB_SEARCH_ZAHL],
     messages: [{ role: "user", content: userPrompt }],
   });
 

@@ -14,7 +14,7 @@ export function getAnthropic(): Anthropic {
   return client;
 }
 
-export const CLAUDE_MODEL = "claude-sonnet-4-6";
+export const CLAUDE_MODEL = "claude-haiku-4-5";
 
 export const NEWSLETTER_SYSTEM_PROMPT = `Du bist Redakteur des wöchentlichen "Copilot Insider Update"-Newsletters für die Copilot Partner Masterclass (NextSkills GmbH).
 
