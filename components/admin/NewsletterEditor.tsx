@@ -175,16 +175,24 @@ export function NewsletterEditor(props: NewsletterEditorProps) {
         subtitle,
         zusatzMails,
       });
+      await renderPreview(content, titel, subtitle);
       flash("ok", "Gespeichert.");
-      router.refresh();
     });
   }
 
-  async function updatePreview() {
+  async function renderPreview(
+    nextContent: NewsletterContent,
+    nextTitel: string,
+    nextSubtitle: string
+  ) {
     const res = await fetch(`/api/admin/newsletter/${props.id}/preview`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content, titel, subtitle }),
+      body: JSON.stringify({
+        content: nextContent,
+        titel: nextTitel,
+        subtitle: nextSubtitle,
+      }),
     });
     if (!res.ok) {
       flash("err", "Vorschau konnte nicht gerendert werden.");
@@ -192,6 +200,10 @@ export function NewsletterEditor(props: NewsletterEditorProps) {
     }
     const data = await res.json();
     setPreviewHtml(data.html);
+  }
+
+  async function updatePreview() {
+    await renderPreview(content, titel, subtitle);
   }
 
   function fetchMore() {
@@ -203,9 +215,10 @@ export function NewsletterEditor(props: NewsletterEditorProps) {
         subtitle,
         zusatzMails,
       });
-      await fetchMoreNewsAction(props.id);
+      const { content: next } = await fetchMoreNewsAction(props.id);
+      setContent(next);
+      await renderPreview(next, titel, subtitle);
       flash("ok", "5 weitere News geladen.");
-      router.refresh();
     });
   }
 
@@ -217,9 +230,10 @@ export function NewsletterEditor(props: NewsletterEditorProps) {
         subtitle,
         zusatzMails,
       });
-      await regeneratePromptAction(props.id);
+      const { content: next } = await regeneratePromptAction(props.id);
+      setContent(next);
+      await renderPreview(next, titel, subtitle);
       flash("ok", "Prompt der Woche neu generiert.");
-      router.refresh();
     });
   }
 
@@ -231,9 +245,10 @@ export function NewsletterEditor(props: NewsletterEditorProps) {
         subtitle,
         zusatzMails,
       });
-      await regenerateZahlAction(props.id);
+      const { content: next } = await regenerateZahlAction(props.id);
+      setContent(next);
+      await renderPreview(next, titel, subtitle);
       flash("ok", "Zahl der Woche neu generiert.");
-      router.refresh();
     });
   }
 

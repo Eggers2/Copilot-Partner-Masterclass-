@@ -10,65 +10,95 @@ function esc(value: string | undefined | null): string {
     .replace(/'/g, "&#39;");
 }
 
+// Farbschema 1:1 aus der Design-Vorlage (Copilot Insider Update Template).
+// Wir rechnen alle rgba() in feste Hex-Werte um, weil Outlook rgba() oft
+// nicht rendert. Die Werte sind gegen den Hintergrund #1A1A2E vorberechnet.
 const COLORS = {
-  bgOuter: "#0B1220",
-  bgCard: "#111A2E",
-  bgCardMuted: "#0F1728",
-  border: "#1E2A44",
-  borderStrong: "#2A3A5C",
-  text: "#E6EBF5",
-  textMuted: "#96A3BD",
-  textDim: "#6C7A95",
-  accent: "#2FE29B",
-  badgePremium: "#7E9EFF",
-  badgeChat: "#5EC3FF",
-  badgeStudio: "#C58DFF",
-  badgeDatenschutz: "#2FE29B",
-  badgeDistributor: "#F4B955",
-  badgeEvent: "#2FE29B",
-  badgeAdoption: "#8FD694",
+  // Basis
+  bgOuter: "#1A1A2E", // --ds
+  accent: "#00C896", // --sg
+  ivory: "#EAF9F4", // --im
+  cool: "#E8E8F0", // --cw
+  gray: "#6B6B8A", // --gray
+  // Badge-Farben aus dem Template
+  blue: "#63b3ed",
+  purple: "#9f7aea",
+  orange: "#ed8936",
+  yellow: "#ecc94b",
+  // Flächen – aus rgba gegen #1A1A2E gemischt (für Outlook-Kompatibilität)
+  cardBg: "#22223C", // ~ rgba(232,232,240,0.06)
+  cardBorder: "#2B2B48", // ~ rgba(232,232,240,0.1)
+  cardStrongBorder: "#353555", // ~ rgba(232,232,240,0.2)
+  promptBg: "#1E2A3A", // ~ Prompt-Card Mix aus ivory/accent auf ds
+  statBg: "#1D2B3E", // Gradient-Annäherung für Zahl der Woche
+  codeBg: "#141426", // innerer Prompt-Kasten
+  accentSoft: "#1B3B38", // accent @ low alpha auf ds
+  accentStrong: "#2D5249", // accent box (CTA)
+  eventBg: "#1E2E3F", // Event-Block Hintergrund
 };
 
-const BADGE_COLORS: Record<string, string> = {
-  PREMIUM: COLORS.badgePremium,
-  CHAT: COLORS.badgeChat,
-  STUDIO: COLORS.badgeStudio,
-  DATENSCHUTZ: COLORS.badgeDatenschutz,
-  DISTRIBUTOR: COLORS.badgeDistributor,
-  EVENT: COLORS.badgeEvent,
-  ADOPTION: COLORS.badgeAdoption,
+type BadgeTheme = {
+  color: string;
+  bg: string;
+  border: string;
 };
 
-function badgeStyle(badge: string): string {
-  const color = BADGE_COLORS[badge.toUpperCase()] ?? COLORS.badgeChat;
-  return `display:inline-block;padding:4px 10px;border-radius:999px;border:1px solid ${color}55;background:${color}14;color:${color};font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;font-family:Arial,Helvetica,sans-serif;`;
+// Die Badge-Typen aus dem Datenmodell auf die Tag-Farben aus dem Template
+// mappen. Werte gegen #1A1A2E vorgemischt, damit Outlook halbtransparente
+// Hintergründe korrekt rendert.
+const BADGE_THEME: Record<string, BadgeTheme> = {
+  PREMIUM: { color: "#63b3ed", bg: "#1C2640", border: "#2B3E5E" },
+  CHAT: { color: "#00C896", bg: "#17352F", border: "#1F5043" },
+  STUDIO: { color: "#9f7aea", bg: "#2A244A", border: "#3F3566" },
+  DATENSCHUTZ: { color: "#00C896", bg: "#17352F", border: "#1F5043" },
+  DISTRIBUTOR: { color: "#ecc94b", bg: "#33311B", border: "#52492A" }, // ADN/Distri
+  EVENT: { color: "#00C896", bg: "#17352F", border: "#1F5043" },
+  ADOPTION: { color: "#8FD694", bg: "#1E3A28", border: "#2E5638" },
+  SALES: { color: "#ed8936", bg: "#38271C", border: "#5A3C25" },
+};
+
+function themeFor(badge: string): BadgeTheme {
+  return BADGE_THEME[badge.toUpperCase()] ?? BADGE_THEME.CHAT;
+}
+
+function badgePill(badge: string, label?: string): string {
+  const t = themeFor(badge);
+  const text = esc((label ?? badge).toString());
+  return `<span style="display:inline-block;padding:3px 10px;border-radius:100px;border:1px solid ${t.border};background:${t.bg};color:${t.color};font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;font-family:'DM Sans',Arial,Helvetica,sans-serif;mso-line-height-rule:exactly;line-height:1.4;">${text}</span>`;
 }
 
 function newsCard(item: NewsletterNewsItem, index: number): string {
   const nr = String(index + 1).padStart(2, "0");
-  const badgeColor = BADGE_COLORS[item.badge] ?? COLORS.badgeChat;
-  const sourceParts = [esc(item.sourceLabel)];
-  if (item.sourceUrl) {
-    sourceParts.push(
-      `<a href="${esc(item.sourceUrl)}" style="color:${COLORS.textMuted};text-decoration:none;" target="_blank">↗ ${esc(item.sourceLabel || item.sourceUrl)}</a>`
-    );
-  }
+  const t = themeFor(item.badge);
+  const isDistri = item.badge.toUpperCase() === "DISTRIBUTOR";
+
+  const cardBg = isDistri ? "#262218" : COLORS.cardBg;
+  const cardBorder = isDistri ? "#4A3E1F" : COLORS.cardBorder;
+
+  const ctaBlock = item.cta
+    ? `<div style="margin-top:14px;padding:10px 14px;background:${COLORS.accentSoft};border-radius:8px;color:${COLORS.accent};font-size:13px;font-weight:500;font-family:'DM Sans',Arial,Helvetica,sans-serif;line-height:1.45;">&rarr;&nbsp; ${esc(item.cta)}</div>`
+    : "";
+
+  const sourceBlock = item.sourceUrl
+    ? `<div style="margin-top:12px;font-family:'DM Sans',Arial,Helvetica,sans-serif;"><a href="${esc(item.sourceUrl)}" target="_blank" style="display:inline-block;font-size:12px;color:${COLORS.gray};text-decoration:none;">&#8599; ${esc(item.sourceLabel || item.sourceUrl)}</a></div>`
+    : item.sourceLabel
+      ? `<div style="margin-top:12px;font-size:12px;color:${COLORS.gray};font-family:'DM Sans',Arial,Helvetica,sans-serif;">${esc(item.sourceLabel)}</div>`
+      : "";
+
   return `
   <tr>
     <td style="padding:0 0 16px 0;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLORS.bgCard};border:1px solid ${COLORS.border};border-radius:12px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${cardBg};border:1px solid ${cardBorder};border-radius:14px;">
         <tr>
-          <td style="padding:20px 24px;position:relative;">
-            <div style="position:absolute;top:12px;right:20px;color:${COLORS.textDim}22;font-size:48px;font-weight:700;letter-spacing:-2px;font-family:Arial,Helvetica,sans-serif;">${nr}</div>
-            <div style="${badgeStyle(item.badge)}">${esc(item.badge)}</div>
-            <div style="margin-top:12px;color:${COLORS.text};font-size:18px;font-weight:700;line-height:1.3;font-family:Arial,Helvetica,sans-serif;">${esc(item.title)}</div>
-            <div style="margin-top:8px;color:${COLORS.textMuted};font-size:14px;line-height:1.55;font-family:Arial,Helvetica,sans-serif;">${esc(item.body)}</div>
-            ${
-              item.cta
-                ? `<div style="margin-top:14px;padding:10px 14px;background:${badgeColor}10;border:1px solid ${badgeColor}33;border-radius:8px;color:${badgeColor};font-size:13px;font-weight:600;font-family:Arial,Helvetica,sans-serif;">${esc(item.cta)}</div>`
-                : ""
-            }
-            <div style="margin-top:14px;color:${COLORS.textDim};font-size:12px;font-family:Arial,Helvetica,sans-serif;">${sourceParts.join(" · ")}</div>
+          <td style="padding:24px 24px 20px 24px;position:relative;">
+            <!--[if !mso]><!-->
+            <div style="position:absolute;top:14px;right:20px;color:#2A2A44;font-size:48px;font-weight:700;line-height:1;font-family:'DM Sans',Arial,Helvetica,sans-serif;">${nr}</div>
+            <!--<![endif]-->
+            ${badgePill(item.badge)}
+            <div style="margin-top:12px;color:${COLORS.cool};font-size:17px;font-weight:600;line-height:1.35;font-family:'DM Sans',Arial,Helvetica,sans-serif;padding-right:40px;">${esc(item.title)}</div>
+            <div style="margin-top:10px;color:${COLORS.gray};font-size:14px;line-height:1.7;font-family:'DM Sans',Arial,Helvetica,sans-serif;">${esc(item.body)}</div>
+            ${ctaBlock}
+            ${sourceBlock}
           </td>
         </tr>
       </table>
@@ -79,20 +109,30 @@ function newsCard(item: NewsletterNewsItem, index: number): string {
 function eventBlock(content: NewsletterContent): string {
   const ev = content.eventBlock;
   if (!ev) return "";
+
+  const cta = ev.ctaUrl
+    ? `<div style="margin-top:10px;font-family:'DM Sans',Arial,Helvetica,sans-serif;"><a href="${esc(ev.ctaUrl)}" target="_blank" style="display:inline-block;font-size:13px;font-weight:600;color:${COLORS.accent};text-decoration:none;">${esc(ev.ctaLabel || "Kostenlos anmelden")} &rarr;</a></div>`
+    : "";
+
   return `
   <tr>
-    <td style="padding:0 0 24px 0;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLORS.bgCard};border:1px solid ${COLORS.accent}44;border-radius:12px;">
+    <td style="padding:0 0 8px 0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLORS.eventBg};border:1px solid ${COLORS.cardStrongBorder};border-radius:14px;">
         <tr>
-          <td style="padding:20px 24px;">
-            <div style="${badgeStyle("EVENT")}">${esc(ev.badge || "ADN EVENT")}</div>
-            <div style="margin-top:10px;color:${COLORS.text};font-size:18px;font-weight:700;font-family:Arial,Helvetica,sans-serif;">${esc(ev.titel)}</div>
-            <div style="margin-top:8px;color:${COLORS.textMuted};font-size:14px;line-height:1.55;font-family:Arial,Helvetica,sans-serif;">${esc(ev.body)}</div>
-            ${
-              ev.ctaUrl
-                ? `<div style="margin-top:14px;"><a href="${esc(ev.ctaUrl)}" style="color:${COLORS.accent};font-size:14px;font-weight:600;text-decoration:none;font-family:Arial,Helvetica,sans-serif;" target="_blank">${esc(ev.ctaLabel || "Mehr erfahren")} →</a></div>`
-                : ""
-            }
+          <td style="padding:20px 22px;" valign="top">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+              <tr>
+                <td width="56" valign="top" style="padding-right:16px;">
+                  <div style="width:44px;height:44px;line-height:44px;border-radius:10px;background:${COLORS.accentSoft};text-align:center;font-size:20px;">&#128197;</div>
+                </td>
+                <td valign="top">
+                  <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${COLORS.accent};font-family:'DM Sans',Arial,Helvetica,sans-serif;">${esc(ev.badge || "ADN Event")}</div>
+                  <div style="margin-top:4px;color:${COLORS.cool};font-size:15px;font-weight:600;font-family:'DM Sans',Arial,Helvetica,sans-serif;line-height:1.4;">${esc(ev.titel)}</div>
+                  <div style="margin-top:4px;color:${COLORS.gray};font-size:13px;line-height:1.55;font-family:'DM Sans',Arial,Helvetica,sans-serif;">${esc(ev.body)}</div>
+                  ${cta}
+                </td>
+              </tr>
+            </table>
           </td>
         </tr>
       </table>
@@ -122,10 +162,12 @@ export function renderNewsletterHtml(
   });
   const autor = opts.autor ?? "Alexander Eggers";
   const lesezeit = opts.lesezeit ?? "5 Min.";
-  const titelClean = esc(opts.titel || "Copilot Insider Update");
-  const titelParts = (opts.titel || "Copilot Insider Update").split(" ");
+
+  const titelRaw = opts.titel || "Copilot Insider Update";
+  const titelParts = titelRaw.split(" ");
   const titelLast = esc(titelParts.pop() ?? "Update");
   const titelRest = esc(titelParts.join(" "));
+  const titelClean = esc(titelRaw);
 
   const selected = content.selectedIds
     .map((id) => content.candidates.find((c) => c.id === id))
@@ -134,78 +176,149 @@ export function renderNewsletterHtml(
 
   const newsCards = newsItems.map((item, i) => newsCard(item, i)).join("");
 
+  const subtitle = esc(
+    opts.subtitle ?? "Prompts, News und Insights – dein wöchentlicher Vorsprung."
+  );
+
+  const prompt = content.prompt;
+  const zahl = content.zahl;
+
   return `<!doctype html>
 <html lang="de">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<meta name="supported-color-schemes" content="dark light">
 <title>${titelClean} – Ausgabe #${opts.ausgabeNr} · KW ${opts.kw}</title>
+<!--[if mso]>
+<style type="text/css">
+body, table, td, a { font-family: Arial, Helvetica, sans-serif !important; }
+</style>
+<![endif]-->
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  @media (max-width: 600px) {
+    .ctn-outer { padding: 20px 12px !important; }
+    .ctn-inner { width: 100% !important; }
+    .h1 { font-size: 28px !important; }
+    .stat-num { font-size: 48px !important; }
+    .meta-row td { display: block !important; width: 100% !important; padding-bottom: 4px !important; }
+  }
+</style>
 </head>
-<body style="margin:0;padding:0;background:${COLORS.bgOuter};color:${COLORS.text};font-family:Arial,Helvetica,sans-serif;">
+<body style="margin:0;padding:0;background:${COLORS.bgOuter};color:${COLORS.cool};font-family:'DM Sans',Arial,Helvetica,sans-serif;-webkit-font-smoothing:antialiased;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLORS.bgOuter};">
   <tr>
-    <td align="center" style="padding:32px 16px;">
-      <table role="presentation" width="640" cellpadding="0" cellspacing="0" border="0" style="max-width:640px;width:100%;">
+    <td align="center" class="ctn-outer" style="padding:32px 20px;">
+      <table role="presentation" class="ctn-inner" width="640" cellpadding="0" cellspacing="0" border="0" style="max-width:640px;width:100%;">
 
+        <!-- HERO -->
         <tr>
-          <td style="padding:0 0 20px 0;border-left:3px solid ${COLORS.accent};padding-left:16px;">
-            <div style="color:${COLORS.accent};font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;">NEXTSKILLS · COPILOT PARTNER MASTERCLASS</div>
-            <div style="margin-top:12px;display:inline-block;padding:4px 12px;border:1px solid ${COLORS.border};border-radius:999px;color:${COLORS.textMuted};font-size:11px;letter-spacing:0.6px;"><span style="color:${COLORS.accent};">●</span> Ausgabe #${opts.ausgabeNr} · KW ${opts.kw}</div>
-            <h1 style="margin:14px 0 8px 0;color:${COLORS.text};font-size:32px;font-weight:800;line-height:1.15;">${titelRest} <span style="color:${COLORS.accent};">${titelLast}</span></h1>
-            <div style="color:${COLORS.textMuted};font-size:14px;line-height:1.5;">${esc(opts.subtitle ?? "Prompts, News und Insights – dein wöchentlicher Vorsprung.")}</div>
-            <div style="margin-top:12px;color:${COLORS.textDim};font-size:12px;">📅 ${dateLabel} &nbsp;·&nbsp; ⌛ ${esc(lesezeit)} &nbsp;·&nbsp; 👤 ${esc(autor)}</div>
+          <td style="padding:24px 0 20px 0;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td width="10" style="background:${COLORS.accent};border-radius:3px;line-height:28px;">&nbsp;</td>
+                <td width="12">&nbsp;</td>
+                <td style="color:${COLORS.gray};font-size:12px;font-weight:500;letter-spacing:2px;text-transform:uppercase;font-family:'DM Sans',Arial,Helvetica,sans-serif;">NextSkills &middot; Copilot Partner Masterclass</td>
+              </tr>
+            </table>
+            <div style="margin-top:20px;">
+              <span style="display:inline-block;padding:6px 16px;border-radius:100px;border:1px solid ${themeFor("CHAT").border};background:${themeFor("CHAT").bg};color:${COLORS.accent};font-size:12px;font-weight:600;letter-spacing:0.5px;font-family:'DM Sans',Arial,Helvetica,sans-serif;">&#9679; Ausgabe #${opts.ausgabeNr} &middot; KW ${opts.kw}</span>
+            </div>
+            <h1 class="h1" style="margin:18px 0 10px 0;color:${COLORS.cool};font-size:40px;font-weight:700;line-height:1.15;letter-spacing:-0.5px;font-family:'DM Sans',Arial,Helvetica,sans-serif;">${titelRest ? `${titelRest} ` : ""}<span style="color:${COLORS.accent};">${titelLast}</span></h1>
+            <div style="color:${COLORS.gray};font-size:16px;line-height:1.55;font-family:'DM Sans',Arial,Helvetica,sans-serif;max-width:520px;">${subtitle}</div>
+
+            <table role="presentation" class="meta-row" cellpadding="0" cellspacing="0" border="0" style="margin-top:18px;">
+              <tr>
+                <td style="padding-right:24px;color:${COLORS.gray};font-size:13px;font-family:'DM Sans',Arial,Helvetica,sans-serif;">&#128197;&nbsp; ${dateLabel}</td>
+                <td style="padding-right:24px;color:${COLORS.gray};font-size:13px;font-family:'DM Sans',Arial,Helvetica,sans-serif;">&#9203;&nbsp; ${esc(lesezeit)}</td>
+                <td style="color:${COLORS.gray};font-size:13px;font-family:'DM Sans',Arial,Helvetica,sans-serif;">&#128100;&nbsp; ${esc(autor)}</td>
+              </tr>
+            </table>
           </td>
         </tr>
 
+        <!-- EVENT -->
         ${eventBlock(content)}
 
+        <!-- SECTION: PROMPT DER WOCHE -->
         <tr>
-          <td style="padding:24px 0 8px 0;">
-            <div style="color:${COLORS.accent};font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;">Prompt der Woche</div>
+          <td style="padding:32px 0 14px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td width="150" style="color:${COLORS.accent};font-size:11px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;font-family:'DM Sans',Arial,Helvetica,sans-serif;white-space:nowrap;">Prompt der Woche</td>
+                <td style="padding-left:10px;">
+                  <div style="height:1px;background:${COLORS.cardStrongBorder};line-height:1px;font-size:0;">&nbsp;</div>
+                </td>
+              </tr>
+            </table>
           </td>
         </tr>
         <tr>
-          <td style="padding:0 0 24px 0;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLORS.bgCard};border:1px solid ${COLORS.accent}33;border-radius:12px;">
+          <td style="padding:0 0 12px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLORS.promptBg};border:1px solid ${themeFor("CHAT").border};border-radius:16px;">
               <tr>
-                <td style="padding:22px 24px;">
-                  <div style="${badgeStyle("PREMIUM")}">${esc(content.prompt.badge || "COPILOT PREMIUM")}</div>
-                  <div style="margin-top:12px;color:${COLORS.text};font-size:20px;font-weight:700;line-height:1.3;">${esc(content.prompt.title)}</div>
-                  <div style="margin-top:8px;color:${COLORS.textMuted};font-size:14px;line-height:1.55;">Verwandelt jedes Teams-Meeting, jede Recherche, jedes Angebot in Minuten statt Stunden.</div>
-                  <div style="margin-top:16px;padding:16px;background:${COLORS.bgCardMuted};border:1px solid ${COLORS.border};border-radius:8px;color:${COLORS.text};font-family:'Courier New',Consolas,monospace;font-size:13px;line-height:1.65;white-space:pre-wrap;">${esc(content.prompt.body)}</div>
-                  <div style="margin-top:16px;padding:12px 14px;border-left:3px solid ${COLORS.accent};background:${COLORS.accent}10;color:${COLORS.textMuted};font-size:13px;line-height:1.5;"><strong style="color:${COLORS.text};">Sales-Tipp:</strong> ${esc(content.prompt.tipp)}</div>
+                <td style="background:${COLORS.accent};border-radius:16px 16px 0 0;line-height:3px;font-size:0;">&nbsp;</td>
+              </tr>
+              <tr>
+                <td style="padding:26px 28px;">
+                  ${badgePill("PREMIUM", prompt.badge || "Copilot Premium")}
+                  <div style="margin-top:14px;color:${COLORS.cool};font-size:18px;font-weight:600;line-height:1.35;font-family:'DM Sans',Arial,Helvetica,sans-serif;">${esc(prompt.title)}</div>
+                  ${prompt.tipp ? "" : ""}
+                  <div style="margin-top:18px;padding:18px;background:${COLORS.codeBg};border:1px solid ${COLORS.cardBorder};border-radius:10px;color:${COLORS.cool};font-family:'JetBrains Mono','Courier New',Consolas,monospace;font-size:13px;line-height:1.7;white-space:pre-wrap;word-break:break-word;">${esc(prompt.body)}</div>
+                  ${prompt.tipp ? `<div style="margin-top:18px;padding:14px 18px;background:${COLORS.accentSoft};border-left:3px solid ${COLORS.accent};border-radius:0 10px 10px 0;font-family:'DM Sans',Arial,Helvetica,sans-serif;"><span style="color:${COLORS.cool};font-weight:600;font-size:13px;">Sales-Tipp:</span> <span style="color:${COLORS.gray};font-size:13px;line-height:1.55;">${esc(prompt.tipp)}</span></div>` : ""}
                 </td>
               </tr>
             </table>
           </td>
         </tr>
 
+        <!-- SECTION: NEWS DER WOCHE -->
         <tr>
-          <td style="padding:24px 0 8px 0;">
-            <div style="color:${COLORS.accent};font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;">News der Woche</div>
-          </td>
-        </tr>
-
-        <tr>
-          <td style="padding:0 0 16px 0;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLORS.bgCard};border:1px solid ${COLORS.border};border-radius:12px;">
+          <td style="padding:32px 0 14px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td align="center" style="padding:28px 24px;">
-                  <div style="color:${COLORS.accent};font-size:56px;font-weight:800;line-height:1;letter-spacing:-1px;">${esc(content.zahl.wert)}</div>
-                  <div style="margin-top:12px;color:${COLORS.text};font-size:16px;font-weight:700;">${esc(content.zahl.titel)}</div>
-                  <div style="margin-top:6px;color:${COLORS.textMuted};font-size:13px;line-height:1.5;">${esc(content.zahl.body)}</div>
+                <td width="140" style="color:${COLORS.accent};font-size:11px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;font-family:'DM Sans',Arial,Helvetica,sans-serif;white-space:nowrap;">News der Woche</td>
+                <td style="padding-left:10px;">
+                  <div style="height:1px;background:${COLORS.cardStrongBorder};line-height:1px;font-size:0;">&nbsp;</div>
                 </td>
               </tr>
             </table>
           </td>
         </tr>
+
+        <!-- Zahl der Woche -->
+        ${
+          zahl && zahl.wert
+            ? `<tr>
+          <td style="padding:0 0 20px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLORS.statBg};border:1px solid ${themeFor("CHAT").border};border-radius:16px;">
+              <tr>
+                <td align="center" style="padding:40px 28px;">
+                  <div class="stat-num" style="color:${COLORS.accent};font-size:64px;font-weight:700;line-height:1;letter-spacing:-1px;font-family:'DM Sans',Arial,Helvetica,sans-serif;">${esc(zahl.wert)}</div>
+                  <div style="margin-top:12px;color:${COLORS.cool};font-size:17px;font-weight:500;font-family:'DM Sans',Arial,Helvetica,sans-serif;line-height:1.4;">${esc(zahl.titel)}</div>
+                  ${zahl.body ? `<div style="margin-top:10px;color:${COLORS.gray};font-size:14px;line-height:1.55;font-family:'DM Sans',Arial,Helvetica,sans-serif;max-width:460px;margin-left:auto;margin-right:auto;">${esc(zahl.body)}</div>` : ""}
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>`
+            : ""
+        }
 
         ${newsCards}
 
+        <!-- FOOTER -->
         <tr>
-          <td style="padding:24px 0 8px 0;border-top:1px solid ${COLORS.border};">
-            <div style="text-align:center;color:${COLORS.textDim};font-size:12px;line-height:1.6;">
-              Copilot Partner Masterclass · NextSkills GmbH · <a href="https://www.copilotberater.de" style="color:${COLORS.accent};text-decoration:none;" target="_blank">copilotberater.de</a><br>
+          <td style="padding:32px 0 12px 0;">
+            <div style="height:1px;background:${COLORS.cardBorder};line-height:1px;font-size:0;">&nbsp;</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0 32px 0;text-align:center;">
+            <div style="color:${COLORS.gray};font-size:12px;line-height:1.7;font-family:'DM Sans',Arial,Helvetica,sans-serif;">
+              Copilot Partner Masterclass &middot; NextSkills GmbH &middot; <a href="https://www.copilotberater.de" style="color:${COLORS.accent};text-decoration:none;" target="_blank">copilotberater.de</a><br>
               Fragen? Einfach auf die Mail antworten.
             </div>
           </td>
