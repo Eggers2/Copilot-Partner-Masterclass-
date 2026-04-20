@@ -69,7 +69,9 @@ export async function deleteNewsletterAction(id: string) {
   return { ok: true };
 }
 
-export async function fetchMoreNewsAction(id: string) {
+export async function fetchMoreNewsAction(
+  id: string
+): Promise<{ content: NewsletterContent }> {
   await requireAuth();
   const nl = await getNewsletter(id);
   if (!nl) throw new Error("Newsletter nicht gefunden");
@@ -91,26 +93,35 @@ export async function fetchMoreNewsAction(id: string) {
   };
   await updateContent(id, { content: next });
   revalidatePath(`/admin/newsletter/${id}`);
+  return { content: next };
 }
 
-export async function regeneratePromptAction(id: string) {
+export async function regeneratePromptAction(
+  id: string
+): Promise<{ content: NewsletterContent }> {
   await requireAuth();
   const nl = await getNewsletter(id);
   if (!nl) throw new Error("Newsletter nicht gefunden");
   const content = readContent(nl);
   const prompt = await generatePromptOfWeek();
-  await updateContent(id, { content: { ...content, prompt } });
+  const next: NewsletterContent = { ...content, prompt };
+  await updateContent(id, { content: next });
   revalidatePath(`/admin/newsletter/${id}`);
+  return { content: next };
 }
 
-export async function regenerateZahlAction(id: string) {
+export async function regenerateZahlAction(
+  id: string
+): Promise<{ content: NewsletterContent }> {
   await requireAuth();
   const nl = await getNewsletter(id);
   if (!nl) throw new Error("Newsletter nicht gefunden");
   const content = readContent(nl);
   const zahl = await generateZahlOfWeek();
-  await updateContent(id, { content: { ...content, zahl } });
+  const next: NewsletterContent = { ...content, zahl };
+  await updateContent(id, { content: next });
   revalidatePath(`/admin/newsletter/${id}`);
+  return { content: next };
 }
 
 export async function saveContentAction(
