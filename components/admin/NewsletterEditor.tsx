@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Mail,
@@ -11,6 +11,7 @@ import {
   Send,
   CheckCircle2,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import type {
   NewsletterContent,
@@ -44,6 +45,19 @@ interface NewsletterEditorProps {
 
 const MAX_SELECTED = 5;
 
+function GenStatus({ label, done }: { label: string; done: boolean }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      {done ? (
+        <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+      ) : (
+        <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
+      )}
+      <span className={done ? "text-green-700" : "text-blue-700"}>{label}</span>
+    </span>
+  );
+}
+
 export function NewsletterEditor(props: NewsletterEditorProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -56,6 +70,57 @@ export function NewsletterEditor(props: NewsletterEditorProps) {
     { kind: "ok" | "err"; text: string } | null
   >(null);
   const [previewHtml, setPreviewHtml] = useState(props.previewHtml);
+  const [liveError, setLiveError] = useState<string | null>(props.fehlerText);
+
+  const newsReady = content.candidates.length > 0;
+  const promptReady = !!content.prompt?.title?.trim();
+  const zahlReady = !!content.zahl?.wert?.trim();
+  const isGenerating = !newsReady || !promptReady || !zahlReady;
+
+  // Polling solange mindestens eine Sektion noch leer ist. Wir mergen vom
+  // Server nur die Sektionen, die im Client noch nicht gefüllt sind, damit
+  // manuelle User-Edits niemals überschrieben werden.
+  const contentRef = useRef(content);
+  contentRef.current = content;
+
+  useEffect(() => {
+    if (!isGenerating) return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const res = await fetch(`/api/admin/newsletter/${props.id}`, {
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          content: NewsletterContent;
+          fehlerText: string | null;
+        };
+        if (cancelled) return;
+        if (data.fehlerText) setLiveError(data.fehlerText);
+        setContent((current) => ({
+          ...current,
+          candidates:
+            current.candidates.length > 0
+              ? current.candidates
+              : data.content.candidates,
+          prompt: current.prompt?.title?.trim()
+            ? current.prompt
+            : data.content.prompt,
+          zahl: current.zahl?.wert?.trim() ? current.zahl : data.content.zahl,
+        }));
+      } catch {
+        // leise ignorieren – nächster Tick probiert's wieder
+      }
+    };
+    const interval = setInterval(tick, 3000);
+    // Sofort einmal, nicht erst nach 3s warten
+    void tick();
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [isGenerating, props.id]);
 
   const selectedCount = content.selectedIds.length;
   const readOnly =
@@ -244,6 +309,27 @@ export function NewsletterEditor(props: NewsletterEditorProps) {
         </div>
       )}
 
+      {isGenerating && (
+        <div className="flex items-start gap-3 px-4 py-3 rounded-lg text-sm bg-blue-50 text-blue-800 border border-blue-200">
+          <Loader2 className="w-4 h-4 mt-0.5 flex-shrink-0 animate-spin" />
+          <div className="flex-1">
+            <strong>Claude recherchiert…</strong> Die News, der Prompt der Woche
+            und die Zahl der Woche werden parallel generiert. Die Abschnitte
+            erscheinen hier, sobald sie fertig sind.
+            <div className="flex gap-4 mt-2 text-xs">
+              <GenStatus label="News" done={newsReady} />
+              <GenStatus label="Prompt der Woche" done={promptReady} />
+              <GenStatus label="Zahl der Woche" done={zahlReady} />
+            </div>
+            {liveError && (
+              <div className="mt-2 text-xs text-red-700">
+                Hinweis: {liveError}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <div className="text-xs text-dark-slate-400 font-semibold tracking-wide uppercase">
@@ -289,7 +375,12 @@ export function NewsletterEditor(props: NewsletterEditorProps) {
       <div className="grid lg:grid-cols-2 gap-4">
         <div className="bg-white rounded-2xl border border-dark-slate-100 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-dark-slate-900">Prompt der Woche</h2>
+            <h2 className="text-lg font-semibold text-dark-slate-900 flex items-center gap-2">
+              Prompt der Woche
+              {!promptReady && isGenerating && (
+                <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+              )}
+            </h2>
             <button
               onClick={regeneratePrompt}
               disabled={pending || readOnly}
@@ -345,7 +436,12 @@ export function NewsletterEditor(props: NewsletterEditorProps) {
 
         <div className="bg-white rounded-2xl border border-dark-slate-100 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-dark-slate-900">Zahl der Woche</h2>
+            <h2 className="text-lg font-semibold text-dark-slate-900 flex items-center gap-2">
+              Zahl der Woche
+              {!zahlReady && isGenerating && (
+                <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+              )}
+            </h2>
             <button
               onClick={regenerateZahl}
               disabled={pending || readOnly}
@@ -408,6 +504,12 @@ export function NewsletterEditor(props: NewsletterEditorProps) {
           </button>
         </div>
         <div className="space-y-3">
+          {content.candidates.length === 0 && !newsReady && (
+            <div className="flex items-center gap-2 px-4 py-6 rounded-xl border border-dashed border-dark-slate-200 bg-dark-slate-50 text-sm text-dark-slate-500">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              News-Recherche läuft… (üblicherweise 20–40 s bei 5 News)
+            </div>
+          )}
           {content.candidates.map((item, idx) => {
             const selected = content.selectedIds.includes(item.id);
             const selectedIndex = selected
