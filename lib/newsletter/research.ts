@@ -11,6 +11,7 @@ import type {
 const WEB_SEARCH_TOOL = {
   type: "web_search_20260209" as const,
   name: "web_search" as const,
+  max_uses: 3,
 };
 
 const ALLOWED_BADGES: NewsBadge[] = [
@@ -120,8 +121,7 @@ Antworte ausschließlich mit einem JSON-Array nach dieser Struktur:
   const client = getAnthropic();
   const response = await client.messages.create({
     model: CLAUDE_MODEL,
-    max_tokens: 16000,
-    thinking: { type: "adaptive" },
+    max_tokens: 4000,
     system: [
       {
         type: "text",
@@ -176,8 +176,7 @@ Antworte ausschließlich mit JSON:
   const client = getAnthropic();
   const response = await client.messages.create({
     model: CLAUDE_MODEL,
-    max_tokens: 4000,
-    thinking: { type: "adaptive" },
+    max_tokens: 1500,
     system: [
       {
         type: "text",
@@ -215,8 +214,7 @@ Antworte ausschließlich mit JSON:
   const client = getAnthropic();
   const response = await client.messages.create({
     model: CLAUDE_MODEL,
-    max_tokens: 4000,
-    thinking: { type: "adaptive" },
+    max_tokens: 1500,
     system: [
       {
         type: "text",
