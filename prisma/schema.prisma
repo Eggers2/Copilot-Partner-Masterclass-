@@ -56,6 +56,13 @@ enum RegistrationStatus {
   CANCELLED
 }
 
+enum NewsletterStatus {
+  DRAFT
+  SENDING
+  SENT
+  FAILED
+}
+
 model Lead {
   id                   String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email                String                @unique
@@ -175,6 +182,27 @@ model BestellungTeilnehmer {
   @@unique([bestellungId, position])
   @@index([bestellungId])
   @@map("bestellung_teilnehmer")
+}
+
+model Newsletter {
+  id             String           @id @default(cuid())
+  ausgabeNr      Int              @map("ausgabe_nr")
+  kw             Int
+  jahr           Int
+  titel          String           @default("Copilot Insider Update")
+  subtitle       String?
+  status         NewsletterStatus @default(DRAFT)
+  content        Json
+  html           String?
+  zusatzMails    String?          @map("zusatz_mails")
+  recipients     Json?
+  gesendetAm     DateTime?        @map("gesendet_am")
+  fehlerText     String?          @map("fehler_text")
+  erstelltAm     DateTime         @default(now()) @map("erstellt_am")
+  aktualisiertAm DateTime         @updatedAt @map("aktualisiert_am")
+
+  @@index([status, gesendetAm])
+  @@map("newsletters")
 }
 
 model KundenMagicLink {
