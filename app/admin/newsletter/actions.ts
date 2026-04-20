@@ -19,10 +19,18 @@ import {
   generateZahlOfWeek,
   researchNews,
 } from "@/lib/newsletter/research";
+import { generateNewsletterContent } from "@/lib/newsletter/generate";
 import { renderNewsletterHtml } from "@/lib/newsletter/render";
 import { buildRecipientList } from "@/lib/newsletter/recipients";
 import { fireNewsletterWebhook } from "@/lib/webhooks/newsletter";
 import type { NewsletterContent } from "@/lib/newsletter/types";
+
+const EMPTY_CONTENT: NewsletterContent = {
+  candidates: [],
+  selectedIds: [],
+  prompt: { badge: "", title: "", body: "", tipp: "" },
+  zahl: { wert: "", titel: "", body: "" },
+};
 
 export async function createDraftAction() {
   await requireAuth();
@@ -31,20 +39,21 @@ export async function createDraftAction() {
   const { kw, jahr } = isoWeek(now);
   const ausgabeNr = await nextAusgabeNr();
 
-  const [candidates, prompt, zahl] = await Promise.all([
-    researchNews({ count: 10 }),
-    generatePromptOfWeek(),
-    generateZahlOfWeek(),
-  ]);
+  // Leeren Draft sofort anlegen und in den Editor springen – die Inhalte werden
+  // im Hintergrund generiert und per Polling nachgeladen.
+  const draft = await createDraft({
+    ausgabeNr,
+    kw,
+    jahr,
+    content: EMPTY_CONTENT,
+  });
 
-  const content: NewsletterContent = {
-    candidates,
-    selectedIds: [],
-    prompt,
-    zahl,
-  };
+  // Fire-and-forget: läuft auf Railway (Node-Runtime) weiter, während wir
+  // redirecten. Die Editor-Seite pollt auf Teilergebnisse.
+  void generateNewsletterContent(draft.id).catch((err) => {
+    console.error("[newsletter] Background-Generierung fehlgeschlagen:", err);
+  });
 
-  const draft = await createDraft({ ausgabeNr, kw, jahr, content });
   revalidatePath("/admin/newsletter");
   redirect(`/admin/newsletter/${draft.id}`);
 }

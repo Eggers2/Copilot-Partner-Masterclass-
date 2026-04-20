@@ -32,7 +32,9 @@ export default async function NewsletterListPage() {
       </div>
 
       <p className="text-xs text-dark-slate-400 mb-4">
-        Hinweis: Beim Anlegen eines Newsletters ruft das System die Claude API auf. Das dauert je nach Recherche 20–60 Sekunden.
+        Hinweis: Nach Klick auf &quot;Neuer Newsletter&quot; springst du sofort in den Editor –
+        News, Prompt und Zahl werden im Hintergrund von Claude generiert (ca. 20–40 s)
+        und erscheinen dort live.
       </p>
 
       {newsletters.length === 0 ? (
