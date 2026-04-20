@@ -105,7 +105,7 @@
             {
               "id": "a-to",
               "name": "to_email",
-              "value": "={{ $json.body.absender || $env.NEWSLETTER_SENDER_EMAIL || 'info@copilotberater.de' }}",
+              "value": "={{ $json.body.absender || 'info@copilotberater.de' }}",
               "type": "string"
             },
             {
