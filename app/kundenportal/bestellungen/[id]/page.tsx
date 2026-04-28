@@ -37,12 +37,6 @@ export default async function KundeBestellungDetailPage({
 
   if (!bestellung || bestellung.email !== session.email) notFound();
 
-  const matchingLead = await prisma.lead.findUnique({
-    where: { email: bestellung.email },
-    select: { showOnMap: true },
-  });
-  const showOnMap = matchingLead?.showOnMap ?? true;
-
   const paketInfo =
     PACKAGES[bestellung.paket as keyof typeof PACKAGES] ?? null;
 
@@ -136,7 +130,7 @@ export default async function KundeBestellungDetailPage({
             nachname: t.nachname,
             email: t.email,
           })),
-          showOnMap,
+          showOnMap: bestellung.showOnMap,
         }}
       />
     </div>

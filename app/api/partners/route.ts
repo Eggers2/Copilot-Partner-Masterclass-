@@ -4,6 +4,16 @@ import { geocodeAddress } from "@/lib/geocode";
 
 export const dynamic = "force-dynamic";
 
+function addressKey(
+  firma: string | null,
+  plz: string | null,
+  ort: string | null
+): string {
+  return [firma, plz, ort]
+    .map((v) => (v ?? "").trim().toLowerCase())
+    .join("|");
+}
+
 async function geocodeMissingPartners() {
   const partners = await prisma.lead.findMany({
     where: {
@@ -35,6 +45,15 @@ export async function GET() {
     // Geocode partners missing coordinates (runs only for those without coords)
     await geocodeMissingPartners();
 
+    const optedOut = await prisma.bestellung.findMany({
+      where: { showOnMap: false },
+      select: { email: true, firma: true, plz: true, ort: true },
+    });
+    const optedOutEmails = new Set(optedOut.map((b) => b.email.toLowerCase()));
+    const optedOutAddresses = new Set(
+      optedOut.map((b) => addressKey(b.firma, b.plz, b.ort))
+    );
+
     const partners = await prisma.lead.findMany({
       where: {
         status: "WON",
@@ -44,6 +63,7 @@ export async function GET() {
       },
       select: {
         company: true,
+        email: true,
         street: true,
         zip: true,
         city: true,
@@ -53,15 +73,21 @@ export async function GET() {
       },
     });
 
-    const result = partners.map((p) => ({
-      companyName: p.company,
-      street: p.street,
-      zip: p.zip,
-      city: p.city,
-      website: p.website,
-      latitude: p.latitude,
-      longitude: p.longitude,
-    }));
+    const result = partners
+      .filter(
+        (p) =>
+          !optedOutEmails.has(p.email.toLowerCase()) &&
+          !optedOutAddresses.has(addressKey(p.company, p.zip, p.city))
+      )
+      .map((p) => ({
+        companyName: p.company,
+        street: p.street,
+        zip: p.zip,
+        city: p.city,
+        website: p.website,
+        latitude: p.latitude,
+        longitude: p.longitude,
+      }));
 
     return NextResponse.json(result);
   } catch (error) {
