@@ -27,6 +27,7 @@ interface UpdateKundeBestellungInput {
   ort: string;
   land: string;
   ustId: string | null;
+  website: string | null;
   vorname: string;
   nachname: string;
   email: string;
@@ -101,6 +102,7 @@ export async function updateKundeBestellungAction(
         ort: newOrt,
         land: input.land,
         ustId: input.ustId?.trim() || null,
+        website: input.website?.trim() || null,
         vorname: input.vorname.trim(),
         nachname: input.nachname.trim(),
         email: newEmail,

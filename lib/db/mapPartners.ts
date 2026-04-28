@@ -67,6 +67,7 @@ export async function loadMapPartners(): Promise<MapPartner[]> {
       strasse: true,
       plz: true,
       ort: true,
+      website: true,
       latitude: true,
       longitude: true,
       showOnMap: true,
@@ -91,14 +92,18 @@ export async function loadMapPartners(): Promise<MapPartner[]> {
     })
     .map(([, b]) => b);
 
-  const emails = visible.map((b) => b.email.toLowerCase());
-  const leads = emails.length
+  // Website kommt primär aus der Bestellung. Falls dort leer, fallen wir auf
+  // den Lead zurück, damit historische Datensätze nicht ihre Website verlieren.
+  const fallbackEmails = visible
+    .filter((b) => !b.website)
+    .map((b) => b.email.toLowerCase());
+  const leads = fallbackEmails.length
     ? await prisma.lead.findMany({
-        where: { email: { in: emails } },
+        where: { email: { in: fallbackEmails } },
         select: { email: true, website: true },
       })
     : [];
-  const websiteByEmail = new Map(
+  const fallbackByEmail = new Map(
     leads.map((l) => [l.email.toLowerCase(), l.website])
   );
 
@@ -107,7 +112,7 @@ export async function loadMapPartners(): Promise<MapPartner[]> {
     street: b.strasse,
     zip: b.plz,
     city: b.ort,
-    website: websiteByEmail.get(b.email.toLowerCase()) ?? null,
+    website: b.website ?? fallbackByEmail.get(b.email.toLowerCase()) ?? null,
     latitude: b.latitude!,
     longitude: b.longitude!,
   }));
