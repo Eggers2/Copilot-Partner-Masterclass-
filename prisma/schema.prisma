@@ -161,6 +161,8 @@ model Bestellung {
   position             String?
   anmerkungen          String?
   showOnMap            Boolean  @default(true) @map("show_on_map")
+  latitude             Float?
+  longitude            Float?
   status               String   @default("neu")
   erstelltAm           DateTime @default(now()) @map("erstellt_am")
   aktualisiertAm       DateTime @updatedAt @map("aktualisiert_am")

@@ -62,7 +62,14 @@ export async function updateKundeBestellungAction(
 
   const current = await prisma.bestellung.findUnique({
     where: { id: bestellungId },
-    select: { id: true, email: true, userAnzahl: true },
+    select: {
+      id: true,
+      email: true,
+      userAnzahl: true,
+      strasse: true,
+      plz: true,
+      ort: true,
+    },
   });
 
   if (!current || current.email !== session.email) {
@@ -75,15 +82,22 @@ export async function updateKundeBestellungAction(
 
   const newEmail = input.email.trim().toLowerCase();
   const slotCount = current.userAnzahl;
+  const newStrasse = input.strasse.trim();
+  const newPlz = input.plz.trim();
+  const newOrt = input.ort.trim();
+  const addressChanged =
+    newStrasse !== current.strasse ||
+    newPlz !== current.plz ||
+    newOrt !== current.ort;
 
   await prisma.$transaction(async (tx) => {
     await tx.bestellung.update({
       where: { id: bestellungId },
       data: {
         firma: input.firma.trim(),
-        strasse: input.strasse.trim(),
-        plz: input.plz.trim(),
-        ort: input.ort.trim(),
+        strasse: newStrasse,
+        plz: newPlz,
+        ort: newOrt,
         land: input.land,
         ustId: input.ustId?.trim() || null,
         vorname: input.vorname.trim(),
@@ -93,6 +107,9 @@ export async function updateKundeBestellungAction(
         position: input.position?.trim() || null,
         anmerkungen: input.anmerkungen?.trim() || null,
         showOnMap: input.showOnMap,
+        // Adressänderung → Geokoordinaten verwerfen, werden beim nächsten
+        // Map-Fetch neu aus der aktualisierten Adresse geocodet.
+        ...(addressChanged ? { latitude: null, longitude: null } : {}),
       },
     });
 
