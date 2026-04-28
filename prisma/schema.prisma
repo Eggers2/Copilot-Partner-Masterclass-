@@ -159,6 +159,7 @@ model Bestellung {
   email                String
   telefon              String?
   position             String?
+  website              String?
   anmerkungen          String?
   showOnMap            Boolean  @default(true) @map("show_on_map")
   latitude             Float?

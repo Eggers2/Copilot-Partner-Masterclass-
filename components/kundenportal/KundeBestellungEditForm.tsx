@@ -22,6 +22,7 @@ interface BestellungData {
   ort: string;
   land: string;
   ustId: string | null;
+  website: string | null;
   vorname: string;
   nachname: string;
   email: string;
@@ -71,6 +72,7 @@ export function KundeBestellungEditForm({
   const [ort, setOrt] = useState(bestellung.ort);
   const [land, setLand] = useState(bestellung.land);
   const [ustId, setUstId] = useState(bestellung.ustId ?? "");
+  const [website, setWebsite] = useState(bestellung.website ?? "");
   const [vorname, setVorname] = useState(bestellung.vorname);
   const [nachname, setNachname] = useState(bestellung.nachname);
   const [email, setEmail] = useState(bestellung.email);
@@ -119,6 +121,7 @@ export function KundeBestellungEditForm({
         ort,
         land,
         ustId: ustId || null,
+        website: website.trim() || null,
         vorname,
         nachname,
         email,
@@ -209,6 +212,19 @@ export function KundeBestellungEditForm({
               type="text"
               value={ustId}
               onChange={(e) => setUstId(e.target.value)}
+              disabled={isPending}
+              className={inputClass}
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label className={labelClass}>
+              Website (für Anzeige auf der Partner-Karte)
+            </label>
+            <input
+              type="text"
+              placeholder="https://www.firma.de"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
               disabled={isPending}
               className={inputClass}
             />

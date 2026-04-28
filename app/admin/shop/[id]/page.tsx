@@ -71,6 +71,7 @@ export default async function BestellungDetailPage({
           ort: bestellung.ort,
           land: bestellung.land,
           ustId: bestellung.ustId,
+          website: bestellung.website,
           vorname: bestellung.vorname,
           nachname: bestellung.nachname,
           email: bestellung.email,
