@@ -11,6 +11,7 @@ import {
   clearCustomerSession,
 } from "@/lib/auth/customer";
 import { fireTeamsGuestWebhook } from "@/lib/webhooks/teamsGuest";
+import { geocodeAddress } from "@/lib/geocode";
 
 interface TeilnehmerInput {
   position: number;
@@ -86,9 +87,9 @@ export async function updateKundeBestellungAction(
   const newPlz = input.plz.trim();
   const newOrt = input.ort.trim();
   const addressChanged =
-    newStrasse !== current.strasse ||
-    newPlz !== current.plz ||
-    newOrt !== current.ort;
+    newStrasse !== current.strasse.trim() ||
+    newPlz !== current.plz.trim() ||
+    newOrt !== current.ort.trim();
 
   await prisma.$transaction(async (tx) => {
     await tx.bestellung.update({
@@ -188,6 +189,23 @@ export async function updateKundeBestellungAction(
 
   if (newEmail !== session.email) {
     await setCustomerSession(newEmail);
+  }
+
+  // Bei Adressänderung sofort neu geocoden, damit der Partner nicht in der Zeit
+  // bis zum nächsten /api/partners-Aufruf ohne Koordinaten auf der Karte fehlt.
+  // Best-effort: Fehler nicht propagieren – /api/partners holt das später nach.
+  if (addressChanged) {
+    try {
+      const coords = await geocodeAddress(newStrasse, newPlz, newOrt);
+      if (coords) {
+        await prisma.bestellung.update({
+          where: { id: bestellungId },
+          data: { latitude: coords.latitude, longitude: coords.longitude },
+        });
+      }
+    } catch (err) {
+      console.error("[Kundenportal] Re-Geocoding fehlgeschlagen:", err);
+    }
   }
 
   revalidatePath("/kundenportal/bestellungen");
