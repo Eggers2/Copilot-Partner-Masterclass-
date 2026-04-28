@@ -92,7 +92,7 @@ export default function MapClient() {
 
   // Fetch partners
   useEffect(() => {
-    fetch("/api/partners")
+    fetch("/api/partners", { cache: "no-store" })
       .then((r) => r.json())
       .then((data: Partner[]) => {
         if (Array.isArray(data)) {
@@ -125,7 +125,10 @@ export default function MapClient() {
     setSearchResults(null);
 
     try {
-      const res = await fetch(`/api/partners/search?zip=${encodeURIComponent(zip)}`);
+      const res = await fetch(
+        `/api/partners/search?zip=${encodeURIComponent(zip)}`,
+        { cache: "no-store" }
+      );
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Fehler bei der Suche");
