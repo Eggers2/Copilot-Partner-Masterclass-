@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     const partners = await prisma.lead.findMany({
       where: {
         status: "WON",
+        showOnMap: true,
         latitude: { not: null },
         longitude: { not: null },
       },

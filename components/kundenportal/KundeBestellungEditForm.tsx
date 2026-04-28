@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle, AlertCircle, Users } from "lucide-react";
+import { CheckCircle, AlertCircle, Users, MapPin } from "lucide-react";
 import { updateKundeBestellungAction } from "@/app/kundenportal/actions";
 
 interface Teilnehmer {
@@ -29,6 +29,7 @@ interface BestellungData {
   position: string | null;
   anmerkungen: string | null;
   teilnehmer: Teilnehmer[];
+  showOnMap: boolean;
 }
 
 const LAENDER: Record<string, string> = {
@@ -76,6 +77,7 @@ export function KundeBestellungEditForm({
   const [telefon, setTelefon] = useState(bestellung.telefon ?? "");
   const [positionRole, setPositionRole] = useState(bestellung.position ?? "");
   const [anmerkungen, setAnmerkungen] = useState(bestellung.anmerkungen ?? "");
+  const [showOnMap, setShowOnMap] = useState(bestellung.showOnMap);
 
   const slotCount = bestellung.userAnzahl;
   const [teilnehmer, setTeilnehmer] = useState<Teilnehmer[]>(() =>
@@ -124,6 +126,7 @@ export function KundeBestellungEditForm({
         position: positionRole || null,
         anmerkungen: anmerkungen || null,
         teilnehmer: visibleTeilnehmer,
+        showOnMap,
       });
 
       if (result.error) {
@@ -211,6 +214,41 @@ export function KundeBestellungEditForm({
             />
           </div>
         </div>
+      </section>
+
+      {/* Karten-Sichtbarkeit */}
+      <section className="bg-white rounded-2xl border border-dark-slate-100 shadow-sm p-6">
+        <div className="flex items-center gap-2 mb-3">
+          <MapPin className="w-4 h-4 text-[#030386]" />
+          <h2 className="text-base font-semibold text-dark-slate-900">
+            Anzeige auf der Partner-Karte
+          </h2>
+        </div>
+        <label className="flex items-start gap-3 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={showOnMap}
+            onChange={(e) => setShowOnMap(e.target.checked)}
+            disabled={isPending}
+            className="mt-0.5 w-4 h-4 accent-[#030386] cursor-pointer disabled:opacity-50"
+          />
+          <span className="text-sm text-dark-slate-700 leading-relaxed">
+            Ich stimme zu, das unsere Firma auf der Übersichtskarte unter{" "}
+            <a
+              href="https://www.copilotberater.de/suche"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#030386] hover:underline"
+            >
+              www.copilotberater.de/suche
+            </a>{" "}
+            angezeigt wird.
+          </span>
+        </label>
+        <p className="text-xs text-dark-slate-400 mt-3 ml-7">
+          Wenn du den Haken entfernst und speicherst, wird deine Firma weder auf der
+          DACH-Landkarte noch in der Umkreissuche per PLZ oder Ort angezeigt.
+        </p>
       </section>
 
       {/* Ansprechpartner */}
