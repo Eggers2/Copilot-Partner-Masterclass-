@@ -160,6 +160,7 @@ model Bestellung {
   telefon              String?
   position             String?
   anmerkungen          String?
+  showOnMap            Boolean  @default(true) @map("show_on_map")
   status               String   @default("neu")
   erstelltAm           DateTime @default(now()) @map("erstellt_am")
   aktualisiertAm       DateTime @updatedAt @map("aktualisiert_am")

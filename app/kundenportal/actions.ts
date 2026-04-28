@@ -92,11 +92,12 @@ export async function updateKundeBestellungAction(
         telefon: input.telefon?.trim() || null,
         position: input.position?.trim() || null,
         anmerkungen: input.anmerkungen?.trim() || null,
+        showOnMap: input.showOnMap,
       },
     });
 
-    // Karten-Sichtbarkeit am verknüpften Lead pflegen. Match über die bisherige
-    // Bestellungs-E-Mail; wenn dort kein Lead existiert, fallback auf neue E-Mail.
+    // Karten-Sichtbarkeit zusätzlich am verknüpften Lead spiegeln (best-effort,
+    // matcht nicht zwingend, daher ist die Bestellung die Quelle der Wahrheit).
     const leadEmails = Array.from(new Set([current.email, newEmail]));
     await tx.lead.updateMany({
       where: { email: { in: leadEmails } },
