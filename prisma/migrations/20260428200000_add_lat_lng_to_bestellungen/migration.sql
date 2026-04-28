@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "bestellungen" ADD COLUMN IF NOT EXISTS "latitude" DOUBLE PRECISION;
+ALTER TABLE "bestellungen" ADD COLUMN IF NOT EXISTS "longitude" DOUBLE PRECISION;
