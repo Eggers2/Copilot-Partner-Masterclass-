@@ -32,6 +32,7 @@ function parseBerlinDate(dateTimeLocal: string): Date {
 }
 import { updateLead, addActivity, upsertFirstCallScore } from "@/lib/db/leads";
 import { fireTeamsGuestWebhook } from "@/lib/webhooks/teamsGuest";
+import { geocodeAddress } from "@/lib/geocode";
 import {
   createWebinar,
   updateWebinar,
@@ -695,6 +696,19 @@ export async function updateBestellungAction(
   const { mwstSatz, mwstBetrag, preisBrutto, reverseCharge, reverseChargeHinweis } =
     calculateMwst(input.land, input.ustId ?? undefined, preisNetto);
 
+  const current = await prisma.bestellung.findUnique({
+    where: { id },
+    select: { strasse: true, plz: true, ort: true },
+  });
+  const newStrasse = input.strasse.trim();
+  const newPlz = input.plz.trim();
+  const newOrt = input.ort.trim();
+  const addressChanged =
+    !current ||
+    newStrasse !== current.strasse.trim() ||
+    newPlz !== current.plz.trim() ||
+    newOrt !== current.ort.trim();
+
   await prisma.$transaction(async (tx) => {
     await tx.bestellung.update({
       where: { id },
@@ -709,9 +723,9 @@ export async function updateBestellungAction(
         reverseChargeHinweis: reverseChargeHinweis || null,
         preisBrutto,
         firma: input.firma.trim(),
-        strasse: input.strasse.trim(),
-        plz: input.plz.trim(),
-        ort: input.ort.trim(),
+        strasse: newStrasse,
+        plz: newPlz,
+        ort: newOrt,
         land: input.land,
         ustId: input.ustId?.trim() || null,
         vorname: input.vorname.trim(),
@@ -721,6 +735,8 @@ export async function updateBestellungAction(
         position: input.position?.trim() || null,
         anmerkungen: input.anmerkungen?.trim() || null,
         status: input.status,
+        // Adressänderung → Geokoordinaten verwerfen, gleich darunter neu setzen.
+        ...(addressChanged ? { latitude: null, longitude: null } : {}),
       },
     });
 
@@ -793,8 +809,25 @@ export async function updateBestellungAction(
     });
   }
 
+  // Bei Adressänderung sofort neu geocoden, damit der Marker direkt am
+  // richtigen Ort steht. Best-effort: Fehler nicht propagieren.
+  if (addressChanged) {
+    try {
+      const coords = await geocodeAddress(newStrasse, newPlz, newOrt);
+      if (coords) {
+        await prisma.bestellung.update({
+          where: { id },
+          data: { latitude: coords.latitude, longitude: coords.longitude },
+        });
+      }
+    } catch (err) {
+      console.error("[Admin] Re-Geocoding fehlgeschlagen:", err);
+    }
+  }
+
   revalidatePath("/admin/shop");
   revalidatePath(`/admin/shop/${id}`);
+  revalidatePath("/suche");
 
   return { success: true };
 }
