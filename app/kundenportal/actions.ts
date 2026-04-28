@@ -33,6 +33,7 @@ interface UpdateKundeBestellungInput {
   position: string | null;
   anmerkungen: string | null;
   teilnehmer: TeilnehmerInput[];
+  showOnMap: boolean;
 }
 
 export async function requestLinkAction(formData: FormData): Promise<void> {
@@ -92,6 +93,14 @@ export async function updateKundeBestellungAction(
         position: input.position?.trim() || null,
         anmerkungen: input.anmerkungen?.trim() || null,
       },
+    });
+
+    // Karten-Sichtbarkeit am verknüpften Lead pflegen. Match über die bisherige
+    // Bestellungs-E-Mail; wenn dort kein Lead existiert, fallback auf neue E-Mail.
+    const leadEmails = Array.from(new Set([current.email, newEmail]));
+    await tx.lead.updateMany({
+      where: { email: { in: leadEmails } },
+      data: { showOnMap: input.showOnMap },
     });
 
     const existingTeilnehmer = await tx.bestellungTeilnehmer.findMany({
@@ -167,6 +176,7 @@ export async function updateKundeBestellungAction(
   revalidatePath(`/kundenportal/bestellungen/${bestellungId}`);
   revalidatePath("/admin/shop");
   revalidatePath(`/admin/shop/${bestellungId}`);
+  revalidatePath("/suche");
 
   return { success: true };
 }

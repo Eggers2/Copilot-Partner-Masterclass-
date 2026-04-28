@@ -82,6 +82,7 @@ model Lead {
   revenue              Int                   @default(0)
   followUpAt           DateTime?
   webinarRegistered    Boolean               @default(false) @map("webinar_registered")
+  showOnMap            Boolean               @default(true) @map("show_on_map")
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
   activities           LeadActivity[]
