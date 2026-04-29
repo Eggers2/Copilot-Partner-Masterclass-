@@ -286,7 +286,7 @@ export default function LandingPage() {
           {/* Badge */}
           <div className="mb-8">
             <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium border border-[#00C896]/30 text-[#00C896]" style={{ background: "rgba(0,200,150,.08)" }}>
-              12-Monats-Enablement &middot; DACH &middot; Launch Mai 2026
+              Klasse 1 ausgebucht &middot; Klasse 2 ab Juli 2026 &middot; Bewerbung offen
             </span>
           </div>
 
@@ -311,7 +311,7 @@ export default function LandingPage() {
           {/* Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 mb-16">
             <button onClick={scrollToWaitlist} className="btn-primary text-base">
-              Jetzt Platz sichern <ArrowRight className="w-5 h-5" />
+              Für Klasse 2 bewerben <ArrowRight className="w-5 h-5" />
             </button>
             <a href="#solution" className="btn-ghost text-base">
               Programm entdecken
@@ -321,7 +321,7 @@ export default function LandingPage() {
           {/* Stats row */}
           <div className="w-full border-t border-white/10 pt-10 grid grid-cols-2 md:grid-cols-4 gap-8 max-w-[800px]">
             {[
-              { num: "80+", label: "Systemhäuser auf der Warteliste" },
+              { num: "30", label: "Systemhäuser bereits in Klasse 1" },
               { num: "6\u00D7", label: "Microsoft MVP Alexander Eggers" },
               { num: "90", label: "Tage bis zum ersten Auftrag" },
               { num: "25+", label: "Jahre Microsoft-Erfahrung" },
@@ -336,6 +336,82 @@ export default function LandingPage() {
 
         <div className="flex justify-center pb-8 relative">
           <ChevronDown className="w-6 h-6 text-white/30 animate-bounce" />
+        </div>
+      </section>
+
+      {/* ═══ 2.5 KLASSEN-STATUS ═══ */}
+      <section style={{ background: "#23233D" }} className="py-[80px]">
+        <div className="container-main">
+          <div className="text-center mb-12 reveal">
+            <span className="section-label">Aktueller Status</span>
+            <h2
+              className="text-white font-bold mt-3"
+              style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(24px, 3vw, 36px)", letterSpacing: "-0.025em" }}
+            >
+              Klasse 1 ist voll. <span className="text-[#00C896]">Klasse 2 öffnet jetzt.</span>
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 max-w-[900px] mx-auto reveal">
+            {/* Karte 1 – Klasse 1 (ausgebucht) */}
+            <div
+              className="relative rounded-2xl p-8 border border-white/10"
+              style={{ background: "#1A1A2E", opacity: 0.78 }}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <span className="text-white/50 text-xs font-semibold tracking-wider uppercase">
+                  Klasse 01 &middot; Start Mai 2026
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-[#00C896]/40 text-[#00C896]/90" style={{ background: "rgba(0,200,150,.10)" }}>
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Ausgebucht
+                </span>
+              </div>
+
+              <div className="mb-3 flex items-baseline justify-between">
+                <span className="text-white/80 text-sm font-medium">30 / 30 Plätzen vergeben</span>
+                <span className="text-[#00C896]/80 text-sm font-bold">100%</span>
+              </div>
+              <div className="w-full h-2 rounded-full overflow-hidden mb-6" style={{ background: "rgba(255,255,255,.08)" }}>
+                <div className="h-full rounded-full" style={{ width: "100%", background: "rgba(0,200,150,.55)" }} />
+              </div>
+
+              <p className="text-white/55 text-sm leading-relaxed">
+                Diese Kohorte ist komplett. Danke an die 30 Systemhäuser aus dem DACH-Raum, die mit uns starten.
+              </p>
+            </div>
+
+            {/* Karte 2 – Klasse 2 (Bewerbung offen) */}
+            <div
+              className="relative rounded-2xl p-8 border border-[#00C896]/40"
+              style={{ background: "#1A1A2E", boxShadow: "0 0 40px rgba(0,200,150,.12)" }}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <span className="text-[#00C896] text-xs font-semibold tracking-wider uppercase">
+                  Klasse 02 &middot; Start vsl. Juli 2026
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-[#1A1A2E]" style={{ background: "#00C896" }}>
+                  Bewerbung offen
+                </span>
+              </div>
+
+              <div className="mb-3 flex items-baseline justify-between">
+                <span className="text-white/80 text-sm font-medium">Plätze begrenzt</span>
+                <span className="text-white/40 text-sm">Bewerbung läuft</span>
+              </div>
+              <div className="w-full h-2 rounded-full overflow-hidden mb-6 border border-[#00C896]/30" style={{ background: "rgba(0,200,150,.05)" }}>
+                <div className="h-full rounded-full" style={{ width: "8%", background: "#00C896" }} />
+              </div>
+
+              <p className="text-white/65 text-sm leading-relaxed mb-6">
+                Sichern Sie sich Ihren Platz, bevor auch diese Klasse voll ist.
+              </p>
+
+              <button onClick={scrollToWaitlist} className="btn-primary w-full justify-center">
+                Jetzt bewerben <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -695,7 +771,7 @@ export default function LandingPage() {
               },
               {
                 q: "Wir schauen noch, der Markt ist noch nicht reif.",
-                a: "Das Zeitfenster schließt sich in 12–18 Monaten. Wer sich jetzt positioniert, dominiert seinen regionalen Markt. Die Systemhäuser, die heute auf unserer Warteliste stehen, haben diesen Moment bereits erkannt. Wer wartet, verkauft weiterhin nur Lizenzen mit sinkenden Margen – und erklärt seinen Kunden, warum der Wettbewerber schon liefern kann.",
+                a: "Das Zeitfenster schließt sich in 12–18 Monaten. Wer sich jetzt positioniert, dominiert seinen regionalen Markt. Die 30 Systemhäuser in unserer ersten Klasse haben diesen Moment bereits erkannt – die Klasse ist ausgebucht. Wer wartet, verkauft weiterhin nur Lizenzen mit sinkenden Margen – und erklärt seinen Kunden, warum der Wettbewerber schon liefern kann.",
               },
               {
                 q: "Das können wir auch selbst aufbauen.",
@@ -739,18 +815,18 @@ export default function LandingPage() {
         <div className="relative container-main text-center">
           <div className="reveal">
             <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium border border-[#00C896]/30 text-[#00C896] mb-8" style={{ background: "rgba(0,200,150,.08)" }}>
-              Launch Mai 2026 &middot; Plätze begrenzt
+              Bewerbung Klasse 2 &middot; Start vsl. Juli 2026
             </span>
 
             <h2
               className="text-white font-bold mb-4 max-w-[700px] mx-auto"
               style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", letterSpacing: "-0.025em" }}
             >
-              Sichern Sie <span className="text-[#00C896]">Ihren Platz.</span> Bevor es Ihr Wettbewerber tut.
+              Klasse 1 ist ausgebucht. <span className="text-[#00C896]">Sichern Sie sich Klasse 2.</span>
             </h2>
 
             <p className="text-white/50 text-lg max-w-[520px] mx-auto mb-10">
-              80+ Systemhäuser stehen bereits auf der Warteliste. Tragen Sie sich jetzt ein und starten Sie Ihren Bewerbungsprozess.
+              30 Systemhäuser starten im Mai mit uns. Klasse 2 öffnet jetzt – Plätze begrenzt. Tragen Sie sich für den Bewerbungsprozess ein.
             </p>
 
             {renderForm()}
