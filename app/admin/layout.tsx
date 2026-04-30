@@ -1,5 +1,13 @@
 import Link from "next/link";
-import { Zap, LayoutDashboard, CheckSquare, Video, ShoppingCart, Mail } from "lucide-react";
+import {
+  Zap,
+  LayoutDashboard,
+  CheckSquare,
+  Video,
+  ShoppingCart,
+  Mail,
+  GraduationCap,
+} from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
 import { logoutAction } from "./actions";
 import { prisma } from "@/lib/prisma";
@@ -39,6 +47,7 @@ export default async function AdminLayout({
                 <NavLink href="/admin" icon={LayoutDashboard} label="Dashboard" />
                 <NavLink href="/admin/tasks" icon={CheckSquare} label="Follow-ups" />
                 <NavLink href="/admin/webinars" icon={Video} label="Webinare" />
+                <NavLink href="/admin/klassen" icon={GraduationCap} label="Klassen" />
                 <NavLink href="/admin/shop" icon={ShoppingCart} label="Online Shop" badge={neuCount} />
                 <NavLink href="/admin/newsletter" icon={Mail} label="Newsletter" />
               </nav>

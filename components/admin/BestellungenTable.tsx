@@ -13,10 +13,12 @@ import {
   CircleDot,
   Pencil,
 } from "lucide-react";
+import type { AdnChannel } from "@prisma/client";
 import {
   deleteBestellungAction,
   updateBestellungStatusAction,
 } from "@/app/admin/actions";
+import { ADN_CHANNEL_CONFIG } from "@/lib/constants/lead-config";
 
 interface Bestellung {
   id: number;
@@ -25,6 +27,7 @@ interface Bestellung {
   userAnzahl: number;
   zahlungsmodell: string;
   preisNetto: string;
+  listPreisNetto: string | null;
   mwstBetrag: string;
   preisBrutto: string;
   reverseCharge: boolean;
@@ -37,6 +40,8 @@ interface Bestellung {
   anmerkungen: string | null;
   status: string;
   erstelltAm: string;
+  adnChannel: AdnChannel;
+  klasseName: string | null;
 }
 
 type SortKey =
@@ -100,6 +105,8 @@ export function BestellungenTable({
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [paketFilter, setPaketFilter] = useState<string>("");
+  const [adnFilter, setAdnFilter] = useState<AdnChannel | "">("");
+  const [klasseFilter, setKlasseFilter] = useState<string>("");
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
@@ -118,6 +125,8 @@ export function BestellungenTable({
     let result = bestellungen.filter((b) => {
       if (statusFilter && b.status !== statusFilter) return false;
       if (paketFilter && b.paket !== paketFilter) return false;
+      if (adnFilter && b.adnChannel !== adnFilter) return false;
+      if (klasseFilter && b.klasseName !== klasseFilter) return false;
       if (search) {
         const q = search.toLowerCase();
         return (
@@ -165,7 +174,11 @@ export function BestellungenTable({
     }
 
     return result;
-  }, [bestellungen, statusFilter, paketFilter, search, sortKey, sortDir]);
+  }, [bestellungen, statusFilter, paketFilter, adnFilter, klasseFilter, search, sortKey, sortDir]);
+
+  const uniqueKlassen = [
+    ...new Set(bestellungen.map((b) => b.klasseName).filter((n): n is string => !!n)),
+  ];
 
   const handleDelete = (id: number) => {
     startTransition(async () => {
@@ -189,8 +202,11 @@ export function BestellungenTable({
       "User",
       "Zahlungsmodell",
       "Netto",
+      "Listenpreis",
       "MwSt",
       "Brutto",
+      "ADN-Kanal",
+      "Klasse",
       "Firma",
       "Land",
       "Vorname",
@@ -207,8 +223,11 @@ export function BestellungenTable({
       String(b.userAnzahl),
       b.zahlungsmodell,
       b.preisNetto,
+      b.listPreisNetto ?? b.preisNetto,
       b.mwstBetrag,
       b.preisBrutto,
+      ADN_CHANNEL_CONFIG[b.adnChannel].label,
+      b.klasseName ?? "",
       b.firma,
       b.land,
       b.vorname,
@@ -297,6 +316,32 @@ export function BestellungenTable({
             </option>
           ))}
         </select>
+        <select
+          value={adnFilter}
+          onChange={(e) => setAdnFilter(e.target.value as AdnChannel | "")}
+          className="px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none"
+        >
+          <option value="">Alle ADN-Kanäle</option>
+          {Object.entries(ADN_CHANNEL_CONFIG).map(([key, config]) => (
+            <option key={key} value={key}>
+              {config.label}
+            </option>
+          ))}
+        </select>
+        {uniqueKlassen.length > 0 && (
+          <select
+            value={klasseFilter}
+            onChange={(e) => setKlasseFilter(e.target.value)}
+            className="px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none"
+          >
+            <option value="">Alle Klassen</option>
+            {uniqueKlassen.map((k) => (
+              <option key={k} value={k}>
+                {k}
+              </option>
+            ))}
+          </select>
+        )}
         <button
           onClick={downloadCSV}
           className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#030386] border border-[#030386] rounded-lg hover:bg-[#E3ECF8]/50 transition-colors"
@@ -395,14 +440,32 @@ export function BestellungenTable({
                       </Link>
                     </td>
                     <td className="px-4 py-4">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#E3ECF8] text-[#030386]">
-                        {b.paket.charAt(0).toUpperCase() + b.paket.slice(1)}
-                      </span>
+                      <div className="flex flex-wrap items-center gap-1">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#E3ECF8] text-[#030386]">
+                          {b.paket.charAt(0).toUpperCase() + b.paket.slice(1)}
+                        </span>
+                        {b.adnChannel !== "NONE" && (
+                          <span
+                            className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                            style={{
+                              color: ADN_CHANNEL_CONFIG[b.adnChannel].color,
+                              backgroundColor: ADN_CHANNEL_CONFIG[b.adnChannel].bg,
+                            }}
+                          >
+                            {ADN_CHANNEL_CONFIG[b.adnChannel].short}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-dark-slate-400 mt-0.5">
                         {b.zahlungsmodell === "jahresabo"
                           ? "Jahresabo"
                           : "Monatlich"}{" "}
                         &middot; {b.userAnzahl} User
+                        {b.klasseName && (
+                          <>
+                            {" "}&middot; <span className="text-dark-slate-500">{b.klasseName}</span>
+                          </>
+                        )}
                       </p>
                     </td>
                     <td className="px-4 py-4">

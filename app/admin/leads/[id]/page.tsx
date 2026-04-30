@@ -7,6 +7,7 @@ import {
   detectBestellungFromLead,
   hasBestellungForLead,
 } from "@/lib/db/bestellungen";
+import { prisma } from "@/lib/prisma";
 import { LeadDetailPanel } from "@/components/admin/LeadDetailPanel";
 import { FirstCallSection } from "@/components/admin/FirstCallSection";
 import { ActivityTimeline } from "@/components/admin/ActivityTimeline";
@@ -22,9 +23,13 @@ export default async function LeadDetailPage({
   if (!authed) redirect("/admin/login");
 
   const { id } = await params;
-  const [lead, firstCallScore] = await Promise.all([
+  const [lead, firstCallScore, klassen] = await Promise.all([
     getLead(id),
     getFirstCallScore(id),
+    prisma.klasse.findMany({
+      orderBy: { kickoffDate: "asc" },
+      select: { id: true, name: true, slug: true },
+    }),
   ]);
 
   if (!lead) notFound();
@@ -79,7 +84,7 @@ export default async function LeadDetailPage({
 
       <div className="grid lg:grid-cols-5 gap-6">
         <div className="lg:col-span-3 space-y-6">
-          <LeadDetailPanel lead={serializedLead} />
+          <LeadDetailPanel lead={serializedLead} klassen={klassen} />
           <FirstCallSection leadId={lead.id} existingScore={serializedFirstCallScore} />
           {lead.status === "WON" && (
             <ConvertToBestellungButton
@@ -91,6 +96,8 @@ export default async function LeadDetailPage({
               confidence={detection.confidence}
               evidence={detection.evidence}
               placeholders={missing}
+              adnChannelHint={lead.adnChannel}
+              klassen={klassen}
               addressPreview={{
                 firma: lead.company,
                 strasse: lead.street,

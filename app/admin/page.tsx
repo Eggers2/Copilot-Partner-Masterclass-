@@ -48,6 +48,7 @@ export default async function AdminDashboard() {
           createdAt: l.createdAt.toISOString(),
           followUpAt: l.followUpAt?.toISOString() ?? null,
           lastActivityAt: l.activities[0]?.createdAt?.toISOString() ?? null,
+          klasseName: l.klasse?.name ?? null,
         }))}
       />
     </div>

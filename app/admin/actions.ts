@@ -45,8 +45,11 @@ import type {
   ActivityType,
   WebinarStatus,
   RegistrationStatus,
+  AdnChannel,
+  KlasseStatus,
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { isAdnChannelKey } from "@/lib/packages";
 
 export async function loginAction(
   _prev: unknown,
@@ -107,6 +110,14 @@ export async function updateLeadAction(
     currentAddress?.zip !== zip ||
     currentAddress?.city !== city;
 
+  const rawAdnChannel = formData.get("adnChannel");
+  const adnChannel: AdnChannel | undefined = isAdnChannelKey(rawAdnChannel)
+    ? rawAdnChannel
+    : undefined;
+  const rawKlasseId = formData.get("klasseId");
+  const klasseId =
+    typeof rawKlasseId === "string" && rawKlasseId.length > 0 ? rawKlasseId : null;
+
   await updateLead(id, {
     name: (formData.get("name") as string) || null,
     company: (formData.get("company") as string) || null,
@@ -121,6 +132,8 @@ export async function updateLeadAction(
     score: parseInt(formData.get("score") as string) || 0,
     revenue: newStatus === "WON" ? revenueCents : undefined,
     followUpAt: followUpAtRaw ? new Date(followUpAtRaw) : null,
+    ...(adnChannel ? { adnChannel } : {}),
+    klasseId,
     ...(addressChanged ? { latitude: null, longitude: null } : {}),
   });
 
@@ -673,6 +686,8 @@ interface UpdateBestellungInput {
   anmerkungen: string | null;
   status: string;
   teilnehmer: TeilnehmerInput[];
+  adnChannel?: AdnChannel;
+  klasseId?: string;
 }
 
 export async function updateBestellungAction(
@@ -685,17 +700,33 @@ export async function updateBestellungAction(
     return { error: "Firma und E-Mail sind erforderlich." };
   }
 
-  const { PACKAGES, isPaketKey, isZahlungsmodell, getPreisNetto, calculateMwst } =
-    await import("@/lib/packages");
+  const {
+    PACKAGES,
+    isPaketKey,
+    isZahlungsmodell,
+    getPreisNetto,
+    getInvoicedPreisNetto,
+    calculateMwst,
+  } = await import("@/lib/packages");
 
   if (!isPaketKey(input.paket) || !isZahlungsmodell(input.zahlungsmodell)) {
     return { error: "Paket oder Zahlungsmodell ungültig." };
   }
 
+  const adnChannel: AdnChannel = input.adnChannel ?? "NONE";
   const pkg = PACKAGES[input.paket];
-  const preisNetto = getPreisNetto(input.paket, input.zahlungsmodell);
+  const listPreisNetto = getPreisNetto(input.paket, input.zahlungsmodell);
+  const preisNetto = getInvoicedPreisNetto(input.paket, input.zahlungsmodell, adnChannel);
   const { mwstSatz, mwstBetrag, preisBrutto, reverseCharge, reverseChargeHinweis } =
     calculateMwst(input.land, input.ustId ?? undefined, preisNetto);
+
+  if (input.klasseId) {
+    const klasseExists = await prisma.klasse.findUnique({
+      where: { id: input.klasseId },
+      select: { id: true },
+    });
+    if (!klasseExists) return { error: "Die angegebene Klasse existiert nicht." };
+  }
 
   const current = await prisma.bestellung.findUnique({
     where: { id },
@@ -718,6 +749,7 @@ export async function updateBestellungAction(
         userAnzahl: pkg.users,
         zahlungsmodell: input.zahlungsmodell,
         preisNetto,
+        listPreisNetto,
         mwstSatz,
         mwstBetrag,
         reverseCharge,
@@ -737,6 +769,8 @@ export async function updateBestellungAction(
         position: input.position?.trim() || null,
         anmerkungen: input.anmerkungen?.trim() || null,
         status: input.status,
+        adnChannel,
+        ...(input.klasseId ? { klasseId: input.klasseId } : {}),
         // Adressänderung → Geokoordinaten verwerfen, gleich darunter neu setzen.
         ...(addressChanged ? { latitude: null, longitude: null } : {}),
       },
@@ -848,4 +882,185 @@ export async function sendCustomerMagicLinkAction(
   const baseUrl = await resolveAppBaseUrl();
   await requestMagicLink(bestellung.email, baseUrl);
   return { success: true };
+}
+
+// ─── LEAD ANLEGEN (manuell, z.B. ADN-Adressen) ──────
+
+export async function createLeadAction(
+  _prev: unknown,
+  formData: FormData
+): Promise<{ success?: boolean; error?: string; leadId?: string }> {
+  await requireAuth();
+
+  const email = ((formData.get("email") as string) || "").trim().toLowerCase();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return { error: "Bitte eine gültige E-Mail-Adresse angeben." };
+  }
+
+  const existing = await prisma.lead.findUnique({ where: { email } });
+  if (existing) {
+    return {
+      error: `Lead mit dieser E-Mail existiert bereits (${existing.name ?? existing.email}).`,
+    };
+  }
+
+  const rawAdnChannel = formData.get("adnChannel");
+  const adnChannel: AdnChannel = isAdnChannelKey(rawAdnChannel) ? rawAdnChannel : "NONE";
+  const rawKlasseId = formData.get("klasseId");
+  const klasseId =
+    typeof rawKlasseId === "string" && rawKlasseId.length > 0 ? rawKlasseId : null;
+
+  if (klasseId) {
+    const klasse = await prisma.klasse.findUnique({
+      where: { id: klasseId },
+      select: { id: true },
+    });
+    if (!klasse) return { error: "Die angegebene Klasse existiert nicht." };
+  }
+
+  const followUpAtRaw = formData.get("followUpAt") as string;
+  const sourceRaw = formData.get("source") as string;
+  const statusRaw = formData.get("status") as string;
+
+  const lead = await prisma.lead.create({
+    data: {
+      email,
+      name: ((formData.get("name") as string) || "").trim() || null,
+      company: ((formData.get("company") as string) || "").trim() || null,
+      street: ((formData.get("street") as string) || "").trim() || null,
+      zip: ((formData.get("zip") as string) || "").trim() || null,
+      city: ((formData.get("city") as string) || "").trim() || null,
+      website: ((formData.get("website") as string) || "").trim() || null,
+      phone: ((formData.get("phone") as string) || "").trim() || null,
+      status: (statusRaw as LeadStatus) || "NEW",
+      source: (sourceRaw as LeadSource) || "OTHER",
+      notes: ((formData.get("notes") as string) || "").trim() || null,
+      score: parseInt((formData.get("score") as string) || "0") || 0,
+      followUpAt: followUpAtRaw ? new Date(followUpAtRaw) : null,
+      adnChannel,
+      klasseId,
+    },
+  });
+
+  await addActivity(lead.id, {
+    type: "NOTE",
+    content: `Lead manuell angelegt${
+      adnChannel !== "NONE" ? ` (ADN-Kanal: ${adnChannel})` : ""
+    }.`,
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/leads");
+  redirect(`/admin/leads/${lead.id}`);
+}
+
+// ─── KLASSEN-VERWALTUNG ─────────────────────────────
+
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export async function createKlasseAction(
+  _prev: unknown,
+  formData: FormData
+): Promise<{ success?: boolean; error?: string }> {
+  await requireAuth();
+
+  const name = ((formData.get("name") as string) || "").trim();
+  if (name.length < 2) return { error: "Name ist erforderlich." };
+
+  const slugRaw = ((formData.get("slug") as string) || "").trim() || slugify(name);
+  const kickoffDateRaw = formData.get("kickoffDate") as string;
+  const startDateRaw = formData.get("startDate") as string;
+  const endDateRaw = formData.get("endDate") as string;
+
+  if (!kickoffDateRaw || !startDateRaw || !endDateRaw) {
+    return { error: "Kickoff-, Start- und Enddatum sind erforderlich." };
+  }
+
+  const capacityRaw = formData.get("capacity") as string;
+  const capacity =
+    capacityRaw && capacityRaw.trim().length > 0 ? parseInt(capacityRaw, 10) : null;
+  if (capacity !== null && (Number.isNaN(capacity) || capacity < 0)) {
+    return { error: "Kapazität muss eine positive Zahl sein." };
+  }
+
+  const statusRaw = (formData.get("status") as string) || "PLANNED";
+
+  try {
+    await prisma.klasse.create({
+      data: {
+        name,
+        slug: slugRaw,
+        kickoffDate: new Date(kickoffDateRaw),
+        startDate: new Date(startDateRaw),
+        endDate: new Date(endDateRaw),
+        capacity,
+        status: statusRaw as KlasseStatus,
+        description: ((formData.get("description") as string) || "").trim() || null,
+      },
+    });
+  } catch (err: unknown) {
+    if (err && typeof err === "object" && "code" in err && err.code === "P2002") {
+      return { error: "Slug ist bereits vergeben." };
+    }
+    throw err;
+  }
+
+  revalidatePath("/admin/klassen");
+  return { success: true };
+}
+
+export async function updateKlasseAction(
+  _prev: unknown,
+  formData: FormData
+): Promise<{ success?: boolean; error?: string }> {
+  await requireAuth();
+
+  const id = formData.get("id") as string;
+  if (!id) return { error: "ID fehlt." };
+
+  const name = ((formData.get("name") as string) || "").trim();
+  if (name.length < 2) return { error: "Name ist erforderlich." };
+
+  const kickoffDateRaw = formData.get("kickoffDate") as string;
+  const startDateRaw = formData.get("startDate") as string;
+  const endDateRaw = formData.get("endDate") as string;
+  const capacityRaw = formData.get("capacity") as string;
+  const capacity =
+    capacityRaw && capacityRaw.trim().length > 0 ? parseInt(capacityRaw, 10) : null;
+  const statusRaw = (formData.get("status") as string) || "PLANNED";
+
+  await prisma.klasse.update({
+    where: { id },
+    data: {
+      name,
+      kickoffDate: new Date(kickoffDateRaw),
+      startDate: new Date(startDateRaw),
+      endDate: new Date(endDateRaw),
+      capacity,
+      status: statusRaw as KlasseStatus,
+      description: ((formData.get("description") as string) || "").trim() || null,
+    },
+  });
+
+  revalidatePath("/admin/klassen");
+  revalidatePath(`/admin/klassen/${id}`);
+  return { success: true };
+}
+
+export async function setKlasseStatusAction(
+  id: string,
+  status: KlasseStatus
+): Promise<void> {
+  await requireAuth();
+  await prisma.klasse.update({ where: { id }, data: { status } });
+  revalidatePath("/admin/klassen");
+  revalidatePath(`/admin/klassen/${id}`);
 }

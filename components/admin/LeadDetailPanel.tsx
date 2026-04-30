@@ -3,12 +3,13 @@
 import { useState, useTransition } from "react";
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
-import type { LeadStatus, LeadSource } from "@prisma/client";
+import type { LeadStatus, LeadSource, AdnChannel } from "@prisma/client";
 import { Save, Trash2 } from "lucide-react";
 import { LeadStatusBadge } from "./LeadStatusBadge";
 import {
   LEAD_STATUS_CONFIG,
   LEAD_SOURCE_CONFIG,
+  ADN_CHANNEL_CONFIG,
 } from "@/lib/constants/lead-config";
 import { updateLeadAction, deleteLeadAction } from "@/app/admin/actions";
 
@@ -29,6 +30,14 @@ interface Lead {
   revenue: number;
   followUpAt: string | null;
   createdAt: string;
+  adnChannel: AdnChannel;
+  klasseId: string | null;
+}
+
+export interface KlasseChoice {
+  id: string;
+  name: string;
+  slug: string;
 }
 
 function SubmitButton() {
@@ -43,7 +52,13 @@ function SubmitButton() {
   );
 }
 
-export function LeadDetailPanel({ lead }: { lead: Lead }) {
+export function LeadDetailPanel({
+  lead,
+  klassen = [],
+}: {
+  lead: Lead;
+  klassen?: KlasseChoice[];
+}) {
   const [state, formAction] = useActionState(updateLeadAction, null);
   const [selectedStatus, setSelectedStatus] = useState<LeadStatus>(lead.status);
   const [isDeleting, startTransition] = useTransition();
@@ -188,6 +203,39 @@ export function LeadDetailPanel({ lead }: { lead: Lead }) {
               {Object.entries(LEAD_SOURCE_CONFIG).map(([key, config]) => (
                 <option key={key} value={key}>
                   {config.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-dark-slate-600 mb-1">
+              ADN-Kanal
+            </label>
+            <select
+              name="adnChannel"
+              defaultValue={lead.adnChannel}
+              className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none"
+            >
+              {Object.entries(ADN_CHANNEL_CONFIG).map(([key, config]) => (
+                <option key={key} value={key}>
+                  {config.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-dark-slate-600 mb-1">
+              Klasse
+            </label>
+            <select
+              name="klasseId"
+              defaultValue={lead.klasseId ?? ""}
+              className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none"
+            >
+              <option value="">— keine —</option>
+              {klassen.map((k) => (
+                <option key={k.id} value={k.id}>
+                  {k.name}
                 </option>
               ))}
             </select>

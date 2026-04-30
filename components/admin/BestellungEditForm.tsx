@@ -3,14 +3,21 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle, AlertCircle, Users } from "lucide-react";
+import type { AdnChannel } from "@prisma/client";
 import { updateBestellungAction } from "@/app/admin/actions";
 import { PACKAGES } from "@/lib/packages";
+import { ADN_CHANNEL_CONFIG } from "@/lib/constants/lead-config";
 
 interface Teilnehmer {
   position: number;
   vorname: string;
   nachname: string;
   email: string;
+}
+
+interface KlasseChoice {
+  id: string;
+  name: string;
 }
 
 interface BestellungData {
@@ -34,6 +41,8 @@ interface BestellungData {
   anmerkungen: string | null;
   status: string;
   teilnehmer: Teilnehmer[];
+  adnChannel: AdnChannel;
+  klasseId: string;
 }
 
 const LAENDER: Record<string, string> = {
@@ -66,8 +75,10 @@ function padTeilnehmer(list: Teilnehmer[], size: number): Teilnehmer[] {
 
 export function BestellungEditForm({
   bestellung,
+  klassen,
 }: {
   bestellung: BestellungData;
+  klassen: KlasseChoice[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -91,6 +102,8 @@ export function BestellungEditForm({
   const [positionRole, setPositionRole] = useState(bestellung.position ?? "");
   const [anmerkungen, setAnmerkungen] = useState(bestellung.anmerkungen ?? "");
   const [status, setStatus] = useState(bestellung.status);
+  const [adnChannel, setAdnChannel] = useState<AdnChannel>(bestellung.adnChannel);
+  const [klasseId, setKlasseId] = useState<string>(bestellung.klasseId);
 
   const paketInfo = PACKAGES[paket as keyof typeof PACKAGES] ?? PACKAGES.starter;
   const slotCount = paketInfo.users;
@@ -153,6 +166,8 @@ export function BestellungEditForm({
         anmerkungen: anmerkungen || null,
         status,
         teilnehmer: visibleTeilnehmer,
+        adnChannel,
+        klasseId,
       });
 
       if (result.error) {
@@ -215,10 +230,40 @@ export function BestellungEditForm({
               ))}
             </select>
           </div>
+          <div>
+            <label className={labelClass}>ADN-Kanal</label>
+            <select
+              value={adnChannel}
+              onChange={(e) => setAdnChannel(e.target.value as AdnChannel)}
+              disabled={isPending}
+              className={inputClass}
+            >
+              {Object.entries(ADN_CHANNEL_CONFIG).map(([key, config]) => (
+                <option key={key} value={key}>
+                  {config.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelClass}>Klasse *</label>
+            <select
+              value={klasseId}
+              onChange={(e) => setKlasseId(e.target.value)}
+              disabled={isPending}
+              className={inputClass}
+            >
+              {klassen.map((k) => (
+                <option key={k.id} value={k.id}>
+                  {k.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         <p className="text-xs text-dark-slate-400 mt-3">
           Preis und MwSt werden beim Speichern automatisch anhand von Paket,
-          Zahlungsmodell, Land und USt-IdNr. neu berechnet.
+          Zahlungsmodell, Land, USt-IdNr. und ADN-Kanal neu berechnet.
         </p>
       </section>
 

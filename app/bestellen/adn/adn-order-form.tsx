@@ -2,20 +2,13 @@
 
 import { useState, useMemo } from "react";
 import { CheckCircle, AlertCircle } from "lucide-react";
+import type { KlasseOption } from "../order-form";
 
 type FormState = "idle" | "loading" | "success" | "error";
 type PacketKey = "starter" | "team" | "business";
 type Zahlungsmodell = "jahresabo" | "monatlich";
 type Land = "DE" | "AT" | "CH";
-
-export interface KlasseOption {
-  id: string;
-  name: string;
-  slug: string;
-  kickoffDate: string;
-  startDate: string;
-  endDate: string;
-}
+type AdnChannel = "ADN_50" | "ADN_15";
 
 const PACKAGES: Record<
   PacketKey,
@@ -32,11 +25,11 @@ const LAENDER: Record<Land, string> = {
   CH: "Schweiz",
 };
 
-function formatEuro(cents: number): string {
+function formatEuro(value: number): string {
   return new Intl.NumberFormat("de-DE", {
     style: "currency",
     currency: "EUR",
-  }).format(cents);
+  }).format(value);
 }
 
 function calculateMwst(land: Land, ustId: string, preisNetto: number) {
@@ -64,17 +57,21 @@ function calculateMwst(land: Land, ustId: string, preisNetto: number) {
   return { mwstSatz, mwstBetrag, preisBrutto, reverseCharge, reverseChargeHinweis };
 }
 
-export function OrderForm({ klassen }: { klassen: KlasseOption[] }) {
+function getInvoicedPreisNetto(list: number, channel: AdnChannel): number {
+  if (channel === "ADN_15") return Math.round(list * 0.85 * 100) / 100;
+  return list;
+}
+
+export function AdnOrderForm({ klassen }: { klassen: KlasseOption[] }) {
   const [formState, setFormState] = useState<FormState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
-  const [successEmail, setSuccessEmail] = useState("");
+  const [successBestellNr, setSuccessBestellNr] = useState("");
 
-  // Selections
+  const [adnChannel, setAdnChannel] = useState<AdnChannel>("ADN_50");
   const [paket, setPaket] = useState<PacketKey>("team");
   const [zahlungsmodell, setZahlungsmodell] = useState<Zahlungsmodell>("jahresabo");
   const [klasseId, setKlasseId] = useState<string>(klassen[0]?.id ?? "");
 
-  // Company fields
   const [firma, setFirma] = useState("");
   const [strasse, setStrasse] = useState("");
   const [plz, setPlz] = useState("");
@@ -82,22 +79,16 @@ export function OrderForm({ klassen }: { klassen: KlasseOption[] }) {
   const [land, setLand] = useState<Land>("DE");
   const [ustId, setUstId] = useState("");
 
-  // Contact fields
   const [vorname, setVorname] = useState("");
   const [nachname, setNachname] = useState("");
   const [email, setEmail] = useState("");
   const [telefon, setTelefon] = useState("");
   const [position, setPosition] = useState("");
-
-  // Notes
   const [anmerkungen, setAnmerkungen] = useState("");
 
-  // AGB
-  const [agbAccepted, setAgbAccepted] = useState(false);
-
-  // Computed values
   const pkg = PACKAGES[paket];
-  const preisNetto = zahlungsmodell === "jahresabo" ? pkg.yearly : pkg.monthly;
+  const listPreis = zahlungsmodell === "jahresabo" ? pkg.yearly : pkg.monthly;
+  const preisNetto = getInvoicedPreisNetto(listPreis, adnChannel);
   const preisLabel = zahlungsmodell === "jahresabo" ? "/ Jahr" : "/ Monat";
 
   const mwst = useMemo(
@@ -113,12 +104,14 @@ export function OrderForm({ klassen }: { klassen: KlasseOption[] }) {
     setErrorMsg("");
 
     try {
-      const res = await fetch("/api/bestellen", {
+      const res = await fetch("/api/bestellen/adn", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           paket,
           zahlungsmodell,
+          adnChannel,
+          klasseId: klasseId || undefined,
           firma,
           strasse,
           plz,
@@ -131,27 +124,21 @@ export function OrderForm({ klassen }: { klassen: KlasseOption[] }) {
           telefon,
           position,
           anmerkungen,
-          klasseId: klasseId || undefined,
           website: (document.getElementById("website") as HTMLInputElement)?.value || "",
         }),
       });
 
+      const data = await res.json();
       if (!res.ok) {
-        const data = await res.json();
-        setErrorMsg(
-          data.error ||
-            "Es ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie uns direkt."
-        );
+        setErrorMsg(data.error || "Es ist ein Fehler aufgetreten.");
         setFormState("error");
         return;
       }
 
-      setSuccessEmail(email);
+      setSuccessBestellNr(data.bestellNr ?? "");
       setFormState("success");
     } catch {
-      setErrorMsg(
-        "Verbindungsfehler. Bitte versuchen Sie es erneut oder kontaktieren Sie uns direkt."
-      );
+      setErrorMsg("Verbindungsfehler. Bitte versuchen Sie es erneut.");
       setFormState("error");
     }
   };
@@ -164,21 +151,10 @@ export function OrderForm({ klassen }: { klassen: KlasseOption[] }) {
           className="text-2xl font-bold text-slate mb-4"
           style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
         >
-          Vielen Dank für Ihre Bestellung!
+          ADN-Bestellung angelegt
         </h2>
-        <p className="text-gray text-lg mb-2">
-          Wir haben Ihre Bestellung erhalten und senden Ihnen in Kürze eine
-          Rechnung per E-Mail an{" "}
-          <strong className="text-slate">{successEmail}</strong>.
-        </p>
-        <p className="text-gray/60 mt-6">
-          Bei Fragen erreichen Sie uns unter{" "}
-          <a
-            href="mailto:info@next-skills.de"
-            className="text-green hover:underline"
-          >
-            info@next-skills.de
-          </a>
+        <p className="text-gray text-lg">
+          Bestell-Nr: <strong className="text-slate">{successBestellNr}</strong>
         </p>
       </div>
     );
@@ -186,13 +162,55 @@ export function OrderForm({ klassen }: { klassen: KlasseOption[] }) {
 
   return (
     <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-10 px-4 pb-16" noValidate>
-      {/* Honeypot */}
       <div style={{ position: "absolute", left: "-9999px", opacity: 0 }} aria-hidden="true">
         <label htmlFor="website">Website</label>
         <input type="text" id="website" name="website" tabIndex={-1} autoComplete="off" />
       </div>
 
-      {/* Sektion A: Paketwahl */}
+      {/* ADN-Modell */}
+      <section>
+        <h2
+          className="text-xl font-bold text-slate mb-1"
+          style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
+        >
+          ADN-Abrechnungsmodell
+        </h2>
+        <p className="text-sm text-gray mb-4">
+          Welches Abrechnungsmodell wurde mit ADN vereinbart?
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <button
+            type="button"
+            onClick={() => setAdnChannel("ADN_50")}
+            className={`text-left p-5 rounded-xl border-2 transition-all duration-200 ${
+              adnChannel === "ADN_50"
+                ? "border-green shadow-lg bg-white"
+                : "border-cool bg-white hover:border-gray/30"
+            }`}
+          >
+            <h3 className="font-bold text-slate mb-1">ADN 50/50</h3>
+            <p className="text-xs text-gray">
+              ADN zahlt 50%, wir fakturieren 100% des Listenpreises an ADN.
+            </p>
+          </button>
+          <button
+            type="button"
+            onClick={() => setAdnChannel("ADN_15")}
+            className={`text-left p-5 rounded-xl border-2 transition-all duration-200 ${
+              adnChannel === "ADN_15"
+                ? "border-green shadow-lg bg-white"
+                : "border-cool bg-white hover:border-gray/30"
+            }`}
+          >
+            <h3 className="font-bold text-slate mb-1">ADN 85/15</h3>
+            <p className="text-xs text-gray">
+              Wir fakturieren 85% des Listenpreises an ADN; ADN fakturiert weiter.
+            </p>
+          </button>
+        </div>
+      </section>
+
+      {/* Paket */}
       <section>
         <h2
           className="text-xl font-bold text-slate mb-1"
@@ -205,31 +223,22 @@ export function OrderForm({ klassen }: { klassen: KlasseOption[] }) {
           {(Object.keys(PACKAGES) as PacketKey[]).map((key) => {
             const p = PACKAGES[key];
             const isSelected = paket === key;
-            const isRecommended = key === "team";
             return (
               <button
                 key={key}
                 type="button"
                 onClick={() => setPaket(key)}
-                className={`relative text-left p-6 rounded-xl border-2 transition-all duration-200 ${
+                className={`text-left p-6 rounded-xl border-2 transition-all duration-200 ${
                   isSelected
                     ? "border-green shadow-lg bg-white"
                     : "border-cool bg-white hover:border-gray/30"
                 }`}
               >
-                {isRecommended && (
-                  <span className="absolute -top-3 left-4 bg-green text-slate text-xs font-semibold px-3 py-1 rounded-full">
-                    Empfohlen
-                  </span>
-                )}
-                <h3 className="text-lg font-bold text-slate mt-1">{p.label}</h3>
+                <h3 className="text-lg font-bold text-slate">{p.label}</h3>
                 <p className="text-sm text-gray mb-3">{p.usersLabel}</p>
                 <p className="text-2xl font-bold text-green">
                   {formatEuro(p.yearly)}
-                  <span className="text-sm font-normal text-gray"> / Jahr</span>
-                </p>
-                <p className="text-sm text-gray mt-1">
-                  oder {formatEuro(p.monthly)} / Monat
+                  <span className="text-sm font-normal text-gray"> / Jahr (Liste)</span>
                 </p>
               </button>
             );
@@ -237,7 +246,7 @@ export function OrderForm({ klassen }: { klassen: KlasseOption[] }) {
         </div>
       </section>
 
-      {/* Sektion B: Zahlungsmodell */}
+      {/* Zahlungsmodell */}
       <section>
         <h2
           className="text-xl font-bold text-slate mb-4"
@@ -246,48 +255,32 @@ export function OrderForm({ klassen }: { klassen: KlasseOption[] }) {
           Zahlungsmodell
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <button
-            type="button"
-            onClick={() => setZahlungsmodell("jahresabo")}
-            className={`text-left p-5 rounded-xl border-2 transition-all duration-200 ${
-              zahlungsmodell === "jahresabo"
-                ? "border-green shadow-lg bg-white"
-                : "border-cool bg-white hover:border-gray/30"
-            }`}
-          >
-            <div className="flex items-center justify-between mb-1">
-              <h3 className="font-bold text-slate">Jahresabo</h3>
-              <span className="text-lg font-bold text-green">
-                {formatEuro(pkg.yearly)}
-              </span>
-            </div>
-            <p className="text-sm text-gray">
-              Einmalige Jahresrechnung – Sie sparen bis zu 2 Monate
-            </p>
-          </button>
-          <button
-            type="button"
-            onClick={() => setZahlungsmodell("monatlich")}
-            className={`text-left p-5 rounded-xl border-2 transition-all duration-200 ${
-              zahlungsmodell === "monatlich"
-                ? "border-green shadow-lg bg-white"
-                : "border-cool bg-white hover:border-gray/30"
-            }`}
-          >
-            <div className="flex items-center justify-between mb-1">
-              <h3 className="font-bold text-slate">Monatliche Zahlung</h3>
-              <span className="text-lg font-bold text-green">
-                {formatEuro(pkg.monthly)}
-              </span>
-            </div>
-            <p className="text-sm text-gray">
-              12 monatliche Rechnungen – flexibel kündbar nach Mindestlaufzeit
-            </p>
-          </button>
+          {(["jahresabo", "monatlich"] as const).map((m) => {
+            const isSelected = zahlungsmodell === m;
+            return (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setZahlungsmodell(m)}
+                className={`text-left p-5 rounded-xl border-2 transition-all duration-200 ${
+                  isSelected
+                    ? "border-green shadow-lg bg-white"
+                    : "border-cool bg-white hover:border-gray/30"
+                }`}
+              >
+                <h3 className="font-bold text-slate">
+                  {m === "jahresabo" ? "Jahresabo" : "Monatliche Zahlung"}
+                </h3>
+                <p className="text-sm text-gray">
+                  Listenpreis: {formatEuro(m === "jahresabo" ? pkg.yearly : pkg.monthly)}
+                </p>
+              </button>
+            );
+          })}
         </div>
       </section>
 
-      {/* Sektion B2: Klasse / Kohorte */}
+      {/* Klasse */}
       {klassen.length > 0 && (
         <section>
           <h2
@@ -296,62 +289,51 @@ export function OrderForm({ klassen }: { klassen: KlasseOption[] }) {
           >
             Programmstart
           </h2>
-          <p className="text-sm text-gray mb-4">
-            Wählen Sie die Kohorte, an der Sie teilnehmen möchten.
-          </p>
-          {klassen.length === 1 ? (
-            <div className="p-4 bg-white border border-cool rounded-xl text-sm text-slate">
-              <span className="font-semibold">{klassen[0].name}</span>
-              <span className="text-gray ml-2">
-                Kickoff: {new Date(klassen[0].kickoffDate).toLocaleDateString("de-DE")} ·
-                Programm:{" "}
-                {new Date(klassen[0].startDate).toLocaleDateString("de-DE")}–
-                {new Date(klassen[0].endDate).toLocaleDateString("de-DE")}
-              </span>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {klassen.map((k) => {
-                const isSelected = klasseId === k.id;
-                return (
-                  <button
-                    key={k.id}
-                    type="button"
-                    onClick={() => setKlasseId(k.id)}
-                    className={`text-left p-5 rounded-xl border-2 transition-all duration-200 ${
-                      isSelected
-                        ? "border-green shadow-lg bg-white"
-                        : "border-cool bg-white hover:border-gray/30"
-                    }`}
-                  >
-                    <h3 className="font-bold text-slate mb-1">{k.name}</h3>
-                    <p className="text-xs text-gray">
-                      Kickoff: {new Date(k.kickoffDate).toLocaleDateString("de-DE")}
-                    </p>
-                    <p className="text-xs text-gray">
-                      {new Date(k.startDate).toLocaleDateString("de-DE")} –{" "}
-                      {new Date(k.endDate).toLocaleDateString("de-DE")}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          <p className="text-sm text-gray mb-4">Welcher Kohorte soll der Partner zugeordnet werden?</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {klassen.map((k) => {
+              const isSelected = klasseId === k.id;
+              return (
+                <button
+                  key={k.id}
+                  type="button"
+                  onClick={() => setKlasseId(k.id)}
+                  className={`text-left p-5 rounded-xl border-2 transition-all duration-200 ${
+                    isSelected
+                      ? "border-green shadow-lg bg-white"
+                      : "border-cool bg-white hover:border-gray/30"
+                  }`}
+                >
+                  <h3 className="font-bold text-slate mb-1">{k.name}</h3>
+                  <p className="text-xs text-gray">
+                    Kickoff: {new Date(k.kickoffDate).toLocaleDateString("de-DE")}
+                  </p>
+                  <p className="text-xs text-gray">
+                    {new Date(k.startDate).toLocaleDateString("de-DE")} –{" "}
+                    {new Date(k.endDate).toLocaleDateString("de-DE")}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
         </section>
       )}
 
-      {/* Sektion C: Unternehmensdaten */}
+      {/* Partner-Daten (für CRM) */}
       <section>
         <h2
-          className="text-xl font-bold text-slate mb-4"
+          className="text-xl font-bold text-slate mb-1"
           style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
         >
-          Unternehmensdaten
+          Partner-Daten
         </h2>
+        <p className="text-sm text-gray mb-4">
+          Daten des Partners (Endkunden), nicht von ADN. Adresse landet im CRM.
+        </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
             <label htmlFor="firma" className="block text-sm font-medium text-slate mb-1">
-              Firmenname *
+              Firma *
             </label>
             <input
               id="firma"
@@ -440,25 +422,13 @@ export function OrderForm({ klassen }: { klassen: KlasseOption[] }) {
               value={ustId}
               onChange={(e) => setUstId(e.target.value)}
               disabled={formState === "loading"}
-              placeholder={
-                land === "DE"
-                  ? "DE123456789"
-                  : land === "AT"
-                  ? "ATU12345678"
-                  : "CHE-123.456.789"
-              }
               className="w-full px-4 py-3 text-sm border border-cool rounded-xl focus:border-green focus:outline-none disabled:opacity-50 text-slate"
             />
-            {ustIdRequired && (
-              <p className="text-xs text-green mt-1">
-                Für die steuerfreie Abrechnung benötigen wir Ihre USt-IdNr.
-              </p>
-            )}
           </div>
         </div>
       </section>
 
-      {/* Sektion D: Ansprechpartner */}
+      {/* Ansprechpartner */}
       <section>
         <h2
           className="text-xl font-bold text-slate mb-4"
@@ -468,11 +438,8 @@ export function OrderForm({ klassen }: { klassen: KlasseOption[] }) {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="vorname" className="block text-sm font-medium text-slate mb-1">
-              Vorname *
-            </label>
+            <label className="block text-sm font-medium text-slate mb-1">Vorname *</label>
             <input
-              id="vorname"
               type="text"
               required
               value={vorname}
@@ -482,11 +449,8 @@ export function OrderForm({ klassen }: { klassen: KlasseOption[] }) {
             />
           </div>
           <div>
-            <label htmlFor="nachname" className="block text-sm font-medium text-slate mb-1">
-              Nachname *
-            </label>
+            <label className="block text-sm font-medium text-slate mb-1">Nachname *</label>
             <input
-              id="nachname"
               type="text"
               required
               value={nachname}
@@ -496,105 +460,83 @@ export function OrderForm({ klassen }: { klassen: KlasseOption[] }) {
             />
           </div>
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-slate mb-1">
-              E-Mail *
-            </label>
+            <label className="block text-sm font-medium text-slate mb-1">E-Mail *</label>
             <input
-              id="email"
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={formState === "loading"}
-              placeholder="max@firma.de"
               className="w-full px-4 py-3 text-sm border border-cool rounded-xl focus:border-green focus:outline-none disabled:opacity-50 text-slate"
             />
           </div>
           <div>
-            <label htmlFor="telefon" className="block text-sm font-medium text-slate mb-1">
-              Telefon
-            </label>
+            <label className="block text-sm font-medium text-slate mb-1">Telefon</label>
             <input
-              id="telefon"
               type="tel"
               value={telefon}
               onChange={(e) => setTelefon(e.target.value)}
               disabled={formState === "loading"}
-              placeholder="+49 221 12345"
               className="w-full px-4 py-3 text-sm border border-cool rounded-xl focus:border-green focus:outline-none disabled:opacity-50 text-slate"
             />
           </div>
           <div className="md:col-span-2">
-            <label htmlFor="position" className="block text-sm font-medium text-slate mb-1">
-              Position / Rolle
-            </label>
+            <label className="block text-sm font-medium text-slate mb-1">Position / Rolle</label>
             <input
-              id="position"
               type="text"
               value={position}
               onChange={(e) => setPosition(e.target.value)}
               disabled={formState === "loading"}
-              placeholder="z.B. Geschäftsführer, IT-Leiter"
               className="w-full px-4 py-3 text-sm border border-cool rounded-xl focus:border-green focus:outline-none disabled:opacity-50 text-slate"
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-slate mb-1">Anmerkungen</label>
+            <textarea
+              maxLength={500}
+              rows={3}
+              value={anmerkungen}
+              onChange={(e) => setAnmerkungen(e.target.value)}
+              disabled={formState === "loading"}
+              className="w-full px-4 py-3 text-sm border border-cool rounded-xl focus:border-green focus:outline-none disabled:opacity-50 resize-none text-slate"
             />
           </div>
         </div>
       </section>
 
-      {/* Sektion E: Anmerkungen */}
-      <section>
-        <h2
-          className="text-xl font-bold text-slate mb-4"
-          style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
-        >
-          Anmerkungen
-        </h2>
-        <div>
-          <label htmlFor="anmerkungen" className="block text-sm font-medium text-slate mb-1">
-            Haben Sie Fragen oder Anmerkungen?
-          </label>
-          <textarea
-            id="anmerkungen"
-            maxLength={500}
-            rows={4}
-            value={anmerkungen}
-            onChange={(e) => setAnmerkungen(e.target.value)}
-            disabled={formState === "loading"}
-            className="w-full px-4 py-3 text-sm border border-cool rounded-xl focus:border-green focus:outline-none disabled:opacity-50 resize-none text-slate"
-          />
-          <p className="text-xs text-gray text-right mt-1">
-            {anmerkungen.length}/500 Zeichen
-          </p>
-        </div>
-      </section>
-
-      {/* Sektion F: Zusammenfassung & Absenden */}
+      {/* Zusammenfassung */}
       <section>
         <div className="bg-cool rounded-xl p-6 border border-cool">
           <h2
             className="text-xl font-bold text-slate mb-4"
             style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
           >
-            Ihre Bestellung
+            Zusammenfassung
           </h2>
           <div className="space-y-2 text-sm text-slate">
             <div className="flex justify-between">
-              <span className="text-gray">Paket:</span>
+              <span className="text-gray">ADN-Modell:</span>
               <span className="font-medium">
-                {pkg.label} ({pkg.usersLabel})
+                {adnChannel === "ADN_50" ? "ADN 50/50 (100% an ADN)" : "ADN 85/15 (85% an ADN)"}
               </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray">Paket:</span>
+              <span className="font-medium">{pkg.label} ({pkg.usersLabel})</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray">Zahlung:</span>
               <span className="font-medium">
-                {zahlungsmodell === "jahresabo" ? "Jahresabo" : "Monatliche Zahlung"}
+                {zahlungsmodell === "jahresabo" ? "Jahresabo" : "Monatlich"}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray">Preis:</span>
-              <span className="font-medium">
-                {formatEuro(preisNetto)} netto {preisLabel}
-              </span>
+              <span className="text-gray">Listenpreis:</span>
+              <span className="font-medium">{formatEuro(listPreis)} netto {preisLabel}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray">An ADN fakturiert:</span>
+              <span className="font-medium">{formatEuro(preisNetto)} netto {preisLabel}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray">zzgl. MwSt. ({mwst.mwstSatz}%):</span>
@@ -602,10 +544,8 @@ export function OrderForm({ klassen }: { klassen: KlasseOption[] }) {
             </div>
             <hr className="border-gray/20 my-2" />
             <div className="flex justify-between text-base font-bold">
-              <span>Gesamt:</span>
-              <span className="text-green">
-                {formatEuro(mwst.preisBrutto)} brutto {preisLabel}
-              </span>
+              <span>Gesamt an ADN:</span>
+              <span className="text-green">{formatEuro(mwst.preisBrutto)} brutto {preisLabel}</span>
             </div>
           </div>
 
@@ -614,30 +554,6 @@ export function OrderForm({ klassen }: { klassen: KlasseOption[] }) {
               {mwst.reverseChargeHinweis}
             </p>
           )}
-
-          <div className="mt-6">
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={agbAccepted}
-                onChange={(e) => setAgbAccepted(e.target.checked)}
-                required
-                className="mt-0.5 w-4 h-4 accent-green"
-              />
-              <span className="text-sm text-slate">
-                Ich akzeptiere die{" "}
-                <a
-                  href="/agb"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-green font-medium underline hover:text-green-d"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  AGB
-                </a>.
-              </span>
-            </label>
-          </div>
 
           {formState === "error" && (
             <div
@@ -652,17 +568,10 @@ export function OrderForm({ klassen }: { klassen: KlasseOption[] }) {
 
           <button
             type="submit"
-            disabled={formState === "loading" || !agbAccepted}
-            className="w-full mt-6 py-4 bg-green hover:bg-green-d disabled:opacity-60 text-slate font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-base hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,200,150,.35)]"
+            disabled={formState === "loading"}
+            className="w-full mt-6 py-4 bg-green hover:bg-green-d disabled:opacity-60 text-slate font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-base"
           >
-            {formState === "loading" ? (
-              <>
-                <div className="w-5 h-5 border-2 border-slate/30 border-t-slate rounded-full animate-spin" />
-                Bestellung wird verarbeitet...
-              </>
-            ) : (
-              "Verbindlich bestellen"
-            )}
+            {formState === "loading" ? "Bestellung wird verarbeitet..." : "ADN-Bestellung anlegen"}
           </button>
         </div>
       </section>

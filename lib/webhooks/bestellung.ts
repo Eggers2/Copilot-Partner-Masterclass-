@@ -1,14 +1,26 @@
+export interface BestellungWebhookKlasse {
+  id: string;
+  name: string;
+  slug: string;
+  kickoffDate: string;
+  startDate: string;
+  endDate: string;
+}
+
 export interface BestellungWebhookInput {
   bestellNr: string;
   paket: string;
   userAnzahl: number;
   zahlungsmodell: string;
   preisNetto: number;
+  listPreisNetto: number;
   preisBrutto: number;
   mwstSatz: number;
   mwstBetrag: number;
   reverseCharge: boolean;
   reverseChargeHinweis: string;
+  adnChannel: "NONE" | "ADN_50" | "ADN_15";
+  klasse: BestellungWebhookKlasse | null;
   firma: string;
   strasse: string;
   plz: string;
@@ -40,13 +52,16 @@ export function fireBestellungWebhook(data: BestellungWebhookInput): void {
       user_anzahl: data.userAnzahl,
       zahlungsmodell: data.zahlungsmodell,
       preis_netto: data.preisNetto,
+      list_preis_netto: data.listPreisNetto,
       preis_brutto: data.preisBrutto,
       mwst_satz: data.mwstSatz,
       mwst_betrag: data.mwstBetrag,
       reverse_charge: data.reverseCharge,
       reverse_charge_hinweis: data.reverseChargeHinweis,
+      adn_channel: data.adnChannel,
       waehrung: "EUR",
     },
+    klasse: data.klasse,
     unternehmen: {
       firma: data.firma,
       strasse: data.strasse,

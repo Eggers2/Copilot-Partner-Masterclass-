@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { createBestellung, OrderValidationError } from "@/lib/orders/createBestellung";
+import { isAdnChannelKey } from "@/lib/packages";
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,7 +9,6 @@ export async function POST(request: NextRequest) {
       request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       "unknown";
 
-    // Rate limiting: 10 orders per IP per hour
     if (!checkRateLimit(ip, 10, 60 * 60 * 1000)) {
       return NextResponse.json(
         { error: "Zu viele Anfragen. Bitte versuchen Sie es später erneut." },
@@ -18,7 +18,6 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    // Honeypot check - silently accept but don't process
     if (body.website && body.website.trim().length > 0) {
       return NextResponse.json(
         { success: true, bestellNr: "NS-0000-0000" },
@@ -26,7 +25,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Public-Flow: ADN-Kanal immer NONE, Klasse via Auto-Assignment falls nicht angegeben
+    if (!isAdnChannelKey(body.adnChannel) || body.adnChannel === "NONE") {
+      return NextResponse.json(
+        { error: "Bitte ADN-Modell wählen (ADN 50/50 oder ADN 85/15)." },
+        { status: 400 }
+      );
+    }
+
     const result = await createBestellung(
       {
         paket: body.paket,
@@ -43,10 +48,10 @@ export async function POST(request: NextRequest) {
         telefon: body.telefon,
         position: body.position,
         anmerkungen: body.anmerkungen,
-        adnChannel: "NONE",
+        adnChannel: body.adnChannel,
         klasseId: typeof body.klasseId === "string" ? body.klasseId : undefined,
       },
-      { ip, quelle: "copilotberater.de/bestellen" }
+      { ip, quelle: `copilotberater.de/bestellen/adn (${body.adnChannel})` }
     );
 
     return NextResponse.json(
@@ -57,7 +62,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof OrderValidationError) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
-    console.error("Bestellung POST error:", error);
+    console.error("ADN-Bestellung POST error:", error);
     return NextResponse.json(
       {
         error:
