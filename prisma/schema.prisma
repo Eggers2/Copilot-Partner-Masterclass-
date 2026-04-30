@@ -63,6 +63,39 @@ enum NewsletterStatus {
   FAILED
 }
 
+enum AdnChannel {
+  NONE
+  ADN_50
+  ADN_15
+}
+
+enum KlasseStatus {
+  PLANNED
+  OPEN
+  CLOSED
+  RUNNING
+  COMPLETED
+}
+
+model Klasse {
+  id           String       @id @default(cuid())
+  name         String
+  slug         String       @unique
+  kickoffDate  DateTime     @map("kickoff_date")
+  startDate    DateTime     @map("start_date")
+  endDate      DateTime     @map("end_date")
+  capacity     Int?
+  status       KlasseStatus @default(PLANNED)
+  description  String?
+  webinars     Webinar[]
+  bestellungen Bestellung[]
+  leads        Lead[]
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  @@map("klassen")
+}
+
 model Lead {
   id                   String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email                String                @unique
@@ -83,6 +116,9 @@ model Lead {
   followUpAt           DateTime?
   webinarRegistered    Boolean               @default(false) @map("webinar_registered")
   showOnMap            Boolean               @default(true) @map("show_on_map")
+  adnChannel           AdnChannel            @default(NONE) @map("adn_channel")
+  klasseId             String?               @map("klasse_id")
+  klasse               Klasse?               @relation(fields: [klasseId], references: [id])
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
   activities           LeadActivity[]
@@ -112,6 +148,8 @@ model Webinar {
   streamyardLink  String?              @map("streamyard_link")
   status          WebinarStatus        @default(PLANNED)
   description     String?
+  klasseId        String?              @map("klasse_id")
+  klasse          Klasse?              @relation(fields: [klasseId], references: [id])
   createdAt       DateTime             @default(now()) @map("created_at")
   updatedAt       DateTime             @updatedAt @map("updated_at")
   registrations   WebinarRegistration[]
@@ -143,6 +181,7 @@ model Bestellung {
   userAnzahl           Int      @map("user_anzahl")
   zahlungsmodell       String
   preisNetto           Decimal  @db.Decimal(10, 2) @map("preis_netto")
+  listPreisNetto       Decimal? @db.Decimal(10, 2) @map("list_preis_netto")
   mwstSatz             Decimal  @db.Decimal(4, 2) @map("mwst_satz")
   mwstBetrag           Decimal  @db.Decimal(10, 2) @map("mwst_betrag")
   reverseCharge        Boolean  @default(false) @map("reverse_charge")
@@ -165,6 +204,9 @@ model Bestellung {
   latitude             Float?
   longitude            Float?
   status               String   @default("neu")
+  adnChannel           AdnChannel @default(NONE) @map("adn_channel")
+  klasseId             String   @map("klasse_id")
+  klasse               Klasse   @relation(fields: [klasseId], references: [id])
   erstelltAm           DateTime @default(now()) @map("erstellt_am")
   aktualisiertAm       DateTime @updatedAt @map("aktualisiert_am")
   teilnehmer           BestellungTeilnehmer[]

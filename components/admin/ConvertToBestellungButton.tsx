@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShoppingCart, X, AlertTriangle, Check } from "lucide-react";
+import type { AdnChannel } from "@prisma/client";
 import { PACKAGES, type PaketKey, type Zahlungsmodell } from "@/lib/packages";
+import { ADN_CHANNEL_CONFIG } from "@/lib/constants/lead-config";
 
 type Confidence = "high" | "medium" | "low" | "ambiguous";
 
@@ -15,6 +17,12 @@ interface Evidence {
   zahlungsmodell: Zahlungsmodell | null;
 }
 
+interface KlasseChoice {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 interface Props {
   leadId: string;
   leadEmail: string;
@@ -24,6 +32,8 @@ interface Props {
   confidence: Confidence;
   evidence: Evidence[];
   placeholders: string[];
+  adnChannelHint: AdnChannel;
+  klassen: KlasseChoice[];
   addressPreview: {
     firma: string | null;
     strasse: string | null;
@@ -61,6 +71,8 @@ export function ConvertToBestellungButton(props: Props) {
   const [zahlungsmodell, setZahlungsmodell] = useState<Zahlungsmodell | "">(
     props.zahlungsmodellHint ?? ""
   );
+  const [adnChannel, setAdnChannel] = useState<AdnChannel>(props.adnChannelHint ?? "NONE");
+  const [klasseId, setKlasseId] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -81,13 +93,17 @@ export function ConvertToBestellungButton(props: Props) {
       setError("Bitte Paket und Abrechnung wählen.");
       return;
     }
+    if (!klasseId) {
+      setError("Bitte Klasse explizit wählen.");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
       const res = await fetch(`/api/admin/leads/${props.leadId}/bestellung`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paket, zahlungsmodell }),
+        body: JSON.stringify({ paket, zahlungsmodell, adnChannel, klasseId }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -244,6 +260,44 @@ export function ConvertToBestellungButton(props: Props) {
               </section>
 
               <section>
+                <label className="block text-sm font-semibold text-dark-slate-900 mb-2">
+                  ADN-Kanal
+                </label>
+                <select
+                  value={adnChannel}
+                  onChange={(e) => setAdnChannel(e.target.value as AdnChannel)}
+                  className="w-full border border-dark-slate-200 rounded-lg px-3 py-2 text-sm"
+                >
+                  {Object.entries(ADN_CHANNEL_CONFIG).map(([key, config]) => (
+                    <option key={key} value={key}>
+                      {config.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-dark-slate-500 mt-1">
+                  {ADN_CHANNEL_CONFIG[adnChannel].description}
+                </p>
+              </section>
+
+              <section>
+                <label className="block text-sm font-semibold text-dark-slate-900 mb-2">
+                  Klasse *
+                </label>
+                <select
+                  value={klasseId}
+                  onChange={(e) => setKlasseId(e.target.value)}
+                  className="w-full border border-dark-slate-200 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="">— bitte wählen —</option>
+                  {props.klassen.map((k) => (
+                    <option key={k.id} value={k.id}>
+                      {k.name}
+                    </option>
+                  ))}
+                </select>
+              </section>
+
+              <section>
                 <h3 className="text-sm font-semibold text-dark-slate-900 mb-2">Rechnungsdaten</h3>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <AddrField label="Name" value={props.addressPreview.name} />
@@ -287,7 +341,7 @@ export function ConvertToBestellungButton(props: Props) {
               <button
                 type="button"
                 onClick={submit}
-                disabled={loading || !paket || !zahlungsmodell}
+                disabled={loading || !paket || !zahlungsmodell || !klasseId}
                 className="px-4 py-2 text-sm font-semibold text-white bg-[#030386] hover:bg-[#05015B] rounded-lg disabled:opacity-50"
               >
                 {loading ? "Lege an…" : "Bestellung anlegen"}

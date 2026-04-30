@@ -118,3 +118,30 @@ Body:   { "event": "teams_guest_invited",
 ```
 
 Die App setzt daraufhin `teams_eingeladen_am = NOW()` auf dem Teilnehmer, sodass bei nachfolgenden Updates kein Duplikat-Call mehr ausgelöst wird.
+
+## Bestellungs-Webhook – ADN-Kanal & Klassen-Kohorte
+
+Der Bestell-Webhook (`N8N_WEBHOOK_URL_bestellen`, gefeuert aus `lib/webhooks/bestellung.ts`) liefert seit der Klasse-2-/ADN-Erweiterung zusätzliche Felder. Faktura-Workflows müssen den `adn_channel` lesen und die Rechnung entsprechend routen.
+
+### Felder (neu in `bestellung`)
+
+- `adn_channel`: `"NONE" | "ADN_50" | "ADN_15"`
+  - `NONE` → Direktbestellung; Rechnungsempfänger = Kunde aus `unternehmen`. `preis_netto` = Listenpreis.
+  - `ADN_50` → ADN zahlt 50%, wir fakturieren **100% des Listenpreises** an ADN. `preis_netto` = Listenpreis. Rechnungsempfänger = ADN.
+  - `ADN_15` → wir fakturieren **85% des Listenpreises** an ADN; ADN fakturiert weiter. `preis_netto` = 0,85 × Liste, `list_preis_netto` = Listenpreis. Rechnungsempfänger = ADN.
+- `list_preis_netto`: voller Listenpreis (immer als Referenz, auch ohne ADN-Kanal).
+
+### Neuer Top-Level-Block `klasse`
+
+```json
+"klasse": {
+  "id": "klasse-1-seed-id",
+  "name": "Klasse 1",
+  "slug": "klasse-1",
+  "kickoffDate": "2026-05-22T09:00:00.000Z",
+  "startDate": "2026-06-01T00:00:00.000Z",
+  "endDate": "2027-05-31T23:59:59.000Z"
+}
+```
+
+Workflow-Empfehlung: nach `bestellung.adn_channel` verzweigen (3 Branches), Rechnungsadresse + Betrag entsprechend zusammenstellen, im Mail-/Rechnungs-Template Klasse-Daten anzeigen.

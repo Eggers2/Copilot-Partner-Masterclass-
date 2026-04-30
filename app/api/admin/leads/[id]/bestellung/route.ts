@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthenticated } from "@/lib/auth";
-import { isPaketKey, isZahlungsmodell } from "@/lib/packages";
+import { isPaketKey, isZahlungsmodell, isAdnChannelKey } from "@/lib/packages";
 import {
   createBestellungFromLead,
   BestellungCreateError,
@@ -23,9 +23,11 @@ export async function POST(
     return NextResponse.json({ error: "Ungültiger Body." }, { status: 400 });
   }
 
-  const { paket, zahlungsmodell } = (body ?? {}) as {
+  const { paket, zahlungsmodell, adnChannel, klasseId } = (body ?? {}) as {
     paket?: unknown;
     zahlungsmodell?: unknown;
+    adnChannel?: unknown;
+    klasseId?: unknown;
   };
 
   if (!isPaketKey(paket)) {
@@ -35,8 +37,16 @@ export async function POST(
     return NextResponse.json({ error: "Ungültiges Zahlungsmodell." }, { status: 400 });
   }
 
+  const adnOverride = isAdnChannelKey(adnChannel) ? adnChannel : undefined;
+  const klasseOverride = typeof klasseId === "string" && klasseId.length > 0 ? klasseId : undefined;
+
   try {
-    const result = await createBestellungFromLead(id, { paket, zahlungsmodell });
+    const result = await createBestellungFromLead(id, {
+      paket,
+      zahlungsmodell,
+      adnChannel: adnOverride,
+      klasseId: klasseOverride,
+    });
     return NextResponse.json({
       bestellNr: result.bestellNr,
       usedPlaceholders: result.usedPlaceholders,

@@ -18,12 +18,18 @@ export default async function BestellungDetailPage({
   const bestellungId = parseInt(id, 10);
   if (Number.isNaN(bestellungId)) notFound();
 
-  const bestellung = await prisma.bestellung.findUnique({
-    where: { id: bestellungId },
-    include: {
-      teilnehmer: { orderBy: { position: "asc" } },
-    },
-  });
+  const [bestellung, klassen] = await Promise.all([
+    prisma.bestellung.findUnique({
+      where: { id: bestellungId },
+      include: {
+        teilnehmer: { orderBy: { position: "asc" } },
+      },
+    }),
+    prisma.klasse.findMany({
+      orderBy: { kickoffDate: "asc" },
+      select: { id: true, name: true },
+    }),
+  ]);
 
   if (!bestellung) notFound();
 
@@ -59,6 +65,7 @@ export default async function BestellungDetailPage({
       </div>
 
       <BestellungEditForm
+        klassen={klassen}
         bestellung={{
           id: bestellung.id,
           bestellNr: bestellung.bestellNr,
@@ -79,6 +86,8 @@ export default async function BestellungDetailPage({
           position: bestellung.position,
           anmerkungen: bestellung.anmerkungen,
           status: bestellung.status,
+          adnChannel: bestellung.adnChannel,
+          klasseId: bestellung.klasseId,
           teilnehmer: bestellung.teilnehmer.map((t) => ({
             position: t.position,
             vorname: t.vorname,

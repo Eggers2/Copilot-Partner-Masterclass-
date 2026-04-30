@@ -7,6 +7,10 @@ export const PACKAGES = {
 export type PaketKey = keyof typeof PACKAGES;
 export type Zahlungsmodell = "jahresabo" | "monatlich";
 
+export type AdnChannelKey = "NONE" | "ADN_50" | "ADN_15";
+
+export const ADN_CHANNEL_VALUES: AdnChannelKey[] = ["NONE", "ADN_50", "ADN_15"];
+
 export function isPaketKey(value: unknown): value is PaketKey {
   return typeof value === "string" && value in PACKAGES;
 }
@@ -15,9 +19,28 @@ export function isZahlungsmodell(value: unknown): value is Zahlungsmodell {
   return value === "jahresabo" || value === "monatlich";
 }
 
+export function isAdnChannelKey(value: unknown): value is AdnChannelKey {
+  return value === "NONE" || value === "ADN_50" || value === "ADN_15";
+}
+
 export function getPreisNetto(paket: PaketKey, zahlungsmodell: Zahlungsmodell): number {
   const pkg = PACKAGES[paket];
   return zahlungsmodell === "jahresabo" ? pkg.yearly : pkg.monthly;
+}
+
+/**
+ * Berechnet den Betrag, der dem Rechnungsempfänger fakturiert wird.
+ *  - NONE / ADN_50 → voller Listenpreis (bei ADN_50 zahlt ADN intern 50%, wir berechnen 100%)
+ *  - ADN_15        → 85% des Listenpreises (ADN fakturiert die übrigen 15% an den Endkunden weiter)
+ */
+export function getInvoicedPreisNetto(
+  paket: PaketKey,
+  zahlungsmodell: Zahlungsmodell,
+  adnChannel: AdnChannelKey
+): number {
+  const list = getPreisNetto(paket, zahlungsmodell);
+  if (adnChannel === "ADN_15") return Math.round(list * 0.85 * 100) / 100;
+  return list;
 }
 
 export function calculateMwst(

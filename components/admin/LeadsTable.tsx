@@ -1,14 +1,16 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, Download, ChevronUp, ChevronDown } from "lucide-react";
-import type { LeadStatus, LeadSource } from "@prisma/client";
+import { Search, Download, ChevronUp, ChevronDown, Plus } from "lucide-react";
+import type { LeadStatus, LeadSource, AdnChannel } from "@prisma/client";
 import { LeadStatusBadge } from "./LeadStatusBadge";
 import { FirstCallBadge } from "./FirstCallBadge";
 import {
   LEAD_STATUS_CONFIG,
   LEAD_SOURCE_CONFIG,
+  ADN_CHANNEL_CONFIG,
 } from "@/lib/constants/lead-config";
 
 
@@ -24,6 +26,8 @@ interface Lead {
   phone?: string | null;
   status: LeadStatus;
   source: LeadSource;
+  adnChannel: AdnChannel;
+  klasseName: string | null;
   score?: number;
   notes?: string | null;
   createdAt: string;
@@ -33,7 +37,17 @@ interface Lead {
   firstCallScore: { totalScore: number } | null;
 }
 
-type SortKey = "lead" | "company" | "status" | "score" | "source" | "createdAt" | "lastActivityAt" | "followUpAt";
+type SortKey =
+  | "lead"
+  | "company"
+  | "status"
+  | "score"
+  | "source"
+  | "adnChannel"
+  | "klasse"
+  | "createdAt"
+  | "lastActivityAt"
+  | "followUpAt";
 type SortDir = "asc" | "desc";
 
 interface LeadsTableProps {
@@ -66,6 +80,10 @@ function getSortValue(lead: Lead, key: SortKey): string | number | null {
       return lead.firstCallScore?.totalScore ?? null;
     case "source":
       return LEAD_SOURCE_CONFIG[lead.source].label;
+    case "adnChannel":
+      return ADN_CHANNEL_CONFIG[lead.adnChannel].label;
+    case "klasse":
+      return lead.klasseName?.toLowerCase() ?? null;
     case "createdAt":
       return lead.createdAt;
     case "lastActivityAt":
@@ -80,6 +98,7 @@ export function LeadsTable({ leads }: LeadsTableProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "">("");
   const [sourceFilter, setSourceFilter] = useState<LeadSource | "">("");
+  const [adnFilter, setAdnFilter] = useState<AdnChannel | "">("");
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
@@ -96,6 +115,7 @@ export function LeadsTable({ leads }: LeadsTableProps) {
     let result = leads.filter((lead) => {
       if (statusFilter && lead.status !== statusFilter) return false;
       if (sourceFilter && lead.source !== sourceFilter) return false;
+      if (adnFilter && lead.adnChannel !== adnFilter) return false;
       if (search) {
         const q = search.toLowerCase();
         return (
@@ -114,10 +134,10 @@ export function LeadsTable({ leads }: LeadsTableProps) {
     }
 
     return result;
-  }, [leads, statusFilter, sourceFilter, search, sortKey, sortDir]);
+  }, [leads, statusFilter, sourceFilter, adnFilter, search, sortKey, sortDir]);
 
   const downloadCSV = () => {
-    const headers = ["Name", "E-Mail", "Firma", "Straße", "PLZ", "Ort", "Website", "Telefon", "Status", "Quelle", "Score", "Notizen", "Erstellt am", "Letzte Aktivität", "Follow-up Datum"];
+    const headers = ["Name", "E-Mail", "Firma", "Straße", "PLZ", "Ort", "Website", "Telefon", "Status", "Quelle", "ADN-Kanal", "Klasse", "Score", "Notizen", "Erstellt am", "Letzte Aktivität", "Follow-up Datum"];
     const rows = filtered.map((lead) => [
       lead.name ?? "",
       lead.email,
@@ -129,6 +149,8 @@ export function LeadsTable({ leads }: LeadsTableProps) {
       lead.phone ?? "",
       LEAD_STATUS_CONFIG[lead.status].label,
       LEAD_SOURCE_CONFIG[lead.source].label,
+      ADN_CHANNEL_CONFIG[lead.adnChannel].label,
+      lead.klasseName ?? "",
       String(lead.score ?? ""),
       lead.notes ?? "",
       new Date(lead.createdAt).toLocaleString("de-DE"),
@@ -208,6 +230,25 @@ export function LeadsTable({ leads }: LeadsTableProps) {
             </option>
           ))}
         </select>
+        <select
+          value={adnFilter}
+          onChange={(e) => setAdnFilter(e.target.value as AdnChannel | "")}
+          className="px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none"
+        >
+          <option value="">Alle ADN-Kanäle</option>
+          {Object.entries(ADN_CHANNEL_CONFIG).map(([key, config]) => (
+            <option key={key} value={key}>
+              {config.label}
+            </option>
+          ))}
+        </select>
+        <Link
+          href="/admin/leads/new"
+          className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-white bg-[#030386] hover:bg-[#05015B] rounded-lg transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Lead anlegen
+        </Link>
         <button
           onClick={downloadCSV}
           className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#030386] border border-[#030386] rounded-lg hover:bg-[#E3ECF8]/50 transition-colors"
@@ -237,6 +278,12 @@ export function LeadsTable({ leads }: LeadsTableProps) {
               <th className={thClass} onClick={() => handleSort("source")}>
                 Quelle <SortIcon column="source" />
               </th>
+              <th className={thClass} onClick={() => handleSort("adnChannel")}>
+                ADN <SortIcon column="adnChannel" />
+              </th>
+              <th className={thClass} onClick={() => handleSort("klasse")}>
+                Klasse <SortIcon column="klasse" />
+              </th>
               <th className={thClass} onClick={() => handleSort("createdAt")}>
                 Datum <SortIcon column="createdAt" />
               </th>
@@ -252,7 +299,7 @@ export function LeadsTable({ leads }: LeadsTableProps) {
             {filtered.length === 0 ? (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={10}
                   className="px-6 py-12 text-center text-dark-slate-400 text-sm"
                 >
                   Keine Leads gefunden.
@@ -299,6 +346,24 @@ export function LeadsTable({ leads }: LeadsTableProps) {
                   </td>
                   <td className="px-6 py-4 text-sm text-dark-slate-500">
                     {LEAD_SOURCE_CONFIG[lead.source].label}
+                  </td>
+                  <td className="px-6 py-4">
+                    {lead.adnChannel === "NONE" ? (
+                      <span className="text-xs text-dark-slate-400">—</span>
+                    ) : (
+                      <span
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold"
+                        style={{
+                          color: ADN_CHANNEL_CONFIG[lead.adnChannel].color,
+                          backgroundColor: ADN_CHANNEL_CONFIG[lead.adnChannel].bg,
+                        }}
+                      >
+                        {ADN_CHANNEL_CONFIG[lead.adnChannel].short}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-dark-slate-500">
+                    {lead.klasseName ?? "—"}
                   </td>
                   <td className="px-6 py-4 text-sm text-dark-slate-400">
                     {new Date(lead.createdAt).toLocaleDateString("de-DE")}

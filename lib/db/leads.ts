@@ -1,5 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import type { LeadStatus, LeadSource, ActivityType } from "@prisma/client";
+import type {
+  LeadStatus,
+  LeadSource,
+  ActivityType,
+  AdnChannel,
+} from "@prisma/client";
 
 export interface LeadFilters {
   status?: LeadStatus;
@@ -32,6 +37,7 @@ export async function getLeads(filters?: LeadFilters) {
     include: {
       _count: { select: { activities: true } },
       firstCallScore: { select: { totalScore: true } },
+      klasse: { select: { id: true, name: true, slug: true } },
       activities: {
         orderBy: { createdAt: "desc" },
         take: 1,
@@ -68,6 +74,8 @@ export async function updateLead(
     followUpAt?: Date | null;
     latitude?: number | null;
     longitude?: number | null;
+    adnChannel?: AdnChannel;
+    klasseId?: string | null;
   }
 ) {
   return prisma.lead.update({ where: { id }, data });
@@ -200,6 +208,8 @@ export interface OrderLeadSyncData {
   zahlungsmodell: string;
   bestellNr: string;
   preisNetto: number;
+  adnChannel?: AdnChannel;
+  klasseId?: string | null;
 }
 
 /**
@@ -233,6 +243,16 @@ export async function syncOrderWithLead(data: OrderLeadSyncData) {
       existingLead.zip !== data.plz.trim() ||
       existingLead.city !== data.ort.trim();
 
+    // ADN-Kanal: nur überschreiben, wenn die Bestellung aktiv einen Kanal trägt –
+    // sonst bestehende ADN-Markierung am Lead nicht löschen.
+    // Klasse: immer auf die aktuellste Bestellung-Klasse setzen, da ein Lead
+    // typischerweise einer Kohorte angehört.
+    const adnUpdate =
+      data.adnChannel && data.adnChannel !== "NONE"
+        ? { adnChannel: data.adnChannel }
+        : {};
+    const klasseUpdate = data.klasseId ? { klasseId: data.klasseId } : {};
+
     await prisma.lead.update({
       where: { id: existingLead.id },
       data: {
@@ -244,6 +264,8 @@ export async function syncOrderWithLead(data: OrderLeadSyncData) {
         phone: data.telefon?.trim() || existingLead.phone,
         status: "WON",
         revenue: existingLead.revenue + revenueInCents,
+        ...adnUpdate,
+        ...klasseUpdate,
         ...(addressChanged ? { latitude: null, longitude: null } : {}),
       },
     });
@@ -278,6 +300,8 @@ export async function syncOrderWithLead(data: OrderLeadSyncData) {
         status: "WON",
         source: "WEBSITE",
         revenue: revenueInCents,
+        adnChannel: data.adnChannel ?? "NONE",
+        klasseId: data.klasseId ?? null,
       },
     });
 

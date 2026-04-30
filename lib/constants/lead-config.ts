@@ -3,6 +3,8 @@ import type {
   LeadSource,
   WebinarStatus,
   RegistrationStatus,
+  AdnChannel,
+  KlasseStatus,
 } from "@prisma/client";
 
 export const LEAD_TARGET = 500;
@@ -30,6 +32,46 @@ export const LEAD_SOURCE_CONFIG: Record<LeadSource, { label: string }> = {
   WEBINAR: { label: "Webinar" },
   COLD_OUTREACH: { label: "Kaltakquise" },
   OTHER: { label: "Sonstiges" },
+};
+
+export const ADN_CHANNEL_CONFIG: Record<
+  AdnChannel,
+  { label: string; short: string; color: string; bg: string; description: string }
+> = {
+  NONE: {
+    label: "Direkt",
+    short: "—",
+    color: "#6b7280",
+    bg: "#f3f4f6",
+    description: "Kein ADN-Kanal – Direktbestellung an Endkunde.",
+  },
+  ADN_50: {
+    label: "ADN 50/50",
+    short: "ADN 50",
+    color: "#7c3aed",
+    bg: "#ede9fe",
+    description:
+      "ADN zahlt 50% der Rechnung; wir fakturieren 100% des Listenpreises an ADN.",
+  },
+  ADN_15: {
+    label: "ADN 85/15",
+    short: "ADN 15",
+    color: "#0891b2",
+    bg: "#cffafe",
+    description:
+      "Wir fakturieren 85% des Listenpreises an ADN; ADN fakturiert weiter an den Endkunden.",
+  },
+};
+
+export const KLASSE_STATUS_CONFIG: Record<
+  KlasseStatus,
+  { label: string; color: string; bg: string }
+> = {
+  PLANNED:   { label: "Geplant",        color: "#6b7280", bg: "#f3f4f6" },
+  OPEN:      { label: "Offen",          color: "#16a34a", bg: "#dcfce7" },
+  CLOSED:    { label: "Geschlossen",    color: "#d97706", bg: "#fef3c7" },
+  RUNNING:   { label: "Läuft",          color: "#030386", bg: "#E3ECF8" },
+  COMPLETED: { label: "Abgeschlossen",  color: "#0891b2", bg: "#cffafe" },
 };
 
 export const FUNNEL_STAGES: LeadStatus[] = [

@@ -51,9 +51,11 @@ export default async function ShopDashboard() {
         bestellungen={bestellungen.map((b) => ({
           ...b,
           preisNetto: b.preisNetto.toString(),
+          listPreisNetto: b.listPreisNetto?.toString() ?? null,
           mwstBetrag: b.mwstBetrag.toString(),
           preisBrutto: b.preisBrutto.toString(),
           erstelltAm: b.erstelltAm.toISOString(),
+          klasseName: b.klasse?.name ?? null,
         }))}
       />
     </div>

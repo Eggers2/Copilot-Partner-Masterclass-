@@ -3,15 +3,21 @@ import {
   PACKAGES,
   calculateMwst,
   getPreisNetto,
+  getInvoicedPreisNetto,
   type PaketKey,
   type Zahlungsmodell,
+  type AdnChannelKey,
 } from "@/lib/packages";
 import { fireBestellungWebhook } from "@/lib/webhooks/bestellung";
 import { addActivity } from "@/lib/db/leads";
+import { getNextOpenKlasse, NoOpenKlasseError } from "@/lib/klassen";
 
 export async function getBestellungen() {
   return prisma.bestellung.findMany({
     orderBy: { erstelltAm: "desc" },
+    include: {
+      klasse: { select: { id: true, name: true, slug: true } },
+    },
   });
 }
 
@@ -86,7 +92,7 @@ export interface DetectionResult {
 
 export class BestellungCreateError extends Error {
   constructor(
-    public code: "ALREADY_EXISTS" | "NEEDS_REVIEW" | "LEAD_NOT_FOUND",
+    public code: "ALREADY_EXISTS" | "NEEDS_REVIEW" | "LEAD_NOT_FOUND" | "NO_OPEN_KLASSE",
     message: string,
     public details?: unknown
   ) {
@@ -277,6 +283,8 @@ export interface CreateResult {
 export interface CreateOverrides {
   paket?: PaketKey;
   zahlungsmodell?: Zahlungsmodell;
+  adnChannel?: AdnChannelKey;
+  klasseId?: string;
 }
 
 async function nextBestellNrNumber(prefix: string): Promise<number> {
@@ -365,7 +373,35 @@ export async function createBestellungFromLead(
   if (vorname === PLACEHOLDER) usedPlaceholders.push("vorname");
   if (nachname === PLACEHOLDER) usedPlaceholders.push("nachname");
 
-  const preisNetto = getPreisNetto(paket, zahlungsmodell);
+  // ADN-Kanal: Override hat Vorrang, sonst vom Lead übernehmen
+  const adnChannel: AdnChannelKey = overrides?.adnChannel ?? lead.adnChannel ?? "NONE";
+
+  // Klasse: Override hat Vorrang, sonst Auto-Assignment (Lead.klasseId wird bewusst NICHT
+  // automatisch übernommen – Klasse muss bei Konvertierung explizit gewählt werden).
+  let klasseId: string;
+  if (overrides?.klasseId) {
+    const exists = await prisma.klasse.findUnique({
+      where: { id: overrides.klasseId },
+      select: { id: true },
+    });
+    if (!exists) {
+      throw new BestellungCreateError("NEEDS_REVIEW", "Die angegebene Klasse existiert nicht.");
+    }
+    klasseId = overrides.klasseId;
+  } else {
+    try {
+      const next = await getNextOpenKlasse();
+      klasseId = next.id;
+    } catch (err) {
+      if (err instanceof NoOpenKlasseError) {
+        throw new BestellungCreateError("NO_OPEN_KLASSE", err.message);
+      }
+      throw err;
+    }
+  }
+
+  const listPreisNetto = getPreisNetto(paket, zahlungsmodell);
+  const preisNetto = getInvoicedPreisNetto(paket, zahlungsmodell, adnChannel);
   const pkg = PACKAGES[paket];
   const { mwstSatz, mwstBetrag, preisBrutto, reverseCharge, reverseChargeHinweis } =
     calculateMwst(land, undefined, preisNetto);
@@ -386,6 +422,7 @@ export async function createBestellungFromLead(
           userAnzahl: pkg.users,
           zahlungsmodell,
           preisNetto,
+          listPreisNetto,
           mwstSatz,
           mwstBetrag,
           reverseCharge,
@@ -403,6 +440,8 @@ export async function createBestellungFromLead(
           telefon: lead.phone?.trim() || null,
           position: null,
           anmerkungen: null,
+          adnChannel,
+          klasseId,
         },
       });
       break;
@@ -426,17 +465,31 @@ export async function createBestellungFromLead(
       (usedPlaceholders.length > 0 ? ` | Platzhalter: ${usedPlaceholders.join(", ")}` : ""),
   });
 
+  const klasseForWebhook = await prisma.klasse.findUnique({ where: { id: klasseId } });
+
   fireBestellungWebhook({
     bestellNr,
     paket,
     userAnzahl: pkg.users,
     zahlungsmodell,
     preisNetto,
+    listPreisNetto,
     preisBrutto,
     mwstSatz,
     mwstBetrag,
     reverseCharge,
     reverseChargeHinweis,
+    adnChannel,
+    klasse: klasseForWebhook
+      ? {
+          id: klasseForWebhook.id,
+          name: klasseForWebhook.name,
+          slug: klasseForWebhook.slug,
+          kickoffDate: klasseForWebhook.kickoffDate.toISOString(),
+          startDate: klasseForWebhook.startDate.toISOString(),
+          endDate: klasseForWebhook.endDate.toISOString(),
+        }
+      : null,
     firma,
     strasse,
     plz,
