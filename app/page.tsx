@@ -286,7 +286,7 @@ export default function LandingPage() {
           {/* Badge */}
           <div className="mb-8">
             <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium border border-[#00C896]/30 text-[#00C896]" style={{ background: "rgba(0,200,150,.08)" }}>
-              Klasse 1 ausgebucht &middot; Klasse 2 ab Juli 2026 &middot; Bewerbung offen
+              Klasse 1 ausgebucht &middot; Klasse 2 ab August 2026 &middot; Bewerbung offen
             </span>
           </div>
 
@@ -388,7 +388,7 @@ export default function LandingPage() {
             >
               <div className="flex items-center justify-between mb-6">
                 <span className="text-[#00C896] text-xs font-semibold tracking-wider uppercase">
-                  Klasse 02 &middot; Start vsl. Juli 2026
+                  Klasse 02 &middot; Start vsl. August 2026
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-[#1A1A2E]" style={{ background: "#00C896" }}>
                   Bewerbung offen
@@ -815,7 +815,7 @@ export default function LandingPage() {
         <div className="relative container-main text-center">
           <div className="reveal">
             <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium border border-[#00C896]/30 text-[#00C896] mb-8" style={{ background: "rgba(0,200,150,.08)" }}>
-              Bewerbung Klasse 2 &middot; Start vsl. Juli 2026
+              Bewerbung Klasse 2 &middot; Start vsl. August 2026
             </span>
 
             <h2
