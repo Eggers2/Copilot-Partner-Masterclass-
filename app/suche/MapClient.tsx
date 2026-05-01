@@ -48,7 +48,6 @@ export default function MapClient() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<L.LayerGroup | null>(null);
   const [partners, setPartners] = useState<Partner[]>([]);
-  const [partnerCount, setPartnerCount] = useState(0);
   const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
   const [zipInput, setZipInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -58,17 +57,23 @@ export default function MapClient() {
   useEffect(() => {
     if (mapRef.current || !mapContainerRef.current) return;
 
+    // Hard DACH bounds: cuts off France/UK/Poland/etc. on left+right
+    const dachBounds = L.latLngBounds(
+      [46.2, 5.9],   // SW corner (south Switzerland, west border)
+      [55.1, 17.2],  // NE corner (north Germany, east Austria)
+    );
+
     const map = L.map(mapContainerRef.current, {
       center: [50.5, 10.3],
       zoom: 6,
       scrollWheelZoom: true,
+      maxBounds: dachBounds,
+      maxBoundsViscosity: 1.0,
+      minZoom: 6,
+      maxZoom: 18,
     });
 
-    // Fit to DACH bounds: from Flensburg (54.8°N) to south of Switzerland (46°N)
-    map.fitBounds([
-      [54.9, 5.8],   // NW corner (north Germany, west border)
-      [46.3, 17.2],  // SE corner (south Austria, east border)
-    ]);
+    map.fitBounds(dachBounds);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -97,25 +102,30 @@ export default function MapClient() {
       .then((data: Partner[]) => {
         if (Array.isArray(data)) {
           setPartners(data);
-          setPartnerCount(data.length);
         }
       })
       .catch(console.error);
   }, []);
 
-  // Render markers
+  // Render markers + auto-fit to partner bounds (only while no search is active)
   useEffect(() => {
-    if (!markersRef.current) return;
+    if (!markersRef.current || !mapRef.current) return;
     markersRef.current.clearLayers();
     const icon = createGreenIcon();
 
+    const coords: [number, number][] = [];
     partners.forEach((p) => {
       if (p.latitude == null || p.longitude == null) return;
+      coords.push([p.latitude, p.longitude]);
       L.marker([p.latitude, p.longitude], { icon })
         .bindPopup(partnerPopup(p))
         .addTo(markersRef.current!);
     });
-  }, [partners]);
+
+    if (!searchResults && coords.length > 0) {
+      mapRef.current.fitBounds(coords, { padding: [40, 40] });
+    }
+  }, [partners, searchResults]);
 
   const handleSearch = useCallback(async () => {
     const zip = zipInput.trim();
@@ -136,7 +146,17 @@ export default function MapClient() {
       }
       setSearchResults(data.partners);
       if (mapRef.current && data.zipCoords) {
-        mapRef.current.setView([data.zipCoords.latitude, data.zipCoords.longitude], 8);
+        const points: [number, number][] = [
+          [data.zipCoords.latitude, data.zipCoords.longitude],
+          ...(data.partners as SearchResult[])
+            .filter((p) => p.latitude != null && p.longitude != null)
+            .map((p) => [p.latitude as number, p.longitude as number] as [number, number]),
+        ];
+        if (points.length > 1) {
+          mapRef.current.fitBounds(points, { padding: [60, 60], maxZoom: 11 });
+        } else {
+          mapRef.current.setView(points[0], 9);
+        }
       }
     } catch {
       setError("Fehler bei der Suche. Bitte versuchen Sie es erneut.");
@@ -163,7 +183,7 @@ export default function MapClient() {
           >
             Copilot-Berater in Ihrer Nähe
           </h1>
-          <p style={{ color: "#6B6B8A", fontSize: "1.1rem", lineHeight: 1.7 }}>
+          <p style={{ color: "#A8E5D2", fontSize: "1.1rem", lineHeight: 1.7 }}>
             Finden Sie zertifizierte Microsoft Copilot Partner in Deutschland, Österreich und der Schweiz
           </p>
         </div>
@@ -220,25 +240,9 @@ export default function MapClient() {
         )}
       </section>
 
-      {/* Map */}
-      <section style={{ padding: "32px 24px", maxWidth: 1300, margin: "0 auto" }}>
-        <div
-          ref={mapContainerRef}
-          style={{
-            width: "100%",
-            height: "clamp(420px, 70vh, 820px)",
-            maxWidth: 1240,
-            margin: "0 auto",
-            borderRadius: 12,
-            overflow: "hidden",
-            border: "1px solid #E8E8F0",
-          }}
-        />
-      </section>
-
-      {/* Search Results */}
+      {/* Search Results (above the map after a successful search) */}
       {searchResults && searchResults.length > 0 && (
-        <section style={{ padding: "0 24px 40px", maxWidth: 1160, margin: "0 auto" }}>
+        <section style={{ padding: "24px 24px 0", maxWidth: 1160, margin: "0 auto" }}>
           <div
             style={{
               display: "grid",
@@ -298,18 +302,25 @@ export default function MapClient() {
       )}
 
       {searchResults && searchResults.length === 0 && (
-        <section style={{ padding: "0 24px 40px", maxWidth: 1160, margin: "0 auto", textAlign: "center" }}>
+        <section style={{ padding: "24px 24px 0", maxWidth: 1160, margin: "0 auto", textAlign: "center" }}>
           <p style={{ color: "#6B6B8A" }}>Keine Partner in der Nähe gefunden.</p>
         </section>
       )}
 
-      {/* Counter */}
-      <section style={{ padding: "20px 24px 60px", textAlign: "center" }}>
-        <p style={{ color: "#6B6B8A", fontSize: "1.1rem" }}>
-          Aktuell{" "}
-          <span style={{ color: "#00C896", fontWeight: 700 }}>{partnerCount}</span>{" "}
-          Partner im Netzwerk
-        </p>
+      {/* Map */}
+      <section style={{ padding: "32px 24px 60px", maxWidth: 1300, margin: "0 auto" }}>
+        <div
+          ref={mapContainerRef}
+          style={{
+            width: "100%",
+            height: "clamp(560px, 82vh, 980px)",
+            maxWidth: 1240,
+            margin: "0 auto",
+            borderRadius: 12,
+            overflow: "hidden",
+            border: "1px solid #E8E8F0",
+          }}
+        />
       </section>
     </div>
   );
