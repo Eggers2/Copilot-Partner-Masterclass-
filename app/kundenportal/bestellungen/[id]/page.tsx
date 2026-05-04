@@ -95,13 +95,11 @@ export default async function KundeBestellungDetailPage({
             </dd>
           </div>
           <div className="col-span-2 md:col-span-4 pt-3 border-t border-dark-slate-200">
-            <dt className="text-xs text-dark-slate-500">Preis (Brutto)</dt>
+            <dt className="text-xs text-dark-slate-500">Preis (Netto)</dt>
             <dd className="font-medium text-dark-slate-900">
-              {formatEuro(Number(bestellung.preisBrutto))}
-              <span className="text-xs text-dark-slate-500 ml-2">
-                ({formatEuro(Number(bestellung.preisNetto))} netto +{" "}
-                {Number(bestellung.mwstSatz).toFixed(0)}% MwSt)
-              </span>
+              {formatEuro(
+                Number(bestellung.listPreisNetto ?? bestellung.preisNetto)
+              )}
             </dd>
           </div>
         </dl>
