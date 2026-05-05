@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { setAuthCookie, clearAuthCookie, requireAuth } from "@/lib/auth";
-import { requestMagicLink, resolveAppBaseUrl } from "@/lib/auth/customer";
+import { requestOtpCode } from "@/lib/auth/customer";
 
 /**
  * Parses a datetime-local string (e.g. "2026-03-31T17:00") as Europe/Berlin time.
@@ -868,7 +868,7 @@ export async function updateBestellungAction(
   return { success: true };
 }
 
-export async function sendCustomerMagicLinkAction(
+export async function sendCustomerOtpCodeAction(
   bestellungId: number
 ): Promise<{ success?: boolean; error?: string }> {
   await requireAuth();
@@ -879,8 +879,10 @@ export async function sendCustomerMagicLinkAction(
   });
   if (!bestellung?.email) return { error: "Keine E-Mail hinterlegt." };
 
-  const baseUrl = await resolveAppBaseUrl();
-  await requestMagicLink(bestellung.email, baseUrl);
+  const result = await requestOtpCode(bestellung.email);
+  if (!result.ok) {
+    return { error: "Code konnte nicht versendet werden (n8n-Webhook)." };
+  }
   return { success: true };
 }
 

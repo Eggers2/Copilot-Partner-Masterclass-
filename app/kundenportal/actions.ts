@@ -4,11 +4,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import {
-  requestMagicLink,
+  requestOtpCode,
+  verifyOtpCode,
   requireCustomerSession,
-  resolveAppBaseUrl,
   setCustomerSession,
   clearCustomerSession,
+  setOtpPendingCookie,
+  getOtpPendingEmail,
+  clearOtpPendingCookie,
 } from "@/lib/auth/customer";
 import { fireTeamsGuestWebhook } from "@/lib/webhooks/teamsGuest";
 import { geocodeAddress } from "@/lib/geocode";
@@ -38,13 +41,35 @@ interface UpdateKundeBestellungInput {
   showOnMap: boolean;
 }
 
-export async function requestLinkAction(formData: FormData): Promise<void> {
-  const email = (formData.get("email") as string | null)?.trim() ?? "";
-  if (!email) redirect("/kundenportal?error=invalid");
+export async function requestOtpCodeAction(formData: FormData): Promise<void> {
+  const email = (formData.get("email") as string | null)?.trim().toLowerCase() ?? "";
+  if (!email.includes("@")) redirect("/kundenportal?error=invalid");
 
-  const baseUrl = await resolveAppBaseUrl();
-  await requestMagicLink(email, baseUrl);
-  redirect("/kundenportal/check-email");
+  const result = await requestOtpCode(email);
+  if (!result.ok) {
+    redirect(`/kundenportal?error=${result.reason}`);
+  }
+
+  // Pending-Cookie auch bei unbekannter E-Mail setzen — verhindert
+  // Enumeration über das Verhalten der Folgeseite.
+  await setOtpPendingCookie(email);
+  redirect("/kundenportal/code");
+}
+
+export async function verifyOtpCodeAction(
+  formData: FormData
+): Promise<void> {
+  const code = (formData.get("code") as string | null)?.replace(/\s+/g, "") ?? "";
+  const email = await getOtpPendingEmail();
+  if (!email) redirect("/kundenportal?error=expired");
+
+  const result = await verifyOtpCode(email, code);
+  if (!result.ok) {
+    redirect(`/kundenportal/code?error=${result.reason}`);
+  }
+
+  await clearOtpPendingCookie();
+  redirect("/kundenportal/bestellungen");
 }
 
 export async function logoutCustomerAction(): Promise<void> {

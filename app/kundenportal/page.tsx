@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { Mail, AlertCircle } from "lucide-react";
 import { getCustomerSession } from "@/lib/auth/customer";
-import { requestLinkAction } from "./actions";
+import { requestOtpCodeAction } from "./actions";
 
 export default async function KundenportalLoginPage({
   searchParams,
@@ -15,12 +15,16 @@ export default async function KundenportalLoginPage({
 
   const errorMessage =
     error === "expired"
-      ? "Dein Login-Link ist abgelaufen. Bitte fordere einen neuen an."
+      ? "Dein Login-Code ist abgelaufen. Bitte fordere einen neuen an."
       : error === "used"
-        ? "Dieser Login-Link wurde bereits genutzt. Bitte fordere einen neuen an."
+        ? "Dieser Login-Code wurde bereits genutzt. Bitte fordere einen neuen an."
         : error === "invalid"
-          ? "Der Login-Link ist ungültig. Bitte fordere einen neuen an."
-          : null;
+          ? "Bitte gib eine gültige E-Mail-Adresse ein."
+          : error === "delivery_failed"
+            ? "Der Code konnte nicht versendet werden. Bitte versuche es in einem Moment erneut oder kontaktiere uns."
+            : error === "too_many_attempts"
+              ? "Zu viele Fehlversuche. Bitte fordere einen neuen Code an."
+              : null;
 
   return (
     <div className="max-w-md mx-auto">
@@ -32,13 +36,13 @@ export default async function KundenportalLoginPage({
           Willkommen im Kundenportal
         </h1>
         <p className="text-dark-slate-500 text-sm mt-2">
-          Gib deine E-Mail-Adresse ein. Wir senden dir einen persönlichen
-          Login-Link, der 30 Minuten gültig ist.
+          Gib deine E-Mail-Adresse ein. Wir senden dir einen 6-stelligen
+          Login-Code, der 10 Minuten gültig ist.
         </p>
       </div>
 
       <div className="bg-white rounded-2xl border border-dark-slate-100 shadow-sm p-8">
-        <form action={requestLinkAction} className="space-y-4">
+        <form action={requestOtpCodeAction} className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-dark-slate-600 mb-1">
               E-Mail-Adresse
@@ -63,7 +67,7 @@ export default async function KundenportalLoginPage({
             type="submit"
             className="w-full py-3 bg-[#030386] hover:bg-[#030386]/90 text-white font-semibold rounded-lg transition-colors"
           >
-            Login-Link anfordern
+            Login-Code anfordern
           </button>
         </form>
       </div>

@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { BestellungEditForm } from "@/components/admin/BestellungEditForm";
-import { SendCustomerMagicLinkButton } from "@/components/admin/SendCustomerMagicLinkButton";
+import { SendCustomerOtpCodeButton } from "@/components/admin/SendCustomerOtpCodeButton";
 
 export default async function BestellungDetailPage({
   params,
@@ -58,7 +58,7 @@ export default async function BestellungDetailPage({
             Teilnehmer mit Namen und E-Mail eingetragen werden.
           </p>
         </div>
-        <SendCustomerMagicLinkButton
+        <SendCustomerOtpCodeButton
           bestellungId={bestellung.id}
           kundenEmail={bestellung.email}
         />
