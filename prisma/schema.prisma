@@ -252,17 +252,17 @@ model Newsletter {
   @@map("newsletters")
 }
 
-model KundenMagicLink {
-  id         Int      @id @default(autoincrement())
-  tokenHash  String   @unique @map("token_hash")
-  email      String
-  ablaufAm   DateTime @map("ablauf_am")
-  eingeloest Boolean  @default(false)
-  erstelltAm DateTime @default(now()) @map("erstellt_am")
+model KundenOtpCode {
+  id           Int      @id @default(autoincrement())
+  codeHash     String   @map("code_hash")
+  email        String
+  ablaufAm     DateTime @map("ablauf_am")
+  eingeloest   Boolean  @default(false)
+  fehlversuche Int      @default(0)
+  erstelltAm   DateTime @default(now()) @map("erstellt_am")
 
-  @@index([email])
-  @@index([ablaufAm])
-  @@map("kunden_magic_links")
+  @@index([email, ablaufAm])
+  @@map("kunden_otp_codes")
 }
 
 // ==========================================

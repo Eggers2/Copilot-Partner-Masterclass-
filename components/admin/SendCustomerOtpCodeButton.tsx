@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { Send, CheckCircle, AlertCircle } from "lucide-react";
-import { sendCustomerMagicLinkAction } from "@/app/admin/actions";
+import { sendCustomerOtpCodeAction } from "@/app/admin/actions";
 
-export function SendCustomerMagicLinkButton({
+export function SendCustomerOtpCodeButton({
   bestellungId,
   kundenEmail,
 }: {
@@ -19,13 +19,13 @@ export function SendCustomerMagicLinkButton({
     setStatus("idle");
     setMessage(null);
     startTransition(async () => {
-      const result = await sendCustomerMagicLinkAction(bestellungId);
+      const result = await sendCustomerOtpCodeAction(bestellungId);
       if (result.error) {
         setStatus("error");
         setMessage(result.error);
       } else {
         setStatus("success");
-        setMessage(`Login-Link an ${kundenEmail} gesendet.`);
+        setMessage(`Login-Code an ${kundenEmail} gesendet.`);
       }
     });
   };
@@ -39,7 +39,7 @@ export function SendCustomerMagicLinkButton({
         className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#030386] bg-white border border-[#030386]/30 rounded-lg hover:bg-[#030386]/5 disabled:opacity-50 transition-colors"
       >
         <Send className="w-4 h-4" />
-        {isPending ? "Sende…" : "Kundenportal-Link senden"}
+        {isPending ? "Sende…" : "Login-Code senden"}
       </button>
       {status === "success" && message && (
         <p className="flex items-center gap-1 text-xs text-green-700">
