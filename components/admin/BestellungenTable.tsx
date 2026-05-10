@@ -42,12 +42,14 @@ interface Bestellung {
   erstelltAm: string;
   adnChannel: AdnChannel;
   klasseName: string | null;
+  belegt: number;
 }
 
 type SortKey =
   | "bestellNr"
   | "firma"
   | "paket"
+  | "belegt"
   | "preis"
   | "status"
   | "erstelltAm";
@@ -156,6 +158,10 @@ export function BestellungenTable({
             aVal = a.paket;
             bVal = b.paket;
             break;
+          case "belegt":
+            aVal = a.userAnzahl > 0 ? a.belegt / a.userAnzahl : 0;
+            bVal = b.userAnzahl > 0 ? b.belegt / b.userAnzahl : 0;
+            break;
           case "preis":
             aVal = parseFloat(a.preisNetto);
             bVal = parseFloat(b.preisNetto);
@@ -200,6 +206,7 @@ export function BestellungenTable({
       "Bestell-Nr",
       "Paket",
       "User",
+      "Belegt",
       "Zahlungsmodell",
       "Netto",
       "Listenpreis",
@@ -221,6 +228,7 @@ export function BestellungenTable({
       b.bestellNr,
       b.paket,
       String(b.userAnzahl),
+      `${b.belegt}/${b.userAnzahl}`,
       b.zahlungsmodell,
       b.preisNetto,
       b.listPreisNetto ?? b.preisNetto,
@@ -368,6 +376,13 @@ export function BestellungenTable({
               <th className={thClass} onClick={() => handleSort("paket")}>
                 Paket <SortIcon column="paket" />
               </th>
+              <th
+                className={thClass}
+                onClick={() => handleSort("belegt")}
+                title="Belegte Plätze (eingetragene E-Mails) von gekauften Plätzen"
+              >
+                Plätze <SortIcon column="belegt" />
+              </th>
               <th className={thClass} onClick={() => handleSort("preis")}>
                 Netto <SortIcon column="preis" />
               </th>
@@ -389,7 +404,7 @@ export function BestellungenTable({
             {filtered.length === 0 ? (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   className="px-6 py-12 text-center text-dark-slate-400 text-sm"
                 >
                   Keine Bestellungen gefunden.
@@ -467,6 +482,20 @@ export function BestellungenTable({
                           </>
                         )}
                       </p>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-md text-sm font-semibold tabular-nums ${
+                          b.belegt === 0
+                            ? "bg-red-50 text-red-700 border border-red-200"
+                            : b.belegt >= b.userAnzahl
+                            ? "bg-green-50 text-green-700 border border-green-200"
+                            : "bg-dark-slate-50 text-dark-slate-700 border border-dark-slate-200"
+                        }`}
+                        title={`${b.belegt} von ${b.userAnzahl} Plätzen mit E-Mail belegt`}
+                      >
+                        {b.belegt}/{b.userAnzahl}
+                      </span>
                     </td>
                     <td className="px-4 py-4">
                       <p className="text-sm font-semibold text-dark-slate-900">

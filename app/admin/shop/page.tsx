@@ -56,6 +56,7 @@ export default async function ShopDashboard() {
           preisBrutto: b.preisBrutto.toString(),
           erstelltAm: b.erstelltAm.toISOString(),
           klasseName: b.klasse?.name ?? null,
+          belegt: b._count.teilnehmer,
         }))}
       />
     </div>
