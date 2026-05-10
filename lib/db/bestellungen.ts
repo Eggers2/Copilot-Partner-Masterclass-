@@ -17,6 +17,13 @@ export async function getBestellungen() {
     orderBy: { erstelltAm: "desc" },
     include: {
       klasse: { select: { id: true, name: true, slug: true } },
+      _count: {
+        select: {
+          teilnehmer: {
+            where: { email: { not: "" } },
+          },
+        },
+      },
     },
   });
 }
