@@ -715,6 +715,7 @@ export async function updateBestellungAction(
 
   const adnChannel: AdnChannel = input.adnChannel ?? "NONE";
   const pkg = PACKAGES[input.paket];
+  const effectiveSlotCount = Math.max(pkg.users, input.userAnzahl);
   const listPreisNetto = getPreisNetto(input.paket, input.zahlungsmodell);
   const preisNetto = getInvoicedPreisNetto(input.paket, input.zahlungsmodell, adnChannel);
   const { mwstSatz, mwstBetrag, preisBrutto, reverseCharge, reverseChargeHinweis } =
@@ -746,7 +747,7 @@ export async function updateBestellungAction(
       where: { id },
       data: {
         paket: input.paket,
-        userAnzahl: pkg.users,
+        userAnzahl: effectiveSlotCount,
         zahlungsmodell: input.zahlungsmodell,
         preisNetto,
         listPreisNetto,
@@ -776,19 +777,27 @@ export async function updateBestellungAction(
       },
     });
 
-    await tx.bestellungTeilnehmer.deleteMany({
-      where: { bestellungId: id, position: { gte: pkg.users } },
-    });
-
     const existingTeilnehmer = await tx.bestellungTeilnehmer.findMany({
       where: { bestellungId: id },
-      select: { position: true, email: true },
+      select: { position: true, email: true, teamsEingeladenAm: true },
     });
     const existingEmailByPosition = new Map(
       existingTeilnehmer.map((e) => [e.position, e.email])
     );
+    // Beim Entfernen einer leeren Zeile werden im Frontend nachfolgende
+    // Teilnehmer hochgeschoben (Re-Indexierung). Damit dieselbe E-Mail
+    // dadurch nicht erneut als Teams-Gast eingeladen wird, merken wir uns
+    // den Einladungsstatus pro E-Mail.
+    const previousInviteByEmail = new Map<string, Date | null>();
+    for (const e of existingTeilnehmer) {
+      if (e.email) previousInviteByEmail.set(e.email, e.teamsEingeladenAm);
+    }
 
-    for (let i = 0; i < pkg.users; i++) {
+    await tx.bestellungTeilnehmer.deleteMany({
+      where: { bestellungId: id, position: { gte: effectiveSlotCount } },
+    });
+
+    for (let i = 0; i < effectiveSlotCount; i++) {
       const t = input.teilnehmer.find((x) => x.position === i) ?? {
         position: i,
         vorname: "",
@@ -799,6 +808,9 @@ export async function updateBestellungAction(
       const previousEmail = existingEmailByPosition.get(i);
       const emailChanged =
         previousEmail !== undefined && previousEmail !== newTeilnehmerEmail;
+      const preservedInvite = newTeilnehmerEmail
+        ? previousInviteByEmail.get(newTeilnehmerEmail) ?? null
+        : null;
 
       await tx.bestellungTeilnehmer.upsert({
         where: {
@@ -810,14 +822,16 @@ export async function updateBestellungAction(
           vorname: t.vorname.trim(),
           nachname: t.nachname.trim(),
           email: newTeilnehmerEmail,
+          teamsEingeladenAm: preservedInvite,
         },
         update: {
           vorname: t.vorname.trim(),
           nachname: t.nachname.trim(),
           email: newTeilnehmerEmail,
-          // E-Mail-Wechsel setzt den Einladungsstatus zurück, damit der
-          // n8n-Webhook die neue Adresse erneut als Teams-Gast einlädt.
-          ...(emailChanged ? { teamsEingeladenAm: null } : {}),
+          // E-Mail-Wechsel: Einladungsstatus übernehmen, falls dieselbe
+          // E-Mail in der Bestellung bereits eingeladen war, sonst zurücksetzen
+          // damit der n8n-Webhook die neue Adresse als Teams-Gast einlädt.
+          ...(emailChanged ? { teamsEingeladenAm: preservedInvite } : {}),
         },
       });
     }
