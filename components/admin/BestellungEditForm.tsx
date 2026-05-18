@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle, AlertCircle, Users } from "lucide-react";
+import { CheckCircle, AlertCircle, Users, Plus, Minus } from "lucide-react";
 import type { AdnChannel } from "@prisma/client";
 import { updateBestellungAction } from "@/app/admin/actions";
 import { PACKAGES } from "@/lib/packages";
@@ -106,7 +106,17 @@ export function BestellungEditForm({
   const [klasseId, setKlasseId] = useState<string>(bestellung.klasseId);
 
   const paketInfo = PACKAGES[paket as keyof typeof PACKAGES] ?? PACKAGES.starter;
-  const slotCount = paketInfo.users;
+
+  const [slotCount, setSlotCount] = useState<number>(() => {
+    const paketUsers =
+      PACKAGES[bestellung.paket as keyof typeof PACKAGES]?.users ??
+      PACKAGES.starter.users;
+    const maxPosition = bestellung.teilnehmer.reduce(
+      (m, t) => Math.max(m, t.position + 1),
+      0
+    );
+    return Math.max(paketUsers, bestellung.userAnzahl, maxPosition);
+  });
 
   const [teilnehmer, setTeilnehmer] = useState<Teilnehmer[]>(() =>
     padTeilnehmer(bestellung.teilnehmer, slotCount)
@@ -116,6 +126,8 @@ export function BestellungEditForm({
     () => padTeilnehmer(teilnehmer, slotCount),
     [teilnehmer, slotCount]
   );
+
+  const extraSlots = Math.max(0, slotCount - paketInfo.users);
 
   const updateTeilnehmer = (
     position: number,
@@ -137,9 +149,28 @@ export function BestellungEditForm({
 
   const handlePaketChange = (newPaket: string) => {
     setPaket(newPaket);
-    const newSize =
-      PACKAGES[newPaket as keyof typeof PACKAGES]?.users ?? slotCount;
-    setTeilnehmer((prev) => padTeilnehmer(prev, newSize));
+    const newPaketUsers =
+      PACKAGES[newPaket as keyof typeof PACKAGES]?.users ?? paketInfo.users;
+    setSlotCount((prev) => {
+      const next = Math.max(prev, newPaketUsers);
+      setTeilnehmer((prevList) => padTeilnehmer(prevList, next));
+      return next;
+    });
+  };
+
+  const addTeilnehmerRow = () => {
+    setSlotCount((prev) => prev + 1);
+  };
+
+  const removeTeilnehmerRow = (position: number) => {
+    setTeilnehmer((prev) =>
+      prev
+        .filter((t) => t.position !== position)
+        .map((t) =>
+          t.position > position ? { ...t, position: t.position - 1 } : t
+        )
+    );
+    setSlotCount((prev) => Math.max(paketInfo.users, prev - 1));
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -426,56 +457,92 @@ export function BestellungEditForm({
           </h2>
         </div>
         <p className="text-xs text-dark-slate-400 mb-4">
-          Das Paket {paketInfo.label} enthält {slotCount} User-Plätze. Namen und
-          E-Mail-Adressen der Teilnehmer können hier eingetragen werden.
+          Das Paket {paketInfo.label} enthält {paketInfo.users} User-Plätze.
+          {extraSlots > 0
+            ? ` Zusätzlich angelegt: ${extraSlots} ${extraSlots === 1 ? "Platz" : "Plätze"}.`
+            : " Bei Bedarf können weitere Plätze über das + hinzugefügt werden."}
         </p>
         <div className="space-y-3">
-          {visibleTeilnehmer.map((t) => (
-            <div
-              key={t.position}
-              className="grid grid-cols-1 md:grid-cols-[24px_1fr_1fr_1.5fr] gap-3 items-end p-3 rounded-lg border border-dark-slate-100 bg-dark-slate-50/40"
-            >
-              <div className="text-xs font-mono text-dark-slate-400 md:pb-2">
-                #{t.position + 1}
+          {visibleTeilnehmer.map((t) => {
+            const isEmpty =
+              !t.vorname.trim() && !t.nachname.trim() && !t.email.trim();
+            const canRemove = isEmpty && slotCount > paketInfo.users;
+            return (
+              <div
+                key={t.position}
+                className="grid grid-cols-1 md:grid-cols-[24px_1fr_1fr_1.5fr_32px] gap-3 items-end p-3 rounded-lg border border-dark-slate-100 bg-dark-slate-50/40"
+              >
+                <div className="text-xs font-mono text-dark-slate-400 md:pb-2">
+                  #{t.position + 1}
+                </div>
+                <div>
+                  <label className={labelClass}>Vorname</label>
+                  <input
+                    type="text"
+                    value={t.vorname}
+                    onChange={(e) =>
+                      updateTeilnehmer(t.position, "vorname", e.target.value)
+                    }
+                    disabled={isPending}
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Nachname</label>
+                  <input
+                    type="text"
+                    value={t.nachname}
+                    onChange={(e) =>
+                      updateTeilnehmer(t.position, "nachname", e.target.value)
+                    }
+                    disabled={isPending}
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>E-Mail</label>
+                  <input
+                    type="email"
+                    value={t.email}
+                    onChange={(e) =>
+                      updateTeilnehmer(t.position, "email", e.target.value)
+                    }
+                    disabled={isPending}
+                    className={inputClass}
+                  />
+                </div>
+                <div className="flex md:justify-center md:pb-1">
+                  {canRemove ? (
+                    <button
+                      type="button"
+                      onClick={() => removeTeilnehmerRow(t.position)}
+                      disabled={isPending}
+                      aria-label={`Zeile #${t.position + 1} entfernen`}
+                      title="Leere Zeile entfernen"
+                      className="w-7 h-7 inline-flex items-center justify-center rounded-md border border-dark-slate-200 text-dark-slate-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors disabled:opacity-50"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                  ) : null}
+                </div>
               </div>
-              <div>
-                <label className={labelClass}>Vorname</label>
-                <input
-                  type="text"
-                  value={t.vorname}
-                  onChange={(e) =>
-                    updateTeilnehmer(t.position, "vorname", e.target.value)
-                  }
-                  disabled={isPending}
-                  className={inputClass}
-                />
-              </div>
-              <div>
-                <label className={labelClass}>Nachname</label>
-                <input
-                  type="text"
-                  value={t.nachname}
-                  onChange={(e) =>
-                    updateTeilnehmer(t.position, "nachname", e.target.value)
-                  }
-                  disabled={isPending}
-                  className={inputClass}
-                />
-              </div>
-              <div>
-                <label className={labelClass}>E-Mail</label>
-                <input
-                  type="email"
-                  value={t.email}
-                  onChange={(e) =>
-                    updateTeilnehmer(t.position, "email", e.target.value)
-                  }
-                  disabled={isPending}
-                  className={inputClass}
-                />
-              </div>
-            </div>
-          ))}
+            );
+          })}
+        </div>
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={addTeilnehmerRow}
+            disabled={isPending}
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-[#030386] bg-white border border-[#030386]/30 rounded-lg hover:bg-[#030386]/5 transition-colors disabled:opacity-50"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Weiteren Teilnehmer hinzufügen
+          </button>
+          <p className="text-xs text-dark-slate-400 mt-2">
+            Das Paket und der Preis ändern sich dadurch nicht — es wird lediglich
+            ein zusätzlicher Platz freigeschaltet.
+          </p>
         </div>
       </section>
 
