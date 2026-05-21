@@ -51,17 +51,14 @@ export default function LandingPage() {
       const data = await response.json();
 
       if (response.ok) {
-        setFormState({
-          status: "success",
-          message: data.message || "Erfolgreich eingetragen!",
-        });
-        setEmail("");
-      } else {
-        setFormState({
-          status: "error",
-          message: data.error || "Ein Fehler ist aufgetreten.",
-        });
+        window.location.href = "/danke";
+        return;
       }
+
+      setFormState({
+        status: "error",
+        message: data.error || "Ein Fehler ist aufgetreten.",
+      });
     } catch {
       setFormState({
         status: "error",
@@ -148,64 +145,50 @@ export default function LandingPage() {
   /* ── Reusable form renderer ── */
   const renderForm = (maxW: string = "max-w-[480px]") => (
     <div className={`${maxW} mx-auto w-full`}>
-      {formState.status === "success" ? (
-        <div className="flex flex-col items-center gap-4 p-8 bg-[#00C896]/10 border border-[#00C896]/30 rounded-2xl animate-fade-in">
-          <CheckCircle2 className="w-16 h-16 text-[#00C896]" />
-          <div className="text-center">
-            <p className="text-[#00C896] text-xl font-bold mb-1">
-              Ihre Bewerbung ist eingegangen!
-            </p>
-            <p className="text-[#00C896]/70 text-sm">
-              Wir melden uns persönlich bei Ihnen.
-            </p>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1 relative">
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#6B6B8A]" />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="ihre@email.de"
+              required
+              disabled={formState.status === "loading"}
+              className="w-full pl-12 pr-4 py-4 bg-[#2d2d48] border border-[#2d2d48] focus:border-[#00C896] rounded-[10px] text-white placeholder-[#6B6B8A] outline-none transition-colors text-base disabled:opacity-50"
+            />
           </div>
+          <button
+            type="submit"
+            disabled={formState.status === "loading" || !email.trim()}
+            className="btn-primary whitespace-nowrap"
+          >
+            {formState.status === "loading" ? (
+              <>
+                <div className="w-5 h-5 border-2 border-[#1A1A2E]/30 border-t-[#1A1A2E] rounded-full animate-spin" />
+                Wird gesendet...
+              </>
+            ) : (
+              <>
+                Jetzt bewerben
+                <ArrowRight className="w-5 h-5" />
+              </>
+            )}
+          </button>
         </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1 relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#6B6B8A]" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="ihre@email.de"
-                required
-                disabled={formState.status === "loading"}
-                className="w-full pl-12 pr-4 py-4 bg-[#2d2d48] border border-[#2d2d48] focus:border-[#00C896] rounded-[10px] text-white placeholder-[#6B6B8A] outline-none transition-colors text-base disabled:opacity-50"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={formState.status === "loading" || !email.trim()}
-              className="btn-primary whitespace-nowrap"
-            >
-              {formState.status === "loading" ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-[#1A1A2E]/30 border-t-[#1A1A2E] rounded-full animate-spin" />
-                  Wird gesendet...
-                </>
-              ) : (
-                <>
-                  Jetzt bewerben
-                  <ArrowRight className="w-5 h-5" />
-                </>
-              )}
-            </button>
+
+        {formState.status === "error" && (
+          <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm animate-fade-in">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            {formState.message}
           </div>
+        )}
 
-          {formState.status === "error" && (
-            <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm animate-fade-in">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              {formState.message}
-            </div>
-          )}
-
-          <p className="text-[#6B6B8A] text-xs text-center">
-            Keine Verpflichtung. Wir melden uns persönlich.
-          </p>
-        </form>
-      )}
+        <p className="text-[#6B6B8A] text-xs text-center">
+          Keine Verpflichtung. Wir melden uns persönlich.
+        </p>
+      </form>
     </div>
   );
 
