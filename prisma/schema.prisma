@@ -119,12 +119,22 @@ model Lead {
   adnChannel           AdnChannel            @default(NONE) @map("adn_channel")
   klasseId             String?               @map("klasse_id")
   klasse               Klasse?               @relation(fields: [klasseId], references: [id])
+  utmSource            String?               @map("utm_source") @db.VarChar(100)
+  utmMedium            String?               @map("utm_medium") @db.VarChar(100)
+  utmCampaign          String?               @map("utm_campaign") @db.VarChar(100)
+  utmContent           String?               @map("utm_content") @db.VarChar(100)
+  utmTerm              String?               @map("utm_term") @db.VarChar(100)
+  referrer             String?               @db.VarChar(500)
+  landingPage          String?               @map("landing_page") @db.VarChar(500)
+  firstTouchAt         DateTime?             @map("first_touch_at")
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
   activities           LeadActivity[]
   webinarRegistrations WebinarRegistration[]
   firstCallScore       FirstCallScore?
 
+  @@index([utmSource])
+  @@index([utmCampaign])
   @@map("waitlist")
 }
 

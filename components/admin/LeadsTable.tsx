@@ -28,6 +28,8 @@ interface Lead {
   source: LeadSource;
   adnChannel: AdnChannel;
   klasseName: string | null;
+  utmSource: string | null;
+  utmCampaign: string | null;
   score?: number;
   notes?: string | null;
   createdAt: string;
@@ -43,6 +45,7 @@ type SortKey =
   | "status"
   | "score"
   | "source"
+  | "campaign"
   | "adnChannel"
   | "klasse"
   | "createdAt"
@@ -80,6 +83,8 @@ function getSortValue(lead: Lead, key: SortKey): string | number | null {
       return lead.firstCallScore?.totalScore ?? null;
     case "source":
       return LEAD_SOURCE_CONFIG[lead.source].label;
+    case "campaign":
+      return lead.utmCampaign?.toLowerCase() ?? null;
     case "adnChannel":
       return ADN_CHANNEL_CONFIG[lead.adnChannel].label;
     case "klasse":
@@ -137,7 +142,7 @@ export function LeadsTable({ leads }: LeadsTableProps) {
   }, [leads, statusFilter, sourceFilter, adnFilter, search, sortKey, sortDir]);
 
   const downloadCSV = () => {
-    const headers = ["Name", "E-Mail", "Firma", "Straße", "PLZ", "Ort", "Website", "Telefon", "Status", "Quelle", "ADN-Kanal", "Klasse", "Score", "Notizen", "Erstellt am", "Letzte Aktivität", "Follow-up Datum"];
+    const headers = ["Name", "E-Mail", "Firma", "Straße", "PLZ", "Ort", "Website", "Telefon", "Status", "Quelle", "UTM Source", "UTM Campaign", "ADN-Kanal", "Klasse", "Score", "Notizen", "Erstellt am", "Letzte Aktivität", "Follow-up Datum"];
     const rows = filtered.map((lead) => [
       lead.name ?? "",
       lead.email,
@@ -149,6 +154,8 @@ export function LeadsTable({ leads }: LeadsTableProps) {
       lead.phone ?? "",
       LEAD_STATUS_CONFIG[lead.status].label,
       LEAD_SOURCE_CONFIG[lead.source].label,
+      lead.utmSource ?? "",
+      lead.utmCampaign ?? "",
       ADN_CHANNEL_CONFIG[lead.adnChannel].label,
       lead.klasseName ?? "",
       String(lead.score ?? ""),
@@ -278,6 +285,9 @@ export function LeadsTable({ leads }: LeadsTableProps) {
               <th className={thClass} onClick={() => handleSort("source")}>
                 Quelle <SortIcon column="source" />
               </th>
+              <th className={thClass} onClick={() => handleSort("campaign")}>
+                Kampagne <SortIcon column="campaign" />
+              </th>
               <th className={thClass} onClick={() => handleSort("adnChannel")}>
                 ADN <SortIcon column="adnChannel" />
               </th>
@@ -299,7 +309,7 @@ export function LeadsTable({ leads }: LeadsTableProps) {
             {filtered.length === 0 ? (
               <tr>
                 <td
-                  colSpan={10}
+                  colSpan={11}
                   className="px-6 py-12 text-center text-dark-slate-400 text-sm"
                 >
                   Keine Leads gefunden.
@@ -346,6 +356,22 @@ export function LeadsTable({ leads }: LeadsTableProps) {
                   </td>
                   <td className="px-6 py-4 text-sm text-dark-slate-500">
                     {LEAD_SOURCE_CONFIG[lead.source].label}
+                  </td>
+                  <td className="px-6 py-4">
+                    {lead.utmCampaign ? (
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-dark-slate-700">
+                          {lead.utmCampaign}
+                        </span>
+                        {lead.utmSource && (
+                          <span className="text-xs text-dark-slate-400">
+                            {lead.utmSource}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-dark-slate-400">—</span>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     {lead.adnChannel === "NONE" ? (

@@ -67,7 +67,28 @@ export default function PrivacyPage() {
       </p>
 
       <h2 className="text-lg font-semibold mt-6 mb-2">
-        5. Rechte der Betroffenen
+        5. Kampagnen-Attribution (UTM-Parameter)
+      </h2>
+      <p className="mb-4">
+        Wenn Sie unsere Seite über einen Werbe- oder Kampagnen-Link erreichen,
+        werten wir die in der URL übermittelten UTM-Parameter
+        (z.&nbsp;B. <code>utm_source</code>, <code>utm_medium</code>,
+        <code>utm_campaign</code>) sowie den Referrer (vorherige Seite) und
+        die Landingpage technisch aus. Diese Informationen werden in Ihrem
+        Browser-Speicher (localStorage, Schlüssel <code>cb_utm_data</code>)
+        für maximal 90 Tage abgelegt und ausschließlich beim Absenden des
+        Wartelisten-Formulars zusammen mit Ihrer E-Mail-Adresse an unseren
+        Server übertragen, um die Wirksamkeit unserer Kampagnen messen zu
+        können. Es findet keine Profilbildung statt; die Daten werden nicht
+        an Dritte übermittelt. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f
+        DSGVO (berechtigtes Interesse an Kampagnen-Reporting). Sie können
+        die gespeicherten Daten jederzeit in den Entwickler-Tools Ihres
+        Browsers unter <em>Application &rsaquo; Local Storage</em> einsehen
+        und löschen.
+      </p>
+
+      <h2 className="text-lg font-semibold mt-6 mb-2">
+        6. Rechte der Betroffenen
       </h2>
       <p className="mb-4">
         Sie haben jederzeit das Recht auf Auskunft über die zu Ihrer Person
