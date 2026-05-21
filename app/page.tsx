@@ -14,6 +14,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import LinkedInInsightTag from "@/components/LinkedInInsightTag";
 
 interface FormState {
   status: "idle" | "loading" | "success" | "error";
@@ -886,6 +887,8 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      <LinkedInInsightTag />
     </main>
   );
 }
