@@ -34,16 +34,47 @@ export default function PrivacyPage() {
       </h2>
       <p className="mb-4">
         Die Kommunikation zwischen dem LaMetric-Gerät und dem Server erfolgt
-        verschlüsselt über HTTPS. Es werden keine Cookies gesetzt und kein
-        Tracking durchgeführt.
+        verschlüsselt über HTTPS. Im Rahmen der App selbst werden keine
+        zusätzlichen Cookies gesetzt.
       </p>
 
       <h2 className="text-lg font-semibold mt-6 mb-2">
-        4. Rechte der Betroffenen
+        4. LinkedIn Insight Tag (Landingpage)
       </h2>
       <p className="mb-4">
-        Da keine personenbezogenen Daten verarbeitet werden, entfallen
-        Auskunfts-, Löschungs- und Widerspruchsrechte im Kontext dieser App.
+        Auf unserer Startseite setzen wir den &bdquo;LinkedIn Insight Tag&ldquo; der
+        LinkedIn Ireland Unlimited Company ein. Damit werden Cookies in Ihrem
+        Browser gespeichert, die LinkedIn die Analyse Ihres Besuchs und die
+        Messung von Werbekampagnen ermöglichen. Dabei kann es zu einer
+        Übertragung von Daten an LinkedIn-Server in den USA kommen.
+        Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse
+        an Reichweitenanalyse und Online-Marketing). Sie können der
+        Verarbeitung unter{" "}
+        <a
+          href="https://www.linkedin.com/psettings/guest-controls/retargeting-opt-out"
+          className="underline"
+        >
+          linkedin.com/psettings/guest-controls/retargeting-opt-out
+        </a>{" "}
+        widersprechen. Weitere Informationen finden Sie in der{" "}
+        <a
+          href="https://www.linkedin.com/legal/privacy-policy"
+          className="underline"
+        >
+          LinkedIn Datenschutzerklärung
+        </a>
+        .
+      </p>
+
+      <h2 className="text-lg font-semibold mt-6 mb-2">
+        5. Rechte der Betroffenen
+      </h2>
+      <p className="mb-4">
+        Sie haben jederzeit das Recht auf Auskunft über die zu Ihrer Person
+        gespeicherten Daten sowie auf Berichtigung, Löschung, Einschränkung
+        der Verarbeitung, Datenübertragbarkeit und Widerspruch gegen die
+        Verarbeitung. Wenden Sie sich hierzu an den im Impressum genannten
+        Verantwortlichen.
       </p>
     </main>
   );
