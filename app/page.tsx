@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import LinkedInInsightTag from "@/components/LinkedInInsightTag";
+import { captureUtmData, getUtmData } from "@/lib/utm-tracker";
 
 interface FormState {
   status: "idle" | "loading" | "success" | "error";
@@ -41,11 +42,13 @@ export default function LandingPage() {
 
     setFormState({ status: "loading", message: "" });
 
+    const utm = getUtmData();
+
     try {
       const response = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, ...(utm ?? {}) }),
       });
 
       const data = await response.json();
@@ -66,6 +69,11 @@ export default function LandingPage() {
       });
     }
   };
+
+  // Capture UTM/referrer attribution once on mount
+  useEffect(() => {
+    captureUtmData();
+  }, []);
 
   // Navbar scroll effect
   useEffect(() => {

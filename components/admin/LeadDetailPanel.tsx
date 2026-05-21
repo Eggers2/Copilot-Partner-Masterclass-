@@ -32,12 +32,69 @@ interface Lead {
   createdAt: string;
   adnChannel: AdnChannel;
   klasseId: string | null;
+  utmSource: string | null;
+  utmMedium: string | null;
+  utmCampaign: string | null;
+  utmContent: string | null;
+  utmTerm: string | null;
+  referrer: string | null;
+  landingPage: string | null;
+  firstTouchAt: string | null;
 }
 
 export interface KlasseChoice {
   id: string;
   name: string;
   slug: string;
+}
+
+function AttributionField({ label, value }: { label: string; value: string | null }) {
+  return (
+    <div>
+      <dt className="text-xs font-medium uppercase tracking-wider text-dark-slate-400">
+        {label}
+      </dt>
+      <dd className="mt-1 text-sm text-dark-slate-700 break-all">
+        {value ?? <span className="text-dark-slate-300">—</span>}
+      </dd>
+    </div>
+  );
+}
+
+function AttributionBlock({ lead }: { lead: Lead }) {
+  const hasAttribution =
+    lead.utmSource ||
+    lead.utmMedium ||
+    lead.utmCampaign ||
+    lead.utmContent ||
+    lead.utmTerm ||
+    lead.referrer ||
+    lead.landingPage ||
+    lead.firstTouchAt;
+
+  if (!hasAttribution) return null;
+
+  const firstTouchLabel = lead.firstTouchAt
+    ? new Date(lead.firstTouchAt).toLocaleString("de-DE")
+    : null;
+
+  return (
+    <div className="mt-6 pt-6 border-t border-dark-slate-100">
+      <h3 className="text-sm font-semibold text-dark-slate-900 mb-3">
+        Attribution
+      </h3>
+      <dl className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
+        <AttributionField label="UTM Source" value={lead.utmSource} />
+        <AttributionField label="UTM Medium" value={lead.utmMedium} />
+        <AttributionField label="UTM Campaign" value={lead.utmCampaign} />
+        <AttributionField label="UTM Content" value={lead.utmContent} />
+        <AttributionField label="UTM Term" value={lead.utmTerm} />
+        <AttributionField label="First Touch" value={firstTouchLabel} />
+        <AttributionField label="Referrer" value={lead.referrer} />
+        <AttributionField label="Landing Page" value={lead.landingPage} />
+      </dl>
+    </div>
+  );
 }
 
 function SubmitButton() {
@@ -295,6 +352,8 @@ export function LeadDetailPanel({
           )}
         </div>
       </form>
+
+      <AttributionBlock lead={lead} />
 
       <div className="mt-6 pt-6 border-t border-dark-slate-100">
         <button

@@ -50,6 +50,7 @@ export default async function LeadDetailPage({
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
     followUpAt: lead.followUpAt?.toISOString() ?? null,
+    firstTouchAt: lead.firstTouchAt?.toISOString() ?? null,
   };
 
   // First-Call-Score serialisieren (Datumswerte → ISO-Strings)
