@@ -78,20 +78,21 @@ enum KlasseStatus {
 }
 
 model Klasse {
-  id           String       @id @default(cuid())
-  name         String
-  slug         String       @unique
-  kickoffDate  DateTime     @map("kickoff_date")
-  startDate    DateTime     @map("start_date")
-  endDate      DateTime     @map("end_date")
-  capacity     Int?
-  status       KlasseStatus @default(PLANNED)
-  description  String?
-  webinars     Webinar[]
-  bestellungen Bestellung[]
-  leads        Lead[]
-  createdAt    DateTime     @default(now()) @map("created_at")
-  updatedAt    DateTime     @updatedAt @map("updated_at")
+  id                String       @id @default(cuid())
+  name              String
+  slug              String       @unique
+  kickoffDate       DateTime     @map("kickoff_date")
+  startDate         DateTime     @map("start_date")
+  endDate           DateTime     @map("end_date")
+  capacity          Int?
+  status            KlasseStatus @default(PLANNED)
+  teilnehmerSperre  Boolean      @default(false) @map("teilnehmer_sperre")
+  description       String?
+  webinars          Webinar[]
+  bestellungen      Bestellung[]
+  leads             Lead[]
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
 
   @@map("klassen")
 }

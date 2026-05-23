@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { GraduationCap, Plus } from "lucide-react";
+import { GraduationCap, Lock, Plus } from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
 import { listKlassenMitBelegung } from "@/lib/klassen";
 import { KLASSE_STATUS_CONFIG } from "@/lib/constants/lead-config";
@@ -52,12 +52,23 @@ export default async function KlassenPage() {
                   </h2>
                   <p className="text-xs text-dark-slate-400 font-mono">{k.slug}</p>
                 </div>
-                <span
-                  className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold"
-                  style={{ color: conf.color, backgroundColor: conf.bg }}
-                >
-                  {conf.label}
-                </span>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {k.teilnehmerSperre && (
+                    <span
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700"
+                      title="Teilnehmer-Sperre aktiv: Kunden können keine Teilnehmer im Kundenportal mehr ändern."
+                    >
+                      <Lock className="w-3 h-3" />
+                      Teilnehmer gesperrt
+                    </span>
+                  )}
+                  <span
+                    className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold"
+                    style={{ color: conf.color, backgroundColor: conf.bg }}
+                  >
+                    {conf.label}
+                  </span>
+                </div>
               </div>
               <div className="space-y-1 text-sm text-dark-slate-600">
                 <p>
