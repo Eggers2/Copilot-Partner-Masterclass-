@@ -278,7 +278,7 @@ export default function LandingPage() {
           {/* Badge */}
           <div className="mb-8">
             <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium border border-[#00C896]/30 text-[#00C896]" style={{ background: "rgba(0,200,150,.08)" }}>
-              Klasse 1 ausgebucht &middot; Klasse 2 ab Juni 2026 &middot; Bewerbung offen
+              Klasse 1 läuft &middot; Klasse 2 ab Juni 2026 &middot; Bewerbung offen
             </span>
           </div>
 
@@ -313,7 +313,7 @@ export default function LandingPage() {
           {/* Stats row */}
           <div className="w-full border-t border-white/10 pt-10 grid grid-cols-2 md:grid-cols-4 gap-8 max-w-[800px]">
             {[
-              { num: "30", label: "Systemhäuser bereits in Klasse 1" },
+              { num: "31", label: "Systemhäuser bereits in Klasse 1" },
               { num: "6\u00D7", label: "Microsoft MVP Alexander Eggers" },
               { num: "90", label: "Tage bis zum ersten Auftrag" },
               { num: "25+", label: "Jahre Microsoft-Erfahrung" },
@@ -340,37 +340,122 @@ export default function LandingPage() {
               className="text-white font-bold mt-3"
               style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(24px, 3vw, 36px)", letterSpacing: "-0.025em" }}
             >
-              Klasse 1 ist voll. <span className="text-[#00C896]">Klasse 2 öffnet jetzt.</span>
+              Klasse 1 läuft. <span className="text-[#00C896]">Klasse 2 öffnet jetzt.</span>
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 max-w-[900px] mx-auto reveal">
-            {/* Karte 1 – Klasse 1 (ausgebucht) */}
+          <div className="flex flex-col gap-6 max-w-[1100px] mx-auto reveal">
+            {/* Karte 1 – Klasse 1 (live gestartet) */}
             <div
-              className="relative rounded-2xl p-8 border border-white/10"
-              style={{ background: "#1A1A2E", opacity: 0.78 }}
+              className="relative rounded-2xl p-8 md:p-10 border border-white/10"
+              style={{ background: "#1A1A2E" }}
             >
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
                 <span className="text-white/50 text-xs font-semibold tracking-wider uppercase">
                   Klasse 01 &middot; Start Mai 2026
                 </span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-[#00C896]/40 text-[#00C896]/90" style={{ background: "rgba(0,200,150,.10)" }}>
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Ausgebucht
-                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-[#00C896]" style={{ background: "rgba(0,200,150,.12)", border: "1px solid rgba(0,200,150,.45)" }}>
+                    <span className="relative flex w-2 h-2">
+                      <span className="absolute inline-flex w-full h-full rounded-full opacity-75 animate-ping" style={{ background: "#00C896" }} />
+                      <span className="relative inline-flex w-2 h-2 rounded-full" style={{ background: "#00C896" }} />
+                    </span>
+                    Live seit 22.05.2026
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-white/15 text-white/70" style={{ background: "rgba(255,255,255,.04)" }}>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Ausgebucht
+                  </span>
+                </div>
               </div>
 
-              <div className="mb-3 flex items-baseline justify-between">
-                <span className="text-white/80 text-sm font-medium">30 / 30 Plätzen vergeben</span>
-                <span className="text-[#00C896]/80 text-sm font-bold">100%</span>
-              </div>
-              <div className="w-full h-2 rounded-full overflow-hidden mb-6" style={{ background: "rgba(255,255,255,.08)" }}>
-                <div className="h-full rounded-full" style={{ width: "100%", background: "rgba(0,200,150,.55)" }} />
-              </div>
+              <div className="grid md:grid-cols-[1.1fr_1fr] gap-8 md:gap-10 items-start">
+                {/* Links – Screenshot */}
+                <div>
+                  <div className="rounded-xl overflow-hidden border border-white/10 shadow-2xl" style={{ background: "#0f0f1a" }}>
+                    <img
+                      src="/klasse-1-kickoff.png"
+                      alt="Kick-off der Copilot Partner Masterclass Klasse 1 am 22.05.2026 mit knapp 120 Teilnehmern live in Microsoft Teams"
+                      className="w-full h-auto block"
+                      loading="lazy"
+                    />
+                  </div>
+                  <p className="text-white/40 text-xs mt-3 text-center">
+                    Kick-off Klasse 1 &middot; 22.05.2026 &middot; ~120 Teilnehmer live in Microsoft Teams
+                  </p>
+                </div>
 
-              <p className="text-white/55 text-sm leading-relaxed">
-                Diese Kohorte ist komplett. Danke an die 30 Systemhäuser aus dem DACH-Raum, die mit uns starten.
-              </p>
+                {/* Rechts – Story */}
+                <div>
+                  <h3
+                    className="text-white font-bold mb-6"
+                    style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(22px, 2.4vw, 30px)", letterSpacing: "-0.02em", lineHeight: 1.15 }}
+                  >
+                    Klasse 1 läuft <span className="text-[#00C896]">bereits.</span>
+                  </h3>
+
+                  <div className="grid grid-cols-3 gap-2 mb-6">
+                    {[
+                      { num: "31", label: "Systemhäuser" },
+                      { num: "150", label: "Mitarbeiter" },
+                      { num: "22.05.", label: "Kick-off live" },
+                    ].map((s) => (
+                      <div key={s.label} className="rounded-lg p-3 text-center" style={{ background: "#23233D" }}>
+                        <div className="text-[#00C896] text-xl md:text-2xl font-bold leading-tight" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>
+                          {s.num}
+                        </div>
+                        <div className="text-white/50 text-[11px] leading-snug mt-0.5">{s.label}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <blockquote className="border-l-2 border-[#00C896]/50 pl-4 mb-6">
+                    <p className="text-white/75 text-sm md:text-[15px] leading-relaxed italic">
+                      &bdquo;Gestern war es so weit: 31 Systemh&auml;user aus dem DACH-Raum sind in die erste Copilot Partner Masterclass gestartet. Knapp 120 Teilnehmer live im Kick-off, 150 registrierte Mitarbeiter in den kommenden Monaten &ndash; das ist erst der Anfang.&ldquo;
+                    </p>
+                    <footer className="text-white/40 text-xs mt-2">
+                      — Alexander Eggers, Trainer &amp; 6× Microsoft MVP
+                    </footer>
+                  </blockquote>
+
+                  <div>
+                    <div className="text-white/40 text-xs font-semibold tracking-wider uppercase mb-3">
+                      Mit dabei (Auswahl der Klasse 1)
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        "Cloudtastic GmbH",
+                        "connecT Systemhaus AG",
+                        "Gme GmbH",
+                        "GOESYS AG",
+                        "GOHAN GmbH – Business Solutions",
+                        "ke solutions",
+                        "Know How! AG",
+                        "noovic GmbH",
+                      ].map((firma) => (
+                        <span
+                          key={firma}
+                          className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium text-white/80 border border-white/10 transition-colors hover:bg-white/10"
+                          style={{ background: "rgba(255,255,255,.05)" }}
+                        >
+                          {firma}
+                        </span>
+                      ))}
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium text-white/40">
+                        … und 23 weitere
+                      </span>
+                    </div>
+
+                    <a
+                      href="/suche"
+                      className="inline-flex items-center gap-1.5 mt-4 text-sm font-semibold text-[#00C896] hover:text-white transition-colors"
+                    >
+                      Copilot-Partner auf der Karte finden
+                      <ArrowRight className="w-4 h-4" />
+                    </a>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Karte 2 – Klasse 2 (Bewerbung offen) */}
@@ -387,21 +472,24 @@ export default function LandingPage() {
                 </span>
               </div>
 
-              <div className="mb-3 flex items-baseline justify-between">
-                <span className="text-white/80 text-sm font-medium">Plätze begrenzt</span>
-                <span className="text-white/40 text-sm">Bewerbung läuft</span>
-              </div>
-              <div className="w-full h-2 rounded-full overflow-hidden mb-6 border border-[#00C896]/30" style={{ background: "rgba(0,200,150,.05)" }}>
-                <div className="h-full rounded-full" style={{ width: "8%", background: "#00C896" }} />
-              </div>
+              <div className="grid md:grid-cols-[1fr_auto] gap-6 items-center">
+                <div>
+                  <div className="mb-3 flex items-baseline justify-between">
+                    <span className="text-white/80 text-sm font-medium">Plätze begrenzt</span>
+                    <span className="text-white/40 text-sm">Bewerbung läuft</span>
+                  </div>
+                  <div className="w-full h-2 rounded-full overflow-hidden mb-4 border border-[#00C896]/30" style={{ background: "rgba(0,200,150,.05)" }}>
+                    <div className="h-full rounded-full" style={{ width: "8%", background: "#00C896" }} />
+                  </div>
+                  <p className="text-white/65 text-sm leading-relaxed">
+                    Sichern Sie sich Ihren Platz, bevor auch diese Klasse voll ist.
+                  </p>
+                </div>
 
-              <p className="text-white/65 text-sm leading-relaxed mb-6">
-                Sichern Sie sich Ihren Platz, bevor auch diese Klasse voll ist.
-              </p>
-
-              <button onClick={scrollToWaitlist} className="btn-primary w-full justify-center">
-                Jetzt bewerben <ArrowRight className="w-5 h-5" />
-              </button>
+                <button onClick={scrollToWaitlist} className="btn-primary justify-center whitespace-nowrap">
+                  Jetzt bewerben <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -763,7 +851,7 @@ export default function LandingPage() {
               },
               {
                 q: "Wir schauen noch, der Markt ist noch nicht reif.",
-                a: "Das Zeitfenster schließt sich in 12–18 Monaten. Wer sich jetzt positioniert, dominiert seinen regionalen Markt. Die 30 Systemhäuser in unserer ersten Klasse haben diesen Moment bereits erkannt – die Klasse ist ausgebucht. Wer wartet, verkauft weiterhin nur Lizenzen mit sinkenden Margen – und erklärt seinen Kunden, warum der Wettbewerber schon liefern kann.",
+                a: "Das Zeitfenster schließt sich in 12–18 Monaten. Wer sich jetzt positioniert, dominiert seinen regionalen Markt. Die 31 Systemhäuser in unserer ersten Klasse haben diesen Moment bereits erkannt – die Klasse läuft seit dem 22.05.2026. Wer wartet, verkauft weiterhin nur Lizenzen mit sinkenden Margen – und erklärt seinen Kunden, warum der Wettbewerber schon liefern kann.",
               },
               {
                 q: "Das können wir auch selbst aufbauen.",
@@ -818,7 +906,7 @@ export default function LandingPage() {
             </h2>
 
             <p className="text-white/50 text-lg max-w-[520px] mx-auto mb-10">
-              30 Systemhäuser starten im Mai mit uns. Klasse 2 öffnet jetzt – Plätze begrenzt. Tragen Sie sich für den Bewerbungsprozess ein.
+              31 Systemhäuser sind im Mai mit uns gestartet. Klasse 2 öffnet jetzt – Plätze begrenzt. Tragen Sie sich für den Bewerbungsprozess ein.
             </p>
 
             {renderForm()}
