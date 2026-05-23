@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle, AlertCircle, Users, MapPin } from "lucide-react";
+import { CheckCircle, AlertCircle, Users, MapPin, Lock } from "lucide-react";
 import { updateKundeBestellungAction } from "@/app/kundenportal/actions";
 
 interface Teilnehmer {
@@ -31,6 +31,8 @@ interface BestellungData {
   anmerkungen: string | null;
   teilnehmer: Teilnehmer[];
   showOnMap: boolean;
+  klasseName: string;
+  teilnehmerSperre: boolean;
 }
 
 const LAENDER: Record<string, string> = {
@@ -82,6 +84,7 @@ export function KundeBestellungEditForm({
   const [showOnMap, setShowOnMap] = useState(bestellung.showOnMap);
 
   const slotCount = bestellung.userAnzahl;
+  const teilnehmerLocked = bestellung.teilnehmerSperre;
   const [teilnehmer, setTeilnehmer] = useState<Teilnehmer[]>(() =>
     padTeilnehmer(bestellung.teilnehmer, slotCount)
   );
@@ -345,6 +348,24 @@ export function KundeBestellungEditForm({
           Trage hier die Namen und E-Mail-Adressen der Teilnehmer ein, die an der
           Masterclass teilnehmen sollen.
         </p>
+        {teilnehmerLocked && (
+          <div
+            role="status"
+            className="mb-4 flex items-start gap-2 p-3 rounded-lg border border-amber-200 bg-amber-50 text-sm text-amber-800"
+          >
+            <Lock className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold">
+                Teilnehmerliste für {bestellung.klasseName} gesperrt
+              </p>
+              <p className="text-xs mt-0.5">
+                Die Klasse läuft bereits. Bitte kontaktiere uns, wenn du noch
+                Änderungen an den Teilnehmern vornehmen möchtest – wir
+                schalten die Bearbeitung dann kurz für dich frei.
+              </p>
+            </div>
+          </div>
+        )}
         <div className="space-y-3">
           {visibleTeilnehmer.map((t) => (
             <div
@@ -362,7 +383,7 @@ export function KundeBestellungEditForm({
                   onChange={(e) =>
                     updateTeilnehmer(t.position, "vorname", e.target.value)
                   }
-                  disabled={isPending}
+                  disabled={isPending || teilnehmerLocked}
                   className={inputClass}
                 />
               </div>
@@ -374,7 +395,7 @@ export function KundeBestellungEditForm({
                   onChange={(e) =>
                     updateTeilnehmer(t.position, "nachname", e.target.value)
                   }
-                  disabled={isPending}
+                  disabled={isPending || teilnehmerLocked}
                   className={inputClass}
                 />
               </div>
@@ -386,7 +407,7 @@ export function KundeBestellungEditForm({
                   onChange={(e) =>
                     updateTeilnehmer(t.position, "email", e.target.value)
                   }
-                  disabled={isPending}
+                  disabled={isPending || teilnehmerLocked}
                   className={inputClass}
                 />
               </div>

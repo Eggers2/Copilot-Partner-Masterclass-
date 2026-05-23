@@ -104,6 +104,7 @@ export default async function KlasseDetailPage({
               endDate: klasse.endDate.toISOString(),
               capacity: klasse.capacity,
               status: klasse.status,
+              teilnehmerSperre: klasse.teilnehmerSperre,
               description: klasse.description,
             }}
           />

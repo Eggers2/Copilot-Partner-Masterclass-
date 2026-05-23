@@ -1008,6 +1008,9 @@ export async function createKlasseAction(
   }
 
   const statusRaw = (formData.get("status") as string) || "PLANNED";
+  const teilnehmerSperreRaw = formData.get("teilnehmerSperre");
+  const teilnehmerSperre =
+    teilnehmerSperreRaw === "on" || teilnehmerSperreRaw === "true";
 
   try {
     await prisma.klasse.create({
@@ -1019,6 +1022,7 @@ export async function createKlasseAction(
         endDate: new Date(endDateRaw),
         capacity,
         status: statusRaw as KlasseStatus,
+        teilnehmerSperre,
         description: ((formData.get("description") as string) || "").trim() || null,
       },
     });
@@ -1052,6 +1056,9 @@ export async function updateKlasseAction(
   const capacity =
     capacityRaw && capacityRaw.trim().length > 0 ? parseInt(capacityRaw, 10) : null;
   const statusRaw = (formData.get("status") as string) || "PLANNED";
+  const teilnehmerSperreRaw = formData.get("teilnehmerSperre");
+  const teilnehmerSperre =
+    teilnehmerSperreRaw === "on" || teilnehmerSperreRaw === "true";
 
   await prisma.klasse.update({
     where: { id },
@@ -1062,6 +1069,7 @@ export async function updateKlasseAction(
       endDate: new Date(endDateRaw),
       capacity,
       status: statusRaw as KlasseStatus,
+      teilnehmerSperre,
       description: ((formData.get("description") as string) || "").trim() || null,
     },
   });

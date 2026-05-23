@@ -32,7 +32,10 @@ export default async function KundeBestellungDetailPage({
 
   const bestellung = await prisma.bestellung.findUnique({
     where: { id: bestellungId },
-    include: { teilnehmer: { orderBy: { position: "asc" } } },
+    include: {
+      teilnehmer: { orderBy: { position: "asc" } },
+      klasse: { select: { name: true, teilnehmerSperre: true } },
+    },
   });
 
   if (!bestellung || bestellung.email !== session.email) notFound();
@@ -130,6 +133,8 @@ export default async function KundeBestellungDetailPage({
             email: t.email,
           })),
           showOnMap: bestellung.showOnMap,
+          klasseName: bestellung.klasse.name,
+          teilnehmerSperre: bestellung.klasse.teilnehmerSperre,
         }}
       />
     </div>

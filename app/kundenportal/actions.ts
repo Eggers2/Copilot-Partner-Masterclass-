@@ -96,6 +96,7 @@ export async function updateKundeBestellungAction(
       strasse: true,
       plz: true,
       ort: true,
+      klasse: { select: { name: true, teilnehmerSperre: true } },
     },
   });
 
@@ -116,6 +117,41 @@ export async function updateKundeBestellungAction(
     newStrasse !== current.strasse.trim() ||
     newPlz !== current.plz.trim() ||
     newOrt !== current.ort.trim();
+
+  // Teilnehmer-Sperre: Wenn aktiv, dürfen Teilnehmer-Daten nicht abweichen
+  // von dem, was bereits in der DB steht. Stammdaten bleiben editierbar.
+  if (current.klasse.teilnehmerSperre) {
+    const existing = await prisma.bestellungTeilnehmer.findMany({
+      where: { bestellungId },
+      select: { position: true, vorname: true, nachname: true, email: true },
+    });
+    const existingByPosition = new Map(existing.map((t) => [t.position, t]));
+    const norm = (s: string) => s.trim().toLowerCase();
+
+    for (let i = 0; i < slotCount; i++) {
+      const submitted = input.teilnehmer.find((x) => x.position === i) ?? {
+        position: i,
+        vorname: "",
+        nachname: "",
+        email: "",
+      };
+      const stored = existingByPosition.get(i) ?? {
+        position: i,
+        vorname: "",
+        nachname: "",
+        email: "",
+      };
+      if (
+        submitted.vorname.trim() !== stored.vorname.trim() ||
+        submitted.nachname.trim() !== stored.nachname.trim() ||
+        norm(submitted.email) !== norm(stored.email)
+      ) {
+        return {
+          error: `Die Teilnehmerliste für ${current.klasse.name} ist gesperrt, da die Klasse bereits läuft. Bitte kontaktiere uns, um Änderungen vorzunehmen.`,
+        };
+      }
+    }
+  }
 
   await prisma.$transaction(async (tx) => {
     await tx.bestellung.update({

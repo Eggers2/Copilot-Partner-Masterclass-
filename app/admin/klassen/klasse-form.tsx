@@ -20,6 +20,7 @@ interface KlasseValues {
   endDate: string;
   capacity: number | null;
   status: KlasseStatus;
+  teilnehmerSperre: boolean;
   description: string | null;
 }
 
@@ -127,6 +128,27 @@ export function KlasseForm({
             className={inputClass}
           />
         </div>
+      </div>
+
+      <div className="rounded-lg border border-dark-slate-200 bg-dark-slate-50/50 p-4">
+        <label className="flex items-start gap-3 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            name="teilnehmerSperre"
+            defaultChecked={initial?.teilnehmerSperre ?? false}
+            className="mt-0.5 w-4 h-4 accent-[#030386] cursor-pointer"
+          />
+          <span>
+            <span className="block text-sm font-medium text-dark-slate-700">
+              Teilnehmer-Sperre aktiv
+            </span>
+            <span className="block text-xs text-dark-slate-500 mt-0.5">
+              Wenn aktiv, können Kunden im Kundenportal keine Teilnehmer mehr
+              hinzufügen oder ändern. Stammdaten bleiben editierbar. Admin-Edits
+              sind weiterhin möglich.
+            </span>
+          </span>
+        </label>
       </div>
 
       <div>
