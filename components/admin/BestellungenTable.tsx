@@ -43,6 +43,13 @@ interface Bestellung {
   adnChannel: AdnChannel;
   klasseName: string | null;
   belegt: number;
+  teilnehmer: {
+    position: number;
+    vorname: string;
+    nachname: string;
+    email: string;
+    teamsEingeladenAm: string | null;
+  }[];
 }
 
 type SortKey =
@@ -265,6 +272,64 @@ export function BestellungenTable({
     URL.revokeObjectURL(url);
   };
 
+  const downloadTeilnehmerCSV = () => {
+    const headers = [
+      "Bestell-Nr",
+      "Klasse",
+      "Firma",
+      "Besteller-Vorname",
+      "Besteller-Nachname",
+      "Besteller-E-Mail",
+      "Paket",
+      "Status",
+      "ADN-Kanal",
+      "Bestellung erstellt am",
+      "Teilnehmer-Position",
+      "Teilnehmer-Vorname",
+      "Teilnehmer-Nachname",
+      "Teilnehmer-E-Mail",
+      "Teams eingeladen am",
+    ];
+    const rows = filtered.flatMap((b) =>
+      b.teilnehmer.map((t) => [
+        b.bestellNr,
+        b.klasseName ?? "",
+        b.firma,
+        b.vorname,
+        b.nachname,
+        b.email,
+        b.paket,
+        b.status,
+        ADN_CHANNEL_CONFIG[b.adnChannel].label,
+        new Date(b.erstelltAm).toLocaleString("de-DE"),
+        String(t.position),
+        t.vorname,
+        t.nachname,
+        t.email,
+        t.teamsEingeladenAm
+          ? new Date(t.teamsEingeladenAm).toLocaleString("de-DE")
+          : "",
+      ])
+    );
+
+    const csvContent = [
+      headers.join(";"),
+      ...rows.map((row) =>
+        row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(";")
+      ),
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `teilnehmer-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const uniquePakete = [...new Set(bestellungen.map((b) => b.paket))];
 
   const SortIcon = ({ column }: { column: SortKey }) => {
@@ -356,6 +421,13 @@ export function BestellungenTable({
         >
           <Download className="w-4 h-4" />
           CSV
+        </button>
+        <button
+          onClick={downloadTeilnehmerCSV}
+          className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#030386] border border-[#030386] rounded-lg hover:bg-[#E3ECF8]/50 transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          CSV (Teilnehmer)
         </button>
       </div>
 

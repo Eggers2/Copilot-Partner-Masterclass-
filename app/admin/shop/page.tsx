@@ -57,6 +57,15 @@ export default async function ShopDashboard() {
           erstelltAm: b.erstelltAm.toISOString(),
           klasseName: b.klasse?.name ?? null,
           belegt: b._count.teilnehmer,
+          teilnehmer: b.teilnehmer.map((t) => ({
+            position: t.position,
+            vorname: t.vorname,
+            nachname: t.nachname,
+            email: t.email,
+            teamsEingeladenAm: t.teamsEingeladenAm
+              ? t.teamsEingeladenAm.toISOString()
+              : null,
+          })),
         }))}
       />
     </div>

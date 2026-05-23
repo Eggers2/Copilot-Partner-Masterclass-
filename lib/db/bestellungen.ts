@@ -17,6 +17,17 @@ export async function getBestellungen() {
     orderBy: { erstelltAm: "desc" },
     include: {
       klasse: { select: { id: true, name: true, slug: true } },
+      teilnehmer: {
+        where: { email: { not: "" } },
+        orderBy: { position: "asc" },
+        select: {
+          position: true,
+          vorname: true,
+          nachname: true,
+          email: true,
+          teamsEingeladenAm: true,
+        },
+      },
       _count: {
         select: {
           teilnehmer: {
