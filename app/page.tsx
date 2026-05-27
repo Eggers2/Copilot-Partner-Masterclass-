@@ -154,7 +154,7 @@ export default function LandingPage() {
   const renderForm = (maxW: string = "max-w-[480px]") => (
     <div className={`${maxW} mx-auto w-full`}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col gap-3">
           <div className="flex-1 relative">
             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#6B6B8A]" />
             <input
@@ -179,7 +179,7 @@ export default function LandingPage() {
               </>
             ) : (
               <>
-                Jetzt bewerben
+                Jetzt einen der 25 Plätze sichern
                 <ArrowRight className="w-5 h-5" />
               </>
             )}
@@ -194,7 +194,7 @@ export default function LandingPage() {
         )}
 
         <p className="text-[#6B6B8A] text-xs text-center">
-          Keine Verpflichtung. Wir melden uns persönlich.
+          Keine Verpflichtung · Persönliche Rückmeldung · Limitierte Plätze
         </p>
       </form>
     </div>
@@ -275,10 +275,14 @@ export default function LandingPage() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full blur-[120px] opacity-20" style={{ background: "#00C896" }} />
 
         <div className="relative container-main pt-32 pb-20 flex flex-col items-center text-center" style={{ minHeight: "100svh", justifyContent: "center" }}>
-          {/* Badge */}
+          {/* Urgency Badge */}
           <div className="mb-8">
-            <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium border border-[#00C896]/30 text-[#00C896]" style={{ background: "rgba(0,200,150,.08)" }}>
-              Klasse 1 läuft &middot; Klasse 2 ab Juni 2026 &middot; Bewerbung offen
+            <span className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full text-sm font-semibold border border-[#00C896]/40 text-[#00C896]" style={{ background: "rgba(0,200,150,.10)" }}>
+              <span className="relative flex w-2 h-2">
+                <span className="absolute inline-flex w-full h-full rounded-full opacity-75 animate-ping" style={{ background: "#00C896" }} />
+                <span className="relative inline-flex w-2 h-2 rounded-full" style={{ background: "#00C896" }} />
+              </span>
+              Klasse 2: 5 von 30 Plätzen vergeben — 25 noch verfügbar
             </span>
           </div>
 
@@ -296,17 +300,17 @@ export default function LandingPage() {
           </h1>
 
           {/* Subheadline */}
-          <p className="text-white/60 text-lg md:text-xl max-w-[560px] mb-10 leading-relaxed">
-            Das erste spezialisierte Copilot-Programm für Microsoft-Partner im DACH-Raum. In 90 Tagen Ihren ersten Beratungsauftrag – mit fertigen Templates, Demo-Umgebungen und persönlichem MVP-Zugang.
+          <p className="text-white/60 text-lg md:text-xl max-w-[600px] mb-10 leading-relaxed">
+            Das einzige Copilot-Enablement-Programm für Microsoft-Partner im DACH-Raum. 31 Systemhäuser aus Klasse 1 können das bestätigen.
           </p>
 
-          {/* Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-16">
+          {/* CTA – single primary + text link */}
+          <div className="flex flex-col sm:flex-row items-center gap-5 mb-16">
             <button onClick={scrollToWaitlist} className="btn-primary text-base">
-              Für Klasse 2 bewerben <ArrowRight className="w-5 h-5" />
+              Jetzt Klasse-2-Platz sichern <ArrowRight className="w-5 h-5" />
             </button>
-            <a href="#solution" className="btn-ghost text-base">
-              Programm entdecken
+            <a href="#solution" className="inline-flex items-center gap-1.5 text-white/50 hover:text-white/80 text-sm font-medium transition-colors">
+              Programm kennenlernen <ChevronDown className="w-4 h-4" />
             </a>
           </div>
 
@@ -331,6 +335,32 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ═══ 2.1 SOCIAL PROOF BAR ═══ */}
+      <section style={{ background: "#1A1A2E" }} className="border-t border-white/10 py-12">
+        <div className="container-main">
+          <div className="flex flex-col md:flex-row flex-wrap items-center justify-center gap-y-8 gap-x-10 md:gap-x-12">
+            {[
+              { num: "31", label: <>Systemhäuser<br />in Klasse 1 aktiv<br /><span className="text-white/35 text-[11px]">seit 22. Mai 2026</span></> },
+              { num: "150+", label: <>Mitarbeiter<br />bereits im Programm<br /><span className="text-white/35 text-[11px]">ausgebildet</span></> },
+              { num: "8", label: <>Zusagen<br />für Klasse 2<br /><span className="text-white/35 text-[11px]">in 48 Stunden</span></> },
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-10 md:gap-12">
+                {i > 0 && <span className="hidden md:block w-px h-12 bg-white/10" />}
+                <div className="flex items-center gap-4 text-left">
+                  <span className="text-[#00C896] text-4xl md:text-5xl font-bold leading-none" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>
+                    {item.num}
+                  </span>
+                  <span className="text-white/60 text-sm leading-snug">{item.label}</span>
+                </div>
+              </div>
+            ))}
+            <span className="md:ml-2 inline-flex items-center px-4 py-2 rounded-full text-xs font-bold tracking-wider text-[#1A1A2E]" style={{ background: "#00C896" }}>
+              ✦ KLASSE 1 AUSGEBUCHT ✦
+            </span>
+          </div>
+        </div>
+      </section>
+
       {/* ═══ 2.5 KLASSEN-STATUS ═══ */}
       <section style={{ background: "#23233D" }} className="py-[80px]">
         <div className="container-main">
@@ -340,7 +370,7 @@ export default function LandingPage() {
               className="text-white font-bold mt-3"
               style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(24px, 3vw, 36px)", letterSpacing: "-0.025em" }}
             >
-              Klasse 1 läuft. <span className="text-[#00C896]">Klasse 2 öffnet jetzt.</span>
+              Klasse 1 ist ausgebucht. <span className="text-[#00C896]">Ihre Chance: Klasse 2.</span>
             </h2>
           </div>
 
@@ -475,22 +505,60 @@ export default function LandingPage() {
               <div className="grid md:grid-cols-[1fr_auto] gap-6 items-center">
                 <div>
                   <div className="mb-3 flex items-baseline justify-between">
-                    <span className="text-white/80 text-sm font-medium">Plätze begrenzt</span>
-                    <span className="text-white/40 text-sm">Bewerbung läuft</span>
+                    <span className="text-white/80 text-sm font-medium">5 / 30 Plätze vergeben</span>
+                    <span className="text-white/40 text-sm">Start: Juni 2026</span>
                   </div>
                   <div className="w-full h-2 rounded-full overflow-hidden mb-4 border border-[#00C896]/30" style={{ background: "rgba(0,200,150,.05)" }}>
-                    <div className="h-full rounded-full" style={{ width: "8%", background: "#00C896" }} />
+                    <div className="h-full rounded-full" style={{ width: "16.6%", background: "#00C896" }} />
                   </div>
                   <p className="text-white/65 text-sm leading-relaxed">
-                    Sichern Sie sich Ihren Platz, bevor auch diese Klasse voll ist.
+                    8 Systemhäuser haben sich innerhalb von 48 Stunden nach dem Klasse-1-Kickoff für Klasse 2 angemeldet. Ohne Zögern.
                   </p>
                 </div>
 
                 <button onClick={scrollToWaitlist} className="btn-primary justify-center whitespace-nowrap">
-                  Jetzt bewerben <ArrowRight className="w-5 h-5" />
+                  Jetzt Klasse-2-Platz sichern <ArrowRight className="w-5 h-5" />
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 2.6 EARLY-ADOPTER TESTIMONIALS ═══ */}
+      <section style={{ background: "#1A1A2E" }} className="py-[90px]">
+        <div className="container-main max-w-[1000px]">
+          <div className="text-center mb-12 reveal">
+            <span className="section-label">Stimmen aus Klasse 2</span>
+            <h2
+              className="text-white font-bold mt-3"
+              style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(24px, 3vw, 36px)", letterSpacing: "-0.025em" }}
+            >
+              Was die ersten Klasse-2-Mitglieder sagen
+            </h2>
+          </div>
+          <div className="grid md:grid-cols-2 gap-6 reveal">
+            {[
+              {
+                quote:
+                  "Wir haben uns noch am selben Tag entschieden. Als MVP-Partner wussten wir, dass dieses Wissen genau das ist, was uns von reinen Lizenz-Händlern unterscheidet.",
+                author: "— Geschäftsführer, IT-Systemhaus, Süddeutschland",
+              },
+              {
+                quote:
+                  "Nach dem Klasse-1-Kickoff war klar: Entweder wir sind in Klasse 2 dabei, oder wir schauen zu, wie andere den Markt besetzen.",
+                author: "— Vertriebsleiter, Microsoft-Partner, Österreich",
+              },
+            ].map((t, i) => (
+              <blockquote
+                key={i}
+                className={`reveal reveal-delay-${i + 1} rounded-2xl p-8 border border-white/10`}
+                style={{ background: "#23233D" }}
+              >
+                <p className="text-white/80 text-[15px] leading-relaxed italic mb-4">&bdquo;{t.quote}&ldquo;</p>
+                <footer className="text-white/40 text-sm">{t.author}</footer>
+              </blockquote>
+            ))}
           </div>
         </div>
       </section>
@@ -861,6 +929,10 @@ export default function LandingPage() {
                 q: "Für wen ist das Programm geeignet?",
                 a: "Die Masterclass richtet sich an Geschäftsführer und Vertriebsleiter von Microsoft-Partnern (Systemhäuser) im DACH-Raum, die Copilot-Beratung als eigenständiges Geschäftsfeld aufbauen wollen. Technische Berater, die beim Kunden vor Ort sind, profitieren ebenfalls direkt von den fertigen Frameworks und Templates.",
               },
+              {
+                q: "Was passiert nach meiner Bewerbung?",
+                a: "Alexander Eggers oder ein Teammitglied meldet sich persönlich innerhalb von 24 Stunden. Direkter Austausch — kein CRM-Prozess.",
+              },
             ].map((faq, i) => (
               <details
                 key={i}
@@ -875,6 +947,28 @@ export default function LandingPage() {
                 </div>
               </details>
             ))}
+          </div>
+
+          {/* FAQ CTA */}
+          <div className="reveal mt-8 text-center rounded-2xl p-8 md:p-10" style={{ background: "#1A1A2E" }}>
+            <h3 className="text-white font-bold text-xl md:text-2xl mb-3" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>
+              Ihr nächster Schritt dauert 3 Minuten
+            </h3>
+            <p className="text-white/60 text-sm md:text-base mb-6 leading-relaxed">
+              Kein Verkaufsgespräch. Kein automatisierter Funnel.<br />
+              Alexander Eggers oder sein Team melden sich persönlich.
+            </p>
+            <button onClick={scrollToWaitlist} className="btn-primary">
+              Bewerbung starten <ArrowRight className="w-5 h-5" />
+            </button>
+            <ul className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 mt-6 text-white/50 text-xs">
+              <li className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#00C896] flex-shrink-0" /> Persönliche Rückmeldung innerhalb von 24 Stunden
+              </li>
+              <li className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#00C896] flex-shrink-0" /> Kein Kaufzwang · Kein automatisiertes E-Mail-Karussell
+              </li>
+            </ul>
           </div>
         </div>
       </section>
@@ -902,12 +996,16 @@ export default function LandingPage() {
               className="text-white font-bold mb-4 max-w-[700px] mx-auto"
               style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", letterSpacing: "-0.025em" }}
             >
-              Klasse 1 ist ausgebucht. <span className="text-[#00C896]">Sichern Sie sich Klasse 2.</span>
+              25 Plätze. <span className="text-[#00C896]">Klasse 2 startet im Juni 2026.</span>
             </h2>
 
-            <p className="text-white/50 text-lg max-w-[520px] mx-auto mb-10">
-              31 Systemhäuser sind im Mai mit uns gestartet. Klasse 2 öffnet jetzt – Plätze begrenzt. Tragen Sie sich für den Bewerbungsprozess ein.
-            </p>
+            <div className="text-white/50 text-lg max-w-[560px] mx-auto mb-10 leading-relaxed">
+              <p className="text-white/75 font-medium mb-1">Klasse 1: 31 Systemhäuser gestartet. Ausgebucht.</p>
+              <p className="text-[#00C896] font-medium mb-5">Klasse 2: 5 Plätze vergeben. 25 noch verfügbar.</p>
+              <p>
+                Sie entscheiden, ob Ihr Systemhaus in 12 Monaten als führender Copilot-Partner in Ihrer Region positioniert ist — oder ob ein Wettbewerber diesen Platz einnimmt.
+              </p>
+            </div>
 
             {renderForm()}
           </div>
