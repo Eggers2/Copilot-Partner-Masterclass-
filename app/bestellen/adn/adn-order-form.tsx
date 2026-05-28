@@ -6,17 +6,16 @@ import type { KlasseOption } from "../order-form";
 
 type FormState = "idle" | "loading" | "success" | "error";
 type PacketKey = "starter" | "team" | "business";
-type Zahlungsmodell = "jahresabo" | "monatlich";
 type Land = "DE" | "AT" | "CH";
 type AdnChannel = "ADN_50" | "ADN_15";
 
 const PACKAGES: Record<
   PacketKey,
-  { label: string; users: number; usersLabel: string; yearly: number; monthly: number }
+  { label: string; users: number; usersLabel: string; yearly: number }
 > = {
-  starter: { label: "Starter", users: 3, usersLabel: "3 User", yearly: 8900, monthly: 890 },
-  team: { label: "Team", users: 6, usersLabel: "6 User", yearly: 9900, monthly: 990 },
-  business: { label: "Business", users: 15, usersLabel: "bis 15 User", yearly: 14900, monthly: 1490 },
+  starter: { label: "Starter", users: 3, usersLabel: "3 User", yearly: 8900 },
+  team: { label: "Team", users: 6, usersLabel: "6 User", yearly: 9900 },
+  business: { label: "Business", users: 15, usersLabel: "bis 15 User", yearly: 14900 },
 };
 
 const LAENDER: Record<Land, string> = {
@@ -69,7 +68,6 @@ export function AdnOrderForm({ klassen }: { klassen: KlasseOption[] }) {
 
   const [adnChannel, setAdnChannel] = useState<AdnChannel>("ADN_50");
   const [paket, setPaket] = useState<PacketKey>("team");
-  const [zahlungsmodell, setZahlungsmodell] = useState<Zahlungsmodell>("jahresabo");
   const [klasseId, setKlasseId] = useState<string>(klassen[0]?.id ?? "");
 
   const [firma, setFirma] = useState("");
@@ -87,9 +85,9 @@ export function AdnOrderForm({ klassen }: { klassen: KlasseOption[] }) {
   const [anmerkungen, setAnmerkungen] = useState("");
 
   const pkg = PACKAGES[paket];
-  const listPreis = zahlungsmodell === "jahresabo" ? pkg.yearly : pkg.monthly;
+  const listPreis = pkg.yearly;
   const preisNetto = getInvoicedPreisNetto(listPreis, adnChannel);
-  const preisLabel = zahlungsmodell === "jahresabo" ? "/ Jahr" : "/ Monat";
+  const preisLabel = "/ Jahr";
 
   const mwst = useMemo(
     () => calculateMwst(land, ustId, preisNetto),
@@ -109,7 +107,7 @@ export function AdnOrderForm({ klassen }: { klassen: KlasseOption[] }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           paket,
-          zahlungsmodell,
+          zahlungsmodell: "jahresabo",
           adnChannel,
           klasseId: klasseId || undefined,
           firma,
@@ -239,40 +237,6 @@ export function AdnOrderForm({ klassen }: { klassen: KlasseOption[] }) {
                 <p className="text-2xl font-bold text-green">
                   {formatEuro(p.yearly)}
                   <span className="text-sm font-normal text-gray"> / Jahr (Liste)</span>
-                </p>
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Zahlungsmodell */}
-      <section>
-        <h2
-          className="text-xl font-bold text-slate mb-4"
-          style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
-        >
-          Zahlungsmodell
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {(["jahresabo", "monatlich"] as const).map((m) => {
-            const isSelected = zahlungsmodell === m;
-            return (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setZahlungsmodell(m)}
-                className={`text-left p-5 rounded-xl border-2 transition-all duration-200 ${
-                  isSelected
-                    ? "border-green shadow-lg bg-white"
-                    : "border-cool bg-white hover:border-gray/30"
-                }`}
-              >
-                <h3 className="font-bold text-slate">
-                  {m === "jahresabo" ? "Jahresabo" : "Monatliche Zahlung"}
-                </h3>
-                <p className="text-sm text-gray">
-                  Listenpreis: {formatEuro(m === "jahresabo" ? pkg.yearly : pkg.monthly)}
                 </p>
               </button>
             );
@@ -526,9 +490,7 @@ export function AdnOrderForm({ klassen }: { klassen: KlasseOption[] }) {
             </div>
             <div className="flex justify-between">
               <span className="text-gray">Zahlung:</span>
-              <span className="font-medium">
-                {zahlungsmodell === "jahresabo" ? "Jahresabo" : "Monatlich"}
-              </span>
+              <span className="font-medium">Jahresabo</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray">Listenpreis:</span>
