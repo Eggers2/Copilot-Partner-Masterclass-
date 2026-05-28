@@ -313,21 +313,6 @@ export default function LandingPage() {
               Programm kennenlernen <ChevronDown className="w-4 h-4" />
             </a>
           </div>
-
-          {/* Stats row */}
-          <div className="w-full border-t border-white/10 pt-10 grid grid-cols-2 md:grid-cols-4 gap-8 max-w-[800px]">
-            {[
-              { num: "31", label: "Systemhäuser bereits in Klasse 1" },
-              { num: "6\u00D7", label: "Microsoft MVP Alexander Eggers" },
-              { num: "90", label: "Tage bis zum ersten Auftrag" },
-              { num: "25+", label: "Jahre Microsoft-Erfahrung" },
-            ].map((s) => (
-              <div key={s.label} className="text-center">
-                <div className="text-[#00C896] text-3xl md:text-4xl font-bold mb-1" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>{s.num}</div>
-                <div className="text-white/50 text-xs leading-snug">{s.label}</div>
-              </div>
-            ))}
-          </div>
         </div>
 
         <div className="flex justify-center pb-8 relative">
@@ -521,44 +506,6 @@ export default function LandingPage() {
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ 2.6 EARLY-ADOPTER TESTIMONIALS ═══ */}
-      <section style={{ background: "#1A1A2E" }} className="py-[90px]">
-        <div className="container-main max-w-[1000px]">
-          <div className="text-center mb-12 reveal">
-            <span className="section-label">Stimmen aus Klasse 2</span>
-            <h2
-              className="text-white font-bold mt-3"
-              style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(24px, 3vw, 36px)", letterSpacing: "-0.025em" }}
-            >
-              Was die ersten Klasse-2-Mitglieder sagen
-            </h2>
-          </div>
-          <div className="grid md:grid-cols-2 gap-6 reveal">
-            {[
-              {
-                quote:
-                  "Wir haben uns noch am selben Tag entschieden. Als MVP-Partner wussten wir, dass dieses Wissen genau das ist, was uns von reinen Lizenz-Händlern unterscheidet.",
-                author: "— Geschäftsführer, IT-Systemhaus, Süddeutschland",
-              },
-              {
-                quote:
-                  "Nach dem Klasse-1-Kickoff war klar: Entweder wir sind in Klasse 2 dabei, oder wir schauen zu, wie andere den Markt besetzen.",
-                author: "— Vertriebsleiter, Microsoft-Partner, Österreich",
-              },
-            ].map((t, i) => (
-              <blockquote
-                key={i}
-                className={`reveal reveal-delay-${i + 1} rounded-2xl p-8 border border-white/10`}
-                style={{ background: "#23233D" }}
-              >
-                <p className="text-white/80 text-[15px] leading-relaxed italic mb-4">&bdquo;{t.quote}&ldquo;</p>
-                <footer className="text-white/40 text-sm">{t.author}</footer>
-              </blockquote>
-            ))}
           </div>
         </div>
       </section>
