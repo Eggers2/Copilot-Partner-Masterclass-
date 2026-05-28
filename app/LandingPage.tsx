@@ -950,7 +950,7 @@ export default function LandingPage({ klasse2Count, klasse2Capacity }: LandingPa
               className="text-white font-bold mb-4 max-w-[700px] mx-auto"
               style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", letterSpacing: "-0.025em" }}
             >
-              {klasse2Capacity} Plätze. <span className="text-[#00C896]">Klasse 2 startet im Juni 2026.</span>
+              {klasse2Capacity} Plätze.<br /><span className="text-[#00C896]">Klasse 2 startet im Juni 2026.</span>
             </h2>
 
             <div className="text-white/50 text-lg max-w-[560px] mx-auto mb-10 leading-relaxed">
