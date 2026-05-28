@@ -3,7 +3,7 @@ import LandingPage from "./LandingPage";
 
 export const revalidate = 60;
 
-const DEFAULT_CAPACITY = 30;
+const DEFAULT_CAPACITY = 25;
 
 export default async function Page() {
   let count = 0;

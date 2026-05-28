@@ -28,7 +28,6 @@ interface LandingPageProps {
 }
 
 export default function LandingPage({ klasse2Count, klasse2Capacity }: LandingPageProps) {
-  const remaining = Math.max(0, klasse2Capacity - klasse2Count);
   const percent = klasse2Capacity > 0 ? Math.min(100, (klasse2Count / klasse2Capacity) * 100) : 0;
 
   const [email, setEmail] = useState("");
@@ -187,7 +186,7 @@ export default function LandingPage({ klasse2Count, klasse2Capacity }: LandingPa
               </>
             ) : (
               <>
-                Jetzt einen der {remaining} Plätze sichern
+                Jetzt einen der {klasse2Capacity} Plätze sichern
                 <ArrowRight className="w-5 h-5" />
               </>
             )}
@@ -290,7 +289,7 @@ export default function LandingPage({ klasse2Count, klasse2Capacity }: LandingPa
                 <span className="absolute inline-flex w-full h-full rounded-full opacity-75 animate-ping" style={{ background: "#00C896" }} />
                 <span className="relative inline-flex w-2 h-2 rounded-full" style={{ background: "#00C896" }} />
               </span>
-              Klasse 2: {klasse2Count} von {klasse2Capacity} Plätzen vergeben — {remaining} noch verfügbar
+              Klasse 2: {klasse2Count} von {klasse2Capacity} Plätzen vergeben
             </span>
           </div>
 
@@ -951,12 +950,12 @@ export default function LandingPage({ klasse2Count, klasse2Capacity }: LandingPa
               className="text-white font-bold mb-4 max-w-[700px] mx-auto"
               style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", letterSpacing: "-0.025em" }}
             >
-              {remaining} Plätze. <span className="text-[#00C896]">Klasse 2 startet im Juni 2026.</span>
+              {klasse2Capacity} Plätze. <span className="text-[#00C896]">Klasse 2 startet im Juni 2026.</span>
             </h2>
 
             <div className="text-white/50 text-lg max-w-[560px] mx-auto mb-10 leading-relaxed">
               <p className="text-white/75 font-medium mb-1">Klasse 1: 31 Systemhäuser gestartet. Ausgebucht.</p>
-              <p className="text-[#00C896] font-medium mb-5">Klasse 2: {klasse2Count} Plätze vergeben. {remaining} noch verfügbar.</p>
+              <p className="text-[#00C896] font-medium mb-5">Klasse 2: {klasse2Count} von {klasse2Capacity} Plätzen vergeben.</p>
               <p>
                 Sie entscheiden, ob Ihr Systemhaus in 12 Monaten als führender Copilot-Partner in Ihrer Region positioniert ist — oder ob ein Wettbewerber diesen Platz einnimmt.
               </p>
