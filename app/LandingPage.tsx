@@ -504,7 +504,7 @@ export default function LandingPage({ klasse2Count, klasse2Capacity }: LandingPa
                     <div className="h-full rounded-full" style={{ width: `${percent}%`, background: "#00C896" }} />
                   </div>
                   <p className="text-white/65 text-sm leading-relaxed">
-                    8 Systemhäuser haben sich innerhalb von 48 Stunden nach dem Klasse-1-Kickoff für Klasse 2 angemeldet. Ohne Zögern.
+                    5 Systemhäuser haben sich innerhalb von 48 Stunden nach dem Klasse-1-Kickoff für Klasse 2 angemeldet. Ohne Zögern.
                   </p>
                 </div>
 
