@@ -61,12 +61,32 @@ function getInvoicedPreisNetto(list: number, channel: AdnChannel): number {
   return list;
 }
 
+const ANMERKUNGEN_MAX = 500;
+
+function buildAnmerkungenPrefix(adnBestellnummer: string, adnMitarbeiter: string): string {
+  const parts: string[] = [];
+  const bn = adnBestellnummer.trim();
+  const mit = adnMitarbeiter.trim();
+  if (bn) parts.push(`ADN-Bestellnummer: ${bn}`);
+  if (mit) parts.push(`ADN-Mitarbeiter/in: ${mit}`);
+  return parts.join(" | ");
+}
+
+function buildAnmerkungen(prefix: string, userText: string): string {
+  const trimmedUser = userText.trim();
+  if (!prefix) return trimmedUser;
+  if (!trimmedUser) return prefix;
+  return `${prefix}\n\n${trimmedUser}`;
+}
+
 export function AdnOrderForm({ klassen }: { klassen: KlasseOption[] }) {
   const [formState, setFormState] = useState<FormState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [successBestellNr, setSuccessBestellNr] = useState("");
 
   const [adnChannel, setAdnChannel] = useState<AdnChannel>("ADN_50");
+  const [adnBestellnummer, setAdnBestellnummer] = useState("");
+  const [adnMitarbeiter, setAdnMitarbeiter] = useState("");
   const [paket, setPaket] = useState<PacketKey>("team");
   const [klasseId, setKlasseId] = useState<string>(klassen[0]?.id ?? "");
 
@@ -96,6 +116,12 @@ export function AdnOrderForm({ klassen }: { klassen: KlasseOption[] }) {
 
   const ustIdRequired = land === "AT" || land === "CH";
 
+  const anmerkungenPrefix = buildAnmerkungenPrefix(adnBestellnummer, adnMitarbeiter);
+  const anmerkungenBudget = Math.max(
+    0,
+    ANMERKUNGEN_MAX - anmerkungenPrefix.length - (anmerkungenPrefix ? 2 : 0)
+  );
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFormState("loading");
@@ -121,7 +147,7 @@ export function AdnOrderForm({ klassen }: { klassen: KlasseOption[] }) {
           email,
           telefon,
           position,
-          anmerkungen,
+          anmerkungen: buildAnmerkungen(anmerkungenPrefix, anmerkungen),
           website: (document.getElementById("website") as HTMLInputElement)?.value || "",
         }),
       });
@@ -205,6 +231,49 @@ export function AdnOrderForm({ klassen }: { klassen: KlasseOption[] }) {
               Wir fakturieren 85% des Listenpreises an ADN; ADN fakturiert weiter.
             </p>
           </button>
+        </div>
+      </section>
+
+      {/* ADN-Vorgangsdaten */}
+      <section>
+        <h2
+          className="text-xl font-bold text-slate mb-1"
+          style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
+        >
+          ADN-Vorgangsdaten
+        </h2>
+        <p className="text-sm text-gray mb-4">
+          Optional. Wird im Onlineshop in die Anmerkungen übernommen.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="adnBestellnummer" className="block text-sm font-medium text-slate mb-1">
+              ADN-Bestellnummer
+            </label>
+            <input
+              id="adnBestellnummer"
+              type="text"
+              value={adnBestellnummer}
+              onChange={(e) => setAdnBestellnummer(e.target.value)}
+              disabled={formState === "loading"}
+              maxLength={120}
+              className="w-full px-4 py-3 text-sm border border-cool rounded-xl focus:border-green focus:outline-none disabled:opacity-50 text-slate"
+            />
+          </div>
+          <div>
+            <label htmlFor="adnMitarbeiter" className="block text-sm font-medium text-slate mb-1">
+              Zuständige/r ADN-Mitarbeiter/in
+            </label>
+            <input
+              id="adnMitarbeiter"
+              type="text"
+              value={adnMitarbeiter}
+              onChange={(e) => setAdnMitarbeiter(e.target.value)}
+              disabled={formState === "loading"}
+              maxLength={120}
+              className="w-full px-4 py-3 text-sm border border-cool rounded-xl focus:border-green focus:outline-none disabled:opacity-50 text-slate"
+            />
+          </div>
         </div>
       </section>
 
@@ -457,13 +526,18 @@ export function AdnOrderForm({ klassen }: { klassen: KlasseOption[] }) {
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-slate mb-1">Anmerkungen</label>
             <textarea
-              maxLength={500}
+              maxLength={anmerkungenBudget}
               rows={3}
               value={anmerkungen}
-              onChange={(e) => setAnmerkungen(e.target.value)}
+              onChange={(e) => setAnmerkungen(e.target.value.slice(0, anmerkungenBudget))}
               disabled={formState === "loading"}
               className="w-full px-4 py-3 text-sm border border-cool rounded-xl focus:border-green focus:outline-none disabled:opacity-50 resize-none text-slate"
             />
+            <p className="text-xs text-gray mt-1">
+              {anmerkungenPrefix
+                ? `ADN-Vorgangsdaten werden automatisch vorangestellt – noch ${anmerkungenBudget} Zeichen verfügbar.`
+                : `Noch ${anmerkungenBudget - anmerkungen.length} von ${ANMERKUNGEN_MAX} Zeichen verfügbar.`}
+            </p>
           </div>
         </div>
       </section>
