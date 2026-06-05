@@ -392,3 +392,36 @@ model FirstCallScore {
 
   @@map("first_call_scores")
 }
+
+// ─── Email / Resend ──────────────────────────────────────────────────────────
+// Editierbare HTML-Templates für transaktionale Mails. Pro Template entscheidet
+// `aktiv`, ob der Versand über Resend (true) oder weiter über n8n (false) läuft.
+model EmailTemplate {
+  id             String   @id @default(cuid())
+  key            String   @unique // Maschinen-Key, z.B. "kundenportal_otp"
+  name           String // Anzeigename im Portal
+  betreff        String // Subject, unterstützt {{platzhalter}}
+  html           String // Body-HTML, unterstützt {{platzhalter}}
+  beschreibung   String? // Hinweis auf verfügbare Variablen
+  aktiv          Boolean  @default(false) // true → Resend, false → n8n-Fallback
+  erstelltAm     DateTime @default(now()) @map("erstellt_am")
+  aktualisiertAm DateTime @updatedAt @map("aktualisiert_am")
+
+  @@map("email_templates")
+}
+
+// Protokoll jedes Versandversuchs (Resend wie n8n) – heute fehlt jegliches Log.
+model EmailLog {
+  id          String   @id @default(cuid())
+  templateKey String?  @map("template_key")
+  empfaenger  String
+  betreff     String
+  provider    String // "resend" | "n8n"
+  status      String // "sent" | "failed"
+  providerId  String?  @map("provider_id") // Resend Message-ID
+  fehlerText  String?  @map("fehler_text")
+  erstelltAm  DateTime @default(now()) @map("erstellt_am")
+
+  @@index([erstelltAm])
+  @@map("email_logs")
+}
