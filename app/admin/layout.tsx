@@ -6,6 +6,7 @@ import {
   Video,
   ShoppingCart,
   Mail,
+  Send,
   GraduationCap,
 } from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
@@ -50,6 +51,7 @@ export default async function AdminLayout({
                 <NavLink href="/admin/klassen" icon={GraduationCap} label="Klassen" />
                 <NavLink href="/admin/shop" icon={ShoppingCart} label="Online Shop" badge={neuCount} />
                 <NavLink href="/admin/newsletter" icon={Mail} label="Newsletter" />
+                <NavLink href="/admin/emails" icon={Send} label="E-Mails" />
               </nav>
             </div>
             <form action={logoutAction}>

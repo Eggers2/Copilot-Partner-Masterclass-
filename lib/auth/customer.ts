@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { createHmac, randomInt, timingSafeEqual } from "crypto";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { sendOtpCodeViaWebhook } from "@/lib/webhooks/otpCode";
+import { dispatchOtpCode } from "@/lib/email/sendOtpCode";
 
 const SESSION_COOKIE_NAME = "kundenportal-session";
 const PENDING_COOKIE_NAME = "kundenportal-otp-pending";
@@ -121,7 +121,7 @@ export async function requestOtpCode(emailInput: string): Promise<RequestOtpResu
     data: { codeHash, email, ablaufAm },
   });
 
-  const sent = await sendOtpCodeViaWebhook({ email, code });
+  const sent = await dispatchOtpCode({ email, code });
   if (!sent) return { ok: false, reason: "delivery_failed" };
   return { ok: true };
 }
