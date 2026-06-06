@@ -30,23 +30,23 @@ export default async function KundenportalCodePage({
   return (
     <div className="max-w-md mx-auto">
       <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-[#030386]/10 border border-[#030386]/20 rounded-2xl mb-4">
-          <KeyRound className="w-8 h-8 text-[#030386]" />
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-green/10 border border-green/20 rounded-2xl mb-4">
+          <KeyRound className="w-8 h-8 text-green" />
         </div>
-        <h1 className="text-2xl font-bold text-dark-slate-900">
+        <h1 className="text-2xl font-bold text-slate font-heading">
           Code eingeben
         </h1>
-        <p className="text-dark-slate-500 text-sm mt-2">
+        <p className="text-gray text-sm mt-2">
           Wir haben einen 6-stelligen Code an{" "}
-          <span className="font-medium text-dark-slate-900">{pendingEmail}</span>{" "}
+          <span className="font-medium text-slate">{pendingEmail}</span>{" "}
           gesendet. Er ist 10 Minuten gültig.
         </p>
       </div>
 
-      <div className="bg-white rounded-2xl border border-dark-slate-100 shadow-sm p-8">
+      <div className="bg-white rounded-2xl border border-cool shadow-sm p-8">
         <form action={verifyOtpCodeAction} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-dark-slate-600 mb-1">
+            <label className="block text-xs font-medium text-slate mb-1">
               6-stelliger Code
             </label>
             <input
@@ -59,7 +59,7 @@ export default async function KundenportalCodePage({
               maxLength={6}
               autoComplete="one-time-code"
               placeholder="123456"
-              className="w-full px-3 py-3 text-center text-2xl tracking-[0.5em] font-mono border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none bg-white text-dark-slate-900"
+              className="w-full px-3 py-3 text-center text-2xl tracking-[0.5em] font-mono border border-cool rounded-xl focus:border-green focus:outline-none bg-white text-slate"
             />
           </div>
 
@@ -72,16 +72,16 @@ export default async function KundenportalCodePage({
 
           <button
             type="submit"
-            className="w-full py-3 bg-[#030386] hover:bg-[#030386]/90 text-white font-semibold rounded-lg transition-colors"
+            className="w-full py-3 bg-green hover:bg-green-d text-slate font-semibold rounded-xl transition-colors"
           >
             Anmelden
           </button>
         </form>
       </div>
 
-      <p className="text-center text-dark-slate-500 text-xs mt-6">
+      <p className="text-center text-gray text-xs mt-6">
         Keine E-Mail erhalten?{" "}
-        <Link href="/kundenportal" className="text-[#030386] hover:underline">
+        <Link href="/kundenportal" className="text-green hover:underline">
           Neuen Code anfordern
         </Link>
       </p>

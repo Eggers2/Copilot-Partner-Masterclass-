@@ -44,22 +44,22 @@ export default async function KundeBestellungenPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-dark-slate-900">
+        <h1 className="text-2xl font-bold text-slate font-heading">
           Meine Bestellungen
         </h1>
-        <p className="text-dark-slate-500 text-sm mt-1">
+        <p className="text-gray text-sm mt-1">
           Wähle eine Bestellung, um Kontaktdaten, Firmenadresse und Teilnehmer
           zu pflegen.
         </p>
       </div>
 
       {bestellungen.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-dark-slate-100 shadow-sm p-10 text-center">
-          <Package className="w-10 h-10 text-dark-slate-300 mx-auto mb-3" />
-          <p className="text-dark-slate-600 font-medium">
+        <div className="bg-white rounded-2xl border border-cool shadow-sm p-10 text-center">
+          <Package className="w-10 h-10 text-cool mx-auto mb-3" />
+          <p className="text-slate font-medium">
             Keine Bestellungen gefunden
           </p>
-          <p className="text-dark-slate-400 text-sm mt-1">
+          <p className="text-gray text-sm mt-1">
             Zu dieser E-Mail ({session.email}) liegt keine Bestellung vor.
           </p>
         </div>
@@ -71,18 +71,18 @@ export default async function KundeBestellungenPage() {
             const statusInfo =
               STATUS_LABELS[b.status] ?? {
                 label: b.status,
-                color: "bg-dark-slate-50 text-dark-slate-600 border-dark-slate-200",
+                color: "bg-cool/40 text-gray border-cool",
               };
             return (
               <Link
                 key={b.id}
                 href={`/kundenportal/bestellungen/${b.id}`}
-                className="block bg-white rounded-2xl border border-dark-slate-100 shadow-sm hover:border-[#030386]/30 hover:shadow-md transition-all p-5"
+                className="block bg-white rounded-2xl border border-cool shadow-sm hover:border-green/40 hover:shadow-md transition-all p-5"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-mono text-dark-slate-400">
+                      <span className="text-xs font-mono text-gray">
                         {b.bestellNr}
                       </span>
                       <span
@@ -91,10 +91,10 @@ export default async function KundeBestellungenPage() {
                         {statusInfo.label}
                       </span>
                     </div>
-                    <h2 className="text-base font-semibold text-dark-slate-900 truncate">
+                    <h2 className="text-base font-semibold text-slate truncate">
                       {b.firma}
                     </h2>
-                    <div className="flex items-center gap-4 mt-2 text-sm text-dark-slate-500">
+                    <div className="flex items-center gap-4 mt-2 text-sm text-gray">
                       <span className="flex items-center gap-1">
                         <Package className="w-3.5 h-3.5" />
                         {paketInfo?.label ?? b.paket}
@@ -103,12 +103,12 @@ export default async function KundeBestellungenPage() {
                         <Users className="w-3.5 h-3.5" />
                         {b.userAnzahl} User
                       </span>
-                      <span className="text-xs text-dark-slate-400">
+                      <span className="text-xs text-gray">
                         bestellt am {formatDate(b.erstelltAm)}
                       </span>
                     </div>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-dark-slate-300 flex-shrink-0 mt-1" />
+                  <ChevronRight className="w-5 h-5 text-cool flex-shrink-0 mt-1" />
                 </div>
               </Link>
             );

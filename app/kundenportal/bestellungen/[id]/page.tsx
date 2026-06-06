@@ -48,7 +48,7 @@ export default async function KundeBestellungDetailPage({
       <div className="mb-6">
         <Link
           href="/kundenportal/bestellungen"
-          className="inline-flex items-center gap-2 text-sm text-dark-slate-500 hover:text-[#030386] transition-colors"
+          className="inline-flex items-center gap-2 text-sm text-gray hover:text-green transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Zurück zur Übersicht
@@ -56,50 +56,50 @@ export default async function KundeBestellungDetailPage({
       </div>
 
       <div className="mb-8">
-        <p className="text-xs font-mono text-dark-slate-400 mb-1">
+        <p className="text-xs font-mono text-gray mb-1">
           Bestell-Nr: {bestellung.bestellNr}
         </p>
-        <h1 className="text-2xl font-bold text-dark-slate-900">
+        <h1 className="text-2xl font-bold text-slate font-heading">
           Meine Daten pflegen
         </h1>
-        <p className="text-dark-slate-500 text-sm mt-1">
+        <p className="text-gray text-sm mt-1">
           Du kannst Kontaktdaten, Firmenadresse und Teilnehmer bearbeiten. Paket,
           Zahlungsvariante und Status werden vom Admin gepflegt.
         </p>
       </div>
 
-      <section className="bg-dark-slate-50 border border-dark-slate-200 rounded-2xl p-5 mb-6">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-dark-slate-500 mb-3">
+      <section className="bg-cool/30 border border-cool rounded-2xl p-5 mb-6">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-gray mb-3">
           Deine Buchung (nur Info)
         </h2>
         <dl className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div>
-            <dt className="text-xs text-dark-slate-500">Paket</dt>
-            <dd className="font-medium text-dark-slate-900">
+            <dt className="text-xs text-gray">Paket</dt>
+            <dd className="font-medium text-slate">
               {paketInfo?.label ?? bestellung.paket}
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-dark-slate-500">User</dt>
-            <dd className="font-medium text-dark-slate-900">
+            <dt className="text-xs text-gray">User</dt>
+            <dd className="font-medium text-slate">
               {bestellung.userAnzahl}
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-dark-slate-500">Abrechnung</dt>
-            <dd className="font-medium text-dark-slate-900 capitalize">
+            <dt className="text-xs text-gray">Abrechnung</dt>
+            <dd className="font-medium text-slate capitalize">
               {bestellung.zahlungsmodell}
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-dark-slate-500">Status</dt>
-            <dd className="font-medium text-dark-slate-900">
+            <dt className="text-xs text-gray">Status</dt>
+            <dd className="font-medium text-slate">
               {STATUS_LABELS[bestellung.status] ?? bestellung.status}
             </dd>
           </div>
-          <div className="col-span-2 md:col-span-4 pt-3 border-t border-dark-slate-200">
-            <dt className="text-xs text-dark-slate-500">Preis (Netto)</dt>
-            <dd className="font-medium text-dark-slate-900">
+          <div className="col-span-2 md:col-span-4 pt-3 border-t border-cool">
+            <dt className="text-xs text-gray">Preis (Netto)</dt>
+            <dd className="font-medium text-slate">
               {formatEuro(
                 Number(bestellung.listPreisNetto ?? bestellung.preisNetto)
               )}
