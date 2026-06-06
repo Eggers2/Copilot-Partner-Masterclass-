@@ -851,7 +851,7 @@ export default function LandingPage({ klasse2Count, klasse2Capacity }: LandingPa
               </div>
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { num: "26", label: "Jahre Microsoft MVP" },
+                  { num: "26×", label: "Microsoft MVP ausgezeichnet" },
                   { num: "40+", label: "Jahre IT-Erfahrung" },
                   { num: "M365", label: "Copilot & SharePoint" },
                   { num: "Podcast", label: "Speaker & Community-Host" },
