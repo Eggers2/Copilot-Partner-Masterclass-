@@ -1,24 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
-import { geocodeZip, haversineDistance } from "@/lib/geocode";
+import { geocodeQuery, haversineDistance } from "@/lib/geocode";
 import { loadMapPartners } from "@/lib/db/mapPartners";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-  const zip = request.nextUrl.searchParams.get("zip");
-  if (!zip) {
-    return NextResponse.json({ error: "PLZ parameter required" }, { status: 400 });
+  const params = request.nextUrl.searchParams;
+  // Accept "q" (PLZ or city). Keep "zip" as a backwards-compatible alias.
+  const query = (params.get("q") ?? params.get("zip"))?.trim();
+  const lat = Number(params.get("lat"));
+  const lng = Number(params.get("lng"));
+  const hasCoords = Number.isFinite(lat) && Number.isFinite(lng) && lat !== 0 && lng !== 0;
+
+  const limit = Math.min(Number(params.get("limit")) || 5, 50);
+  const radiusParam = Number(params.get("radius"));
+  const radius = Number.isFinite(radiusParam) && radiusParam > 0 ? radiusParam : null;
+
+  if (!query && !hasCoords) {
+    return NextResponse.json({ error: "PLZ, Ort oder Koordinaten erforderlich" }, { status: 400 });
   }
 
   try {
-    const zipCoords = await geocodeZip(zip);
+    // Direct coordinates (e.g. "in meiner Nähe") skip the Nominatim round-trip.
+    const zipCoords = hasCoords
+      ? { latitude: lat, longitude: lng }
+      : await geocodeQuery(query!);
+
     if (!zipCoords) {
-      return NextResponse.json({ error: "PLZ nicht gefunden" }, { status: 404 });
+      return NextResponse.json({ error: "Ort oder PLZ nicht gefunden" }, { status: 404 });
     }
 
     const partners = await loadMapPartners();
 
-    const withDistance = partners
+    let withDistance = partners
       .map((p) => ({
         ...p,
         distance: Math.round(
@@ -30,8 +44,12 @@ export async function GET(request: NextRequest) {
           )
         ),
       }))
-      .sort((a, b) => a.distance - b.distance)
-      .slice(0, 3);
+      .sort((a, b) => a.distance - b.distance);
+
+    if (radius) {
+      withDistance = withDistance.filter((p) => p.distance <= radius);
+    }
+    withDistance = withDistance.slice(0, limit);
 
     return NextResponse.json({
       zipCoords,
