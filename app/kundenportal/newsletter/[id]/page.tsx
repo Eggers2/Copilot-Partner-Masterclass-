@@ -31,21 +31,21 @@ export default async function KundenportalNewsletterDetailPage({
     <div className="space-y-4">
       <Link
         href="/kundenportal/newsletter"
-        className="inline-flex items-center gap-1.5 text-sm text-dark-slate-500 hover:text-dark-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-gray hover:text-green transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         Zurück zum Archiv
       </Link>
 
       <div>
-        <div className="text-xs text-dark-slate-400 font-semibold uppercase tracking-wide">
+        <div className="text-xs text-gray font-semibold uppercase tracking-wide">
           Ausgabe #{nl.ausgabeNr} · KW {nl.kw}/{nl.jahr}
         </div>
-        <h1 className="text-2xl font-bold text-dark-slate-900 mt-1">
+        <h1 className="text-2xl font-bold text-slate font-heading mt-1">
           {nl.titel}
         </h1>
         {nl.gesendetAm && (
-          <p className="text-xs text-dark-slate-400 mt-1">
+          <p className="text-xs text-gray mt-1">
             Versandt am{" "}
             {new Date(nl.gesendetAm).toLocaleDateString("de-DE", {
               day: "2-digit",
@@ -60,7 +60,7 @@ export default async function KundenportalNewsletterDetailPage({
         srcDoc={html}
         title={`${nl.titel} – Ausgabe ${nl.ausgabeNr}`}
         sandbox="allow-same-origin"
-        className="w-full border border-dark-slate-200 rounded-2xl bg-white"
+        className="w-full border border-cool rounded-2xl bg-white"
         style={{ minHeight: "1200px" }}
       />
     </div>

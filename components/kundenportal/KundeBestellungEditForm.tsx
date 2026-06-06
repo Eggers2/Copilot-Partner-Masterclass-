@@ -42,9 +42,9 @@ const LAENDER: Record<string, string> = {
 };
 
 const inputClass =
-  "w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none disabled:opacity-50 bg-white text-dark-slate-900";
+  "w-full px-4 py-3 text-sm border border-cool rounded-xl focus:border-green focus:outline-none disabled:opacity-50 bg-white text-slate";
 
-const labelClass = "block text-xs font-medium text-dark-slate-600 mb-1";
+const labelClass = "block text-xs font-medium text-slate mb-1";
 
 function padTeilnehmer(list: Teilnehmer[], size: number): Teilnehmer[] {
   const map = new Map(list.map((t) => [t.position, t]));
@@ -148,8 +148,8 @@ export function KundeBestellungEditForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       {/* Unternehmen */}
-      <section className="bg-white rounded-2xl border border-dark-slate-100 shadow-sm p-6">
-        <h2 className="text-base font-semibold text-dark-slate-900 mb-4">
+      <section className="bg-white rounded-2xl border border-cool shadow-sm p-6">
+        <h2 className="text-base font-semibold text-slate font-heading mb-4">
           Unternehmen
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -236,10 +236,10 @@ export function KundeBestellungEditForm({
       </section>
 
       {/* Karten-Sichtbarkeit */}
-      <section className="bg-white rounded-2xl border border-dark-slate-100 shadow-sm p-6">
+      <section className="bg-white rounded-2xl border border-cool shadow-sm p-6">
         <div className="flex items-center gap-2 mb-3">
-          <MapPin className="w-4 h-4 text-[#030386]" />
-          <h2 className="text-base font-semibold text-dark-slate-900">
+          <MapPin className="w-4 h-4 text-green" />
+          <h2 className="text-base font-semibold text-slate font-heading">
             Anzeige auf der Partner-Karte
           </h2>
         </div>
@@ -249,30 +249,30 @@ export function KundeBestellungEditForm({
             checked={showOnMap}
             onChange={(e) => setShowOnMap(e.target.checked)}
             disabled={isPending}
-            className="mt-0.5 w-4 h-4 accent-[#030386] cursor-pointer disabled:opacity-50"
+            className="mt-0.5 w-4 h-4 accent-green cursor-pointer disabled:opacity-50"
           />
-          <span className="text-sm text-dark-slate-700 leading-relaxed">
+          <span className="text-sm text-slate leading-relaxed">
             Ich stimme zu, das unsere Firma auf der Übersichtskarte unter{" "}
             <a
               href="https://www.copilotberater.de/suche"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#030386] hover:underline"
+              className="text-green hover:underline"
             >
               www.copilotberater.de/suche
             </a>{" "}
             angezeigt wird.
           </span>
         </label>
-        <p className="text-xs text-dark-slate-400 mt-3 ml-7">
+        <p className="text-xs text-gray mt-3 ml-7">
           Wenn du den Haken entfernst und speicherst, wird deine Firma weder auf der
           DACH-Landkarte noch in der Umkreissuche per PLZ oder Ort angezeigt.
         </p>
       </section>
 
       {/* Ansprechpartner */}
-      <section className="bg-white rounded-2xl border border-dark-slate-100 shadow-sm p-6">
-        <h2 className="text-base font-semibold text-dark-slate-900 mb-4">
+      <section className="bg-white rounded-2xl border border-cool shadow-sm p-6">
+        <h2 className="text-base font-semibold text-slate font-heading mb-4">
           Ansprechpartner
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -308,7 +308,7 @@ export function KundeBestellungEditForm({
               disabled={isPending}
               className={inputClass}
             />
-            <p className="text-xs text-dark-slate-400 mt-1">
+            <p className="text-xs text-gray mt-1">
               Wenn du deine E-Mail änderst, bleibst du weiterhin eingeloggt. Der
               nächste Login-Link geht dann an die neue Adresse.
             </p>
@@ -337,14 +337,14 @@ export function KundeBestellungEditForm({
       </section>
 
       {/* Teilnehmer */}
-      <section className="bg-white rounded-2xl border border-dark-slate-100 shadow-sm p-6">
+      <section className="bg-white rounded-2xl border border-cool shadow-sm p-6">
         <div className="flex items-center gap-2 mb-1">
-          <Users className="w-4 h-4 text-[#030386]" />
-          <h2 className="text-base font-semibold text-dark-slate-900">
+          <Users className="w-4 h-4 text-green" />
+          <h2 className="text-base font-semibold text-slate font-heading">
             Teilnehmer ({slotCount} Plätze)
           </h2>
         </div>
-        <p className="text-xs text-dark-slate-400 mb-4">
+        <p className="text-xs text-gray mb-4">
           Trage hier die Namen und E-Mail-Adressen der Teilnehmer ein, die an der
           Masterclass teilnehmen sollen.
         </p>
@@ -370,9 +370,9 @@ export function KundeBestellungEditForm({
           {visibleTeilnehmer.map((t) => (
             <div
               key={t.position}
-              className="grid grid-cols-1 md:grid-cols-[24px_1fr_1fr_1.5fr] gap-3 items-end p-3 rounded-lg border border-dark-slate-100 bg-dark-slate-50/40"
+              className="grid grid-cols-1 md:grid-cols-[24px_1fr_1fr_1.5fr] gap-3 items-end p-3 rounded-lg border border-cool bg-cool/20"
             >
-              <div className="text-xs font-mono text-dark-slate-400 md:pb-2">
+              <div className="text-xs font-mono text-gray md:pb-2">
                 #{t.position + 1}
               </div>
               <div>
@@ -417,8 +417,8 @@ export function KundeBestellungEditForm({
       </section>
 
       {/* Anmerkungen */}
-      <section className="bg-white rounded-2xl border border-dark-slate-100 shadow-sm p-6">
-        <h2 className="text-base font-semibold text-dark-slate-900 mb-4">
+      <section className="bg-white rounded-2xl border border-cool shadow-sm p-6">
+        <h2 className="text-base font-semibold text-slate font-heading mb-4">
           Anmerkungen
         </h2>
         <textarea
@@ -454,14 +454,14 @@ export function KundeBestellungEditForm({
           type="button"
           onClick={() => router.push("/kundenportal/bestellungen")}
           disabled={isPending}
-          className="px-4 py-2 text-sm font-medium text-dark-slate-600 bg-white border border-dark-slate-200 rounded-lg hover:bg-dark-slate-50 transition-colors disabled:opacity-50"
+          className="px-4 py-2 text-sm font-medium text-slate bg-white border border-cool rounded-xl hover:bg-cool/30 transition-colors disabled:opacity-50"
         >
           Abbrechen
         </button>
         <button
           type="submit"
           disabled={isPending}
-          className="px-4 py-2 text-sm font-semibold text-white bg-[#030386] rounded-lg hover:bg-[#030386]/90 transition-colors disabled:opacity-50"
+          className="px-4 py-2 text-sm font-semibold text-slate bg-green rounded-xl hover:bg-green-d transition-colors disabled:opacity-50"
         >
           {isPending ? "Speichern…" : "Änderungen speichern"}
         </button>
