@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { KeyRound, AlertCircle } from "lucide-react";
 import { getCustomerSession, getOtpPendingEmail } from "@/lib/auth/customer";
 import { verifyOtpCodeAction } from "../actions";
+import { SubmitButton } from "@/components/kundenportal/SubmitButton";
 
 export default async function KundenportalCodePage({
   searchParams,
@@ -70,12 +71,11 @@ export default async function KundenportalCodePage({
             </div>
           )}
 
-          <button
-            type="submit"
+          <SubmitButton
+            label="Anmelden"
+            pendingLabel="Anmeldung läuft…"
             className="w-full py-3 bg-green hover:bg-green-d text-slate font-semibold rounded-xl transition-colors"
-          >
-            Anmelden
-          </button>
+          />
         </form>
       </div>
 
