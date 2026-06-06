@@ -806,9 +806,6 @@ export default function LandingPage({ klasse2Count, klasse2Capacity }: LandingPa
                 Michael Greth ist Berater, Speaker und Podcaster mit über 40 Jahren Erfahrung in der IT. Seit 26 Jahren ist er Microsoft MVP – ein Titel, der sein tiefes Engagement in der Community und das konsequente Mitgestalten eines offenen Austauschs rund um moderne IT widerspiegelt.
               </p>
               <p className="text-[#6B6B8A] text-base leading-relaxed mb-6">
-                Sein Herz schlägt für die Verbindung von Technologie und praktischem Nutzen im Arbeitsalltag. Er hilft Unternehmen dabei, Microsoft Copilot und Künstliche Intelligenz nicht nur zu verstehen, sondern wirksam einzusetzen – strategisch durchdacht, praxisnah vermittelt und nachhaltig verankert.
-              </p>
-              <p className="text-[#6B6B8A] text-base leading-relaxed mb-6">
                 In der Masterclass unterstützt er das Team mit News und Updates zu den technischen Veränderungen des Copiloten, mit technisch geprägten Sessions in den Community-Terminen und mit Unterstützung im Community-Portal, um eure Fragen zu beantworten.
               </p>
 
