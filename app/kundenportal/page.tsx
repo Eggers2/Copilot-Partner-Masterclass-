@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Mail, AlertCircle } from "lucide-react";
 import { getCustomerSession } from "@/lib/auth/customer";
 import { requestOtpCodeAction } from "./actions";
+import { SubmitButton } from "@/components/kundenportal/SubmitButton";
 
 export default async function KundenportalLoginPage({
   searchParams,
@@ -63,12 +64,11 @@ export default async function KundenportalLoginPage({
             </div>
           )}
 
-          <button
-            type="submit"
+          <SubmitButton
+            label="Login-Code anfordern"
+            pendingLabel="Code wird gesendet…"
             className="w-full py-3 bg-green hover:bg-green-d text-slate font-semibold rounded-xl transition-colors"
-          >
-            Login-Code anfordern
-          </button>
+          />
         </form>
       </div>
 
