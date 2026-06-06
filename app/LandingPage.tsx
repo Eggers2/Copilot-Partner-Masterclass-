@@ -821,21 +821,32 @@ export default function LandingPage({ klasse2Count, klasse2Capacity }: LandingPa
                 ))}
               </div>
 
-              <a
-                href="https://www.linkedin.com/in/mgreth/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm font-medium text-[#00C896] hover:text-[#00A87D] transition-colors"
-              >
-                Michael Greth auf LinkedIn
-                <span aria-hidden="true">→</span>
-              </a>
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                <a
+                  href="https://www.linkedin.com/in/mgreth/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-[#00C896] hover:text-[#00A87D] transition-colors"
+                >
+                  Michael Greth auf LinkedIn
+                  <span aria-hidden="true">→</span>
+                </a>
+                <a
+                  href="https://podcast.yourcopilot.de/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-[#00C896] hover:text-[#00A87D] transition-colors"
+                >
+                  Zum Copilot-Podcast
+                  <span aria-hidden="true">→</span>
+                </a>
+              </div>
             </div>
 
             {/* Right – Photo + Credentials */}
             <div className="reveal reveal-delay-2 lg:order-1">
-              <div className="w-48 h-48 rounded-full overflow-hidden mx-auto lg:mx-0 mb-8 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #00C896 0%, #007A5E 100%)" }}>
-                <span className="text-white text-6xl font-bold" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>MG</span>
+              <div className="w-48 h-48 rounded-full overflow-hidden mx-auto lg:mx-0 mb-8">
+                <img src="/trainer-michael-greth.png" alt="Michael Greth" className="w-full h-full object-cover" />
               </div>
               <div className="text-center lg:text-left mb-8">
                 <h3 className="text-[#1A1A2E] text-xl font-bold" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>Michael Greth</h3>
