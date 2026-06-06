@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import Link from "next/link";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -49,7 +50,7 @@ export default function MapClient() {
   const markersRef = useRef<L.LayerGroup | null>(null);
   const [partners, setPartners] = useState<Partner[]>([]);
   const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
-  const [zipInput, setZipInput] = useState("");
+  const [queryInput, setQueryInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -127,18 +128,15 @@ export default function MapClient() {
     }
   }, [partners, searchResults]);
 
-  const handleSearch = useCallback(async () => {
-    const zip = zipInput.trim();
-    if (!zip) return;
+  const runSearch = useCallback(async (queryString: string) => {
     setLoading(true);
     setError("");
     setSearchResults(null);
 
     try {
-      const res = await fetch(
-        `/api/partners/search?zip=${encodeURIComponent(zip)}`,
-        { cache: "no-store" }
-      );
+      const res = await fetch(`/api/partners/search?${queryString}&limit=10`, {
+        cache: "no-store",
+      });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Fehler bei der Suche");
@@ -163,7 +161,30 @@ export default function MapClient() {
     } finally {
       setLoading(false);
     }
-  }, [zipInput]);
+  }, []);
+
+  const handleSearch = useCallback(() => {
+    const query = queryInput.trim();
+    if (!query) return;
+    runSearch(`q=${encodeURIComponent(query)}`);
+  }, [queryInput, runSearch]);
+
+  const handleGeolocate = useCallback(() => {
+    if (!navigator.geolocation) {
+      setError("Standortermittlung wird von Ihrem Browser nicht unterstützt.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => runSearch(`lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`),
+      () => {
+        setError("Standort konnte nicht ermittelt werden. Bitte erlauben Sie den Zugriff oder suchen Sie per PLZ/Ort.");
+        setLoading(false);
+      },
+      { timeout: 10000 }
+    );
+  }, [runSearch]);
 
   return (
     <div style={{ minHeight: "100vh", background: "#FFFFFF" }}>
@@ -191,15 +212,15 @@ export default function MapClient() {
 
       {/* Search Bar */}
       <section style={{ background: "#FFFFFF", padding: "32px 24px 0", maxWidth: 600, margin: "0 auto" }}>
-        <div style={{ display: "flex", gap: 12 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
           <input
             type="text"
-            placeholder="PLZ eingeben..."
-            value={zipInput}
-            onChange={(e) => setZipInput(e.target.value)}
+            placeholder="PLZ oder Ort eingeben..."
+            value={queryInput}
+            onChange={(e) => setQueryInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             style={{
-              flex: 1,
+              flex: "1 1 200px",
               padding: "14px 20px",
               borderRadius: 10,
               border: "2px solid #E8E8F0",
@@ -216,6 +237,7 @@ export default function MapClient() {
             onClick={handleSearch}
             disabled={loading}
             style={{
+              flex: "0 0 auto",
               background: "#00C896",
               color: "#1A1A2E",
               fontWeight: 600,
@@ -235,10 +257,40 @@ export default function MapClient() {
             🔍 Suchen
           </button>
         </div>
+        <button
+          onClick={handleGeolocate}
+          disabled={loading}
+          style={{
+            marginTop: 12,
+            background: "#23233D",
+            color: "#A8E5D2",
+            fontWeight: 600,
+            padding: "12px 20px",
+            borderRadius: 10,
+            border: "1px solid #2E2E4D",
+            cursor: loading ? "not-allowed" : "pointer",
+            fontSize: "0.95rem",
+            fontFamily: "'Figtree', system-ui, sans-serif",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            transition: "all .2s",
+            opacity: loading ? 0.6 : 1,
+          }}
+        >
+          📍 Berater in meiner Nähe finden
+        </button>
         {error && (
           <p style={{ color: "#e74c3c", marginTop: 12, fontSize: "0.9rem" }}>{error}</p>
         )}
       </section>
+
+      {/* Loading state while a search is running */}
+      {loading && !searchResults && (
+        <section style={{ padding: "24px 24px 0", maxWidth: 1160, margin: "0 auto", textAlign: "center" }}>
+          <p style={{ color: "#6B6B8A", fontSize: "0.95rem" }}>Suche läuft …</p>
+        </section>
+      )}
 
       {/* Search Results (above the map after a successful search) */}
       {searchResults && searchResults.length > 0 && (
@@ -260,12 +312,28 @@ export default function MapClient() {
                   padding: 24,
                   display: "flex",
                   flexDirection: "column",
-                  gap: 8,
+                  gap: 10,
                 }}
               >
-                <h3 style={{ color: "#1A1A2E", fontWeight: 700, fontSize: "1.1rem", margin: 0 }}>
-                  {p.companyName || "Unbekannt"}
-                </h3>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+                  <h3 style={{ color: "#1A1A2E", fontWeight: 700, fontSize: "1.1rem", margin: 0 }}>
+                    {p.companyName || "Unbekannt"}
+                  </h3>
+                  <span
+                    style={{
+                      flex: "0 0 auto",
+                      background: "#00C896",
+                      color: "#1A1A2E",
+                      fontWeight: 600,
+                      fontSize: "0.8rem",
+                      padding: "4px 12px",
+                      borderRadius: 20,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    ~{p.distance} km
+                  </span>
+                </div>
                 <p style={{ color: "#6B6B8A", margin: 0, fontSize: "0.95rem", lineHeight: 1.5 }}>
                   {p.street && <>{p.street}<br /></>}
                   {[p.zip, p.city].filter(Boolean).join(" ")}
@@ -275,26 +343,21 @@ export default function MapClient() {
                     href={p.website.startsWith("http") ? p.website : `https://${p.website}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ color: "#00C896", textDecoration: "none", fontWeight: 500, fontSize: "0.95rem" }}
+                    style={{
+                      marginTop: "auto",
+                      alignSelf: "flex-start",
+                      background: "#00C896",
+                      color: "#1A1A2E",
+                      textDecoration: "none",
+                      fontWeight: 600,
+                      fontSize: "0.95rem",
+                      padding: "10px 18px",
+                      borderRadius: 8,
+                    }}
                   >
-                    {p.website} →
+                    Beratung anfragen →
                   </a>
                 )}
-                <span
-                  style={{
-                    display: "inline-block",
-                    background: "#00C896",
-                    color: "#1A1A2E",
-                    fontWeight: 600,
-                    fontSize: "0.85rem",
-                    padding: "4px 12px",
-                    borderRadius: 20,
-                    alignSelf: "flex-start",
-                    marginTop: 4,
-                  }}
-                >
-                  ~{p.distance} km
-                </span>
               </div>
             ))}
           </div>
@@ -303,7 +366,12 @@ export default function MapClient() {
 
       {searchResults && searchResults.length === 0 && (
         <section style={{ padding: "24px 24px 0", maxWidth: 1160, margin: "0 auto", textAlign: "center" }}>
-          <p style={{ color: "#6B6B8A" }}>Keine Partner in der Nähe gefunden.</p>
+          <p style={{ color: "#1A1A2E", fontWeight: 600, margin: "0 0 6px" }}>
+            Keine Berater in der Nähe gefunden.
+          </p>
+          <p style={{ color: "#6B6B8A", margin: 0, fontSize: "0.95rem" }}>
+            Versuchen Sie eine andere PLZ oder einen größeren Ort in Ihrer Region.
+          </p>
         </section>
       )}
 
@@ -322,6 +390,41 @@ export default function MapClient() {
           }}
         />
       </section>
+
+      {/* Footer */}
+      <footer style={{ background: "#1A1A2E", padding: "40px 24px", textAlign: "center" }}>
+        <nav
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            gap: 24,
+            marginBottom: 16,
+          }}
+        >
+          {[
+            { href: "/impressum", label: "Impressum" },
+            { href: "/datenschutz", label: "Datenschutz" },
+            { href: "/agb", label: "AGB" },
+          ].map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              style={{
+                color: "#A8E5D2",
+                textDecoration: "none",
+                fontSize: "0.95rem",
+                fontFamily: "'Figtree', system-ui, sans-serif",
+              }}
+            >
+              {l.label}
+            </Link>
+          ))}
+        </nav>
+        <p style={{ color: "#6B6B8A", fontSize: "0.85rem", margin: 0, fontFamily: "'Figtree', system-ui, sans-serif" }}>
+          © {new Date().getFullYear()} NextSkills GmbH · copilotberater.de
+        </p>
+      </footer>
     </div>
   );
 }

@@ -27,6 +27,29 @@ export async function geocodeAddress(
   }
 }
 
+/**
+ * Geocode a free-text query (PLZ or city name) within the DACH region in a
+ * single Nominatim request. Faster than geocodeZip (no per-country loop) and
+ * handles both "80331" and "München".
+ */
+export async function geocodeQuery(
+  query: string
+): Promise<{ latitude: number; longitude: number } | null> {
+  const url = `${NOMINATIM_BASE}?format=json&countrycodes=de,at,ch&q=${encodeURIComponent(query)}&limit=1`;
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": "copilotberater.de" },
+    });
+    const data: NominatimResult[] = await res.json();
+    if (data.length > 0) {
+      return { latitude: parseFloat(data[0].lat), longitude: parseFloat(data[0].lon) };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function geocodeZip(
   zip: string
 ): Promise<{ latitude: number; longitude: number } | null> {
