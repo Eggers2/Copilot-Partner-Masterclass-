@@ -792,6 +792,70 @@ export default function LandingPage({ klasse2Count, klasse2Capacity }: LandingPa
               </div>
             </div>
           </div>
+
+          {/* Divider */}
+          <div className="my-16 lg:my-20 border-t border-[#00C896]/15 reveal"></div>
+
+          {/* Co-Trainer – Michael Greth */}
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            {/* Left – Bio */}
+            <div className="reveal lg:order-2">
+              <span className="section-label">Ihr Co-Trainer</span>
+              <h2 className="section-title">Michael Greth – KI verstehen. Microsoft 365 wirksam nutzen.</h2>
+              <p className="text-[#6B6B8A] text-base leading-relaxed mb-6">
+                Michael Greth ist Berater, Speaker und Podcaster mit über 40 Jahren Erfahrung in der IT. Seit 26 Jahren ist er Microsoft MVP – ein Titel, der sein tiefes Engagement in der Community und das konsequente Mitgestalten eines offenen Austauschs rund um moderne IT widerspiegelt.
+              </p>
+              <p className="text-[#6B6B8A] text-base leading-relaxed mb-6">
+                Sein Herz schlägt für die Verbindung von Technologie und praktischem Nutzen im Arbeitsalltag. Er hilft Unternehmen dabei, Microsoft Copilot und Künstliche Intelligenz nicht nur zu verstehen, sondern wirksam einzusetzen – strategisch durchdacht, praxisnah vermittelt und nachhaltig verankert.
+              </p>
+              <p className="text-[#6B6B8A] text-base leading-relaxed mb-6">
+                In der Masterclass unterstützt er das Team mit News und Updates zu den technischen Veränderungen des Copiloten, mit technisch geprägten Sessions in den Community-Terminen und mit Unterstützung im Community-Portal, um eure Fragen zu beantworten.
+              </p>
+
+              {/* Tags */}
+              <div className="flex flex-wrap gap-2 mb-8">
+                {["Microsoft MVP (26 Jahre)", "M365 Copilot", "SharePoint", "Microsoft 365", "Microsoft Stream", "Community & Podcast"].map((tag) => (
+                  <span key={tag} className="px-3 py-1 bg-[#00C896]/10 text-[#00C896] rounded-full text-xs font-medium">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+
+              <a
+                href="https://www.linkedin.com/in/mgreth/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm font-medium text-[#00C896] hover:text-[#00A87D] transition-colors"
+              >
+                Michael Greth auf LinkedIn
+                <span aria-hidden="true">→</span>
+              </a>
+            </div>
+
+            {/* Right – Photo + Credentials */}
+            <div className="reveal reveal-delay-2 lg:order-1">
+              <div className="w-48 h-48 rounded-full overflow-hidden mx-auto lg:mx-0 mb-8 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #00C896 0%, #007A5E 100%)" }}>
+                <span className="text-white text-6xl font-bold" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>MG</span>
+              </div>
+              <div className="text-center lg:text-left mb-8">
+                <h3 className="text-[#1A1A2E] text-xl font-bold" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>Michael Greth</h3>
+                <p className="text-[#6B6B8A] text-sm">Microsoft MVP | Berater, Speaker & Podcaster</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { num: "26", label: "Jahre Microsoft MVP" },
+                  { num: "40+", label: "Jahre IT-Erfahrung" },
+                  { num: "M365", label: "Copilot & SharePoint" },
+                  { num: "Podcast", label: "Speaker & Community-Host" },
+                ].map((c, i) => (
+                  <div key={i} className="bg-white p-4 rounded-[10px] text-center">
+                    <div className="text-[#00C896] text-2xl font-bold" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>{c.num}</div>
+                    <div className="text-[#6B6B8A] text-xs mt-1">{c.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
