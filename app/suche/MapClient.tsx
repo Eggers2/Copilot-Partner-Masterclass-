@@ -134,7 +134,7 @@ export default function MapClient() {
     setSearchResults(null);
 
     try {
-      const res = await fetch(`/api/partners/search?${queryString}&limit=10`, {
+      const res = await fetch(`/api/partners/search?${queryString}`, {
         cache: "no-store",
       });
       const data = await res.json();

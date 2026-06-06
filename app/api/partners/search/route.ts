@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const lng = Number(params.get("lng"));
   const hasCoords = Number.isFinite(lat) && Number.isFinite(lng) && lat !== 0 && lng !== 0;
 
-  const limit = Math.min(Number(params.get("limit")) || 5, 50);
+  const limit = Math.min(Number(params.get("limit")) || 3, 50);
   const radiusParam = Number(params.get("radius"));
   const radius = Number.isFinite(radiusParam) && radiusParam > 0 ? radiusParam : null;
 
