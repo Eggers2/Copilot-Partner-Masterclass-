@@ -127,3 +127,33 @@ export async function markFailed(id: string, fehlerText: string) {
 export function readContent(newsletter: Newsletter): NewsletterContent {
   return newsletter.content as unknown as NewsletterContent;
 }
+
+/**
+ * Sammelt die `sourceUrl`s, die in den letzten `limit` versendeten Newslettern
+ * verwendet wurden (bevorzugt die ausgewählten Items, sonst alle Kandidaten).
+ * Dient als Exclude-Liste, damit dieselben Links nicht in mehreren Ausgaben
+ * landen. Read-only auf der eigenen DB.
+ */
+export async function recentlyUsedSourceUrls(limit = 6): Promise<string[]> {
+  const recent = await prisma.newsletter.findMany({
+    where: { status: "SENT" },
+    orderBy: [{ gesendetAm: "desc" }],
+    take: limit,
+    select: { content: true },
+  });
+
+  const urls = new Set<string>();
+  for (const nl of recent) {
+    const content = nl.content as unknown as NewsletterContent | null;
+    if (!content || !Array.isArray(content.candidates)) continue;
+    const selectedIds = Array.isArray(content.selectedIds) ? content.selectedIds : [];
+    const items =
+      selectedIds.length > 0
+        ? content.candidates.filter((c) => selectedIds.includes(c.id))
+        : content.candidates;
+    for (const item of items) {
+      if (item?.sourceUrl) urls.add(item.sourceUrl);
+    }
+  }
+  return [...urls];
+}

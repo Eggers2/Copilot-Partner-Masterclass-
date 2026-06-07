@@ -13,12 +13,13 @@ import {
   markSent,
   nextAusgabeNr,
   readContent,
+  recentlyUsedSourceUrls,
   updateContent,
 } from "@/lib/db/newsletters";
 import {
   generatePromptOfWeek,
   generateZahlOfWeek,
-  researchNews,
+  newsFromLinksammlung,
 } from "@/lib/newsletter/research";
 import { generateNewsletterContent } from "@/lib/newsletter/generate";
 import { renderNewsletterHtml } from "@/lib/newsletter/render";
@@ -77,11 +78,13 @@ export async function fetchMoreNewsAction(
   if (!nl) throw new Error("Newsletter nicht gefunden");
   const content = readContent(nl);
 
-  const excludeUrls = content.candidates
-    .map((c) => c.sourceUrl)
-    .filter((u): u is string => !!u);
+  const used = await recentlyUsedSourceUrls().catch(() => [] as string[]);
+  const excludeUrls = [
+    ...content.candidates.map((c) => c.sourceUrl).filter((u): u is string => !!u),
+    ...used,
+  ];
 
-  const more = await researchNews({ count: 5, excludeUrls });
+  const more = await newsFromLinksammlung({ count: 5, excludeUrls });
   const seenUrls = new Set(excludeUrls.map((u) => u.toLowerCase()));
   const filtered = more.filter(
     (m) => m.sourceUrl && !seenUrls.has(m.sourceUrl.toLowerCase())
