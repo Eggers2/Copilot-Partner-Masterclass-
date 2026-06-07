@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import type { ActivityType, LeadStatus } from "@prisma/client";
+import { sendTeamsAufnahmeEmail } from "@/lib/email/sendTeamsAufnahme";
 
 const WEBHOOK_SECRET = process.env.N8N_WEBHOOK_SECRET;
 
@@ -28,9 +29,20 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    await prisma.bestellungTeilnehmer.update({
+    const teilnehmer = await prisma.bestellungTeilnehmer.update({
       where: { id: teilnehmerId },
       data: { teamsEingeladenAm: new Date() },
+      select: {
+        email: true,
+        vorname: true,
+        bestellung: { select: { klasse: { select: { name: true } } } },
+      },
+    });
+    // Eigene Benachrichtigung – Microsoft schickt bei Gruppen-Aufnahme keine.
+    await sendTeamsAufnahmeEmail({
+      email: teilnehmer.email,
+      vorname: teilnehmer.vorname,
+      klasseName: teilnehmer.bestellung.klasse.name,
     });
     return NextResponse.json({ success: true });
   }
