@@ -4,12 +4,17 @@ import { GraduationCap, Lock, Plus } from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
 import { listKlassenMitBelegung } from "@/lib/klassen";
 import { KLASSE_STATUS_CONFIG } from "@/lib/constants/lead-config";
+import { getTeamsAufnahmeModus } from "@/lib/db/appSettings";
+import { isGraphConfigured } from "@/lib/teams/graph";
+import { TeamsModusToggle } from "@/components/admin/TeamsModusToggle";
 
 export default async function KlassenPage() {
   const authed = await isAuthenticated();
   if (!authed) redirect("/admin/login");
 
   const klassen = await listKlassenMitBelegung();
+  const teamsModus = await getTeamsAufnahmeModus();
+  const graphConfigured = isGraphConfigured();
 
   return (
     <div>
@@ -31,6 +36,8 @@ export default async function KlassenPage() {
           Neue Klasse
         </Link>
       </div>
+
+      <TeamsModusToggle initialModus={teamsModus} graphConfigured={graphConfigured} />
 
       <div className="grid md:grid-cols-2 gap-4">
         {klassen.map((k) => {

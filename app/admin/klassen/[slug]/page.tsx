@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { setKlasseStatusAction } from "@/app/admin/actions";
 import { KlasseForm } from "../klasse-form";
 import { KLASSE_STATUS_CONFIG } from "@/lib/constants/lead-config";
+import { isGraphConfigured } from "@/lib/teams/graph";
+import { TeamsTestInvite } from "@/components/admin/TeamsTestInvite";
 
 export default async function KlasseDetailPage({
   params,
@@ -45,6 +47,7 @@ export default async function KlasseDetailPage({
   const conf = KLASSE_STATUS_CONFIG[klasse.status];
   const isOpen = klasse.status === "OPEN";
   const isClosed = klasse.status === "CLOSED";
+  const graphConfigured = isGraphConfigured();
 
   async function toggleClosed() {
     "use server";
@@ -105,8 +108,30 @@ export default async function KlasseDetailPage({
               capacity: klasse.capacity,
               status: klasse.status,
               teilnehmerSperre: klasse.teilnehmerSperre,
+              teamsGroupId: klasse.teamsGroupId,
               description: klasse.description,
             }}
+          />
+        </section>
+
+        <section className="bg-white rounded-2xl border border-dark-slate-100 p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-dark-slate-900 mb-1">
+            Teams-Aufnahme testen
+          </h2>
+          <p className="text-sm text-dark-slate-500 mb-3">
+            Lädt eine Test-Adresse über den nativen Pfad in das Team dieser Klasse ein –
+            zum Prüfen, bevor der Schalter auf Nativ gestellt wird.
+          </p>
+          <TeamsTestInvite
+            klasseId={klasse.id}
+            disabled={!graphConfigured || !klasse.teamsGroupId}
+            hint={
+              !graphConfigured
+                ? "Microsoft Graph ist nicht konfiguriert (MS_GRAPH_*)."
+                : !klasse.teamsGroupId
+                  ? "Zuerst oben eine Teams-Group-ID speichern."
+                  : undefined
+            }
           />
         </section>
 

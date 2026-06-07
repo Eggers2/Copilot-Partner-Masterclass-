@@ -21,6 +21,7 @@ interface KlasseValues {
   capacity: number | null;
   status: KlasseStatus;
   teilnehmerSperre: boolean;
+  teamsGroupId: string | null;
   description: string | null;
 }
 
@@ -149,6 +150,22 @@ export function KlasseForm({
             </span>
           </span>
         </label>
+      </div>
+
+      <div>
+        <label className={labelClass}>Teams-Team (M365-Group-ID)</label>
+        <input
+          name="teamsGroupId"
+          defaultValue={initial?.teamsGroupId ?? ""}
+          placeholder="z.B. 81beeeb8-3ef1-4715-98bd-dbcd7b823dd9"
+          className={`${inputClass} font-mono`}
+        />
+        <p className="text-xs text-dark-slate-500 mt-1">
+          GUID der M365-Gruppe (= Teams-Team) dieser Klasse. Bestimmt im Native-Modus,
+          in welches Team neue Teilnehmer aufgenommen werden. Leer = Aufnahme wird
+          übersprungen. (In Teams: Team → Link zum Team abrufen → Parameter{" "}
+          <code>groupId</code>.)
+        </p>
       </div>
 
       <div>

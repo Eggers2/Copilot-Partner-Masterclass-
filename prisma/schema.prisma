@@ -88,6 +88,10 @@ model Klasse {
   status            KlasseStatus @default(PLANNED)
   teilnehmerSperre  Boolean      @default(false) @map("teilnehmer_sperre")
   description       String?
+  // GUID der M365-Gruppe (= Teams-Team-ID) dieser Klasse. Steuert im Native-Modus,
+  // in welches Teams-Team die Gäste dieser Klasse aufgenommen werden. NULL = kein
+  // Team hinterlegt → die Aufnahme wird übersprungen (siehe lib/teams/dispatchTeamsGuest.ts).
+  teamsGroupId      String?      @map("teams_group_id")
   webinars          Webinar[]
   bestellungen      Bestellung[]
   leads             Lead[]
@@ -424,4 +428,16 @@ model EmailLog {
 
   @@index([erstelltAm])
   @@map("email_logs")
+}
+
+// ─── App-weite Einstellungen (generischer Key/Value-Store) ──────────────────
+// Laufzeit-Schalter, die im Admin umgelegt werden können – analog zum
+// EmailTemplate.aktiv-Flag, aber nicht an ein einzelnes Template gebunden.
+// Aktueller Key: "teams_aufnahme_modus" = "nativ" | "n8n" (Default ohne Row: "n8n").
+model AppSetting {
+  key            String   @id
+  value          String
+  aktualisiertAm DateTime @updatedAt @map("aktualisiert_am")
+
+  @@map("app_settings")
 }

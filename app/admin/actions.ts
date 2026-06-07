@@ -31,7 +31,12 @@ function parseBerlinDate(dateTimeLocal: string): Date {
   return cest; // fallback to summer time
 }
 import { updateLead, addActivity, upsertFirstCallScore } from "@/lib/db/leads";
-import { fireTeamsGuestWebhook } from "@/lib/webhooks/teamsGuest";
+import { dispatchTeamsGuestInvites } from "@/lib/teams/dispatchTeamsGuest";
+import { inviteGuestToTeam, isGraphConfigured } from "@/lib/teams/graph";
+import {
+  setTeamsAufnahmeModus,
+  type TeamsAufnahmeModus,
+} from "@/lib/db/appSettings";
 import { geocodeAddress } from "@/lib/geocode";
 import {
   createWebinar,
@@ -839,7 +844,10 @@ export async function updateBestellungAction(
 
   const bestellung = await prisma.bestellung.findUnique({
     where: { id },
-    select: { bestellNr: true },
+    select: {
+      bestellNr: true,
+      klasse: { select: { id: true, name: true, teamsGroupId: true } },
+    },
   });
   const toInvite = await prisma.bestellungTeilnehmer.findMany({
     where: {
@@ -849,13 +857,11 @@ export async function updateBestellungAction(
     },
     select: { id: true, vorname: true, nachname: true, email: true },
   });
-  for (const t of toInvite) {
-    fireTeamsGuestWebhook({
-      teilnehmerId: t.id,
-      bestellNr: bestellung?.bestellNr ?? "",
-      vorname: t.vorname,
-      nachname: t.nachname,
-      email: t.email,
+  if (bestellung && toInvite.length > 0) {
+    await dispatchTeamsGuestInvites({
+      participants: toInvite,
+      klasse: bestellung.klasse,
+      bestellNr: bestellung.bestellNr,
     });
   }
 
@@ -1011,6 +1017,8 @@ export async function createKlasseAction(
   const teilnehmerSperreRaw = formData.get("teilnehmerSperre");
   const teilnehmerSperre =
     teilnehmerSperreRaw === "on" || teilnehmerSperreRaw === "true";
+  const teamsGroupId =
+    ((formData.get("teamsGroupId") as string) || "").trim() || null;
 
   try {
     await prisma.klasse.create({
@@ -1023,6 +1031,7 @@ export async function createKlasseAction(
         capacity,
         status: statusRaw as KlasseStatus,
         teilnehmerSperre,
+        teamsGroupId,
         description: ((formData.get("description") as string) || "").trim() || null,
       },
     });
@@ -1059,6 +1068,8 @@ export async function updateKlasseAction(
   const teilnehmerSperreRaw = formData.get("teilnehmerSperre");
   const teilnehmerSperre =
     teilnehmerSperreRaw === "on" || teilnehmerSperreRaw === "true";
+  const teamsGroupId =
+    ((formData.get("teamsGroupId") as string) || "").trim() || null;
 
   await prisma.klasse.update({
     where: { id },
@@ -1070,6 +1081,7 @@ export async function updateKlasseAction(
       capacity,
       status: statusRaw as KlasseStatus,
       teilnehmerSperre,
+      teamsGroupId,
       description: ((formData.get("description") as string) || "").trim() || null,
     },
   });
@@ -1087,4 +1099,73 @@ export async function setKlasseStatusAction(
   await prisma.klasse.update({ where: { id }, data: { status } });
   revalidatePath("/admin/klassen");
   revalidatePath(`/admin/klassen/${id}`);
+}
+
+// ─── Teams-Aufnahme: Laufzeit-Schalter (nativ/n8n) + Test-Einladung ──────────
+
+export async function setTeamsAufnahmeModusAction(
+  modus: TeamsAufnahmeModus
+): Promise<{ ok: boolean; error?: string }> {
+  await requireAuth();
+  // Guard analog zum Resend-Schalter: nativ nur, wenn Graph konfiguriert ist.
+  if (modus === "nativ" && !isGraphConfigured()) {
+    return {
+      ok: false,
+      error:
+        "Microsoft Graph ist nicht konfiguriert (MS_GRAPH_TENANT_ID / MS_GRAPH_CLIENT_ID / MS_GRAPH_CLIENT_SECRET fehlt). Native Aufnahme nicht aktivierbar.",
+    };
+  }
+  await setTeamsAufnahmeModus(modus);
+  revalidatePath("/admin/klassen");
+  return { ok: true };
+}
+
+/**
+ * Lädt eine beliebige Test-Adresse über den NATIVEN Pfad in das Team der
+ * angegebenen Klasse ein – zum Verifizieren, bevor der Schalter umgelegt wird.
+ * Setzt bewusst kein teams_eingeladen_am (kein echter Teilnehmer).
+ */
+export async function sendTeamsTestInviteAction(
+  klasseId: string,
+  testEmail: string
+): Promise<{ ok: boolean; error?: string }> {
+  await requireAuth();
+
+  const email = testEmail.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { ok: false, error: "Bitte eine gültige E-Mail-Adresse eingeben." };
+  }
+  if (!isGraphConfigured()) {
+    return {
+      ok: false,
+      error: "Microsoft Graph ist nicht konfiguriert – Test-Einladung nicht möglich.",
+    };
+  }
+
+  const klasse = await prisma.klasse.findUnique({
+    where: { id: klasseId },
+    select: { name: true, teamsGroupId: true },
+  });
+  if (!klasse) return { ok: false, error: "Klasse nicht gefunden." };
+  if (!klasse.teamsGroupId) {
+    return {
+      ok: false,
+      error: `Für „${klasse.name}" ist keine Teams-Group-ID hinterlegt.`,
+    };
+  }
+
+  try {
+    await inviteGuestToTeam({
+      email,
+      displayName: email,
+      teamsGroupId: klasse.teamsGroupId,
+      redirectUrl: process.env.APP_BASE_URL ?? "https://www.copilotberater.de",
+    });
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Test-Einladung fehlgeschlagen.",
+    };
+  }
+  return { ok: true };
 }
