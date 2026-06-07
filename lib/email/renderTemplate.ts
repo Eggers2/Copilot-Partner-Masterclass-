@@ -74,6 +74,29 @@ const BESTELLUNG_DEFAULT_HTML = `<div style="font-family: -apple-system, BlinkMa
   </div>
 </div>`;
 
+const TEAMS_AUFNAHME_DEFAULT_HTML = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #0F172A;">
+  <div style="padding: 16px 0; border-bottom: 1px solid #E2E8F0;">
+    <h1 style="margin: 0; font-size: 20px; color: #030386;">Willkommen im Teams-Team</h1>
+  </div>
+  <div style="padding: 24px 0; line-height: 1.6; font-size: 15px;">
+    <p>Hallo {{vorname}},</p>
+    <p>du wurdest dem Microsoft-Teams-Team deiner Klasse <strong>{{klasse}}</strong> hinzugefügt.</p>
+    <p>So kommst du hinein:</p>
+    <ol style="padding-left: 20px; margin: 12px 0;">
+      <li>Öffne Microsoft Teams (App oder Browser).</li>
+      <li>Klicke oben rechts auf dein Profil und wähle <strong>Organisation wechseln</strong>.</li>
+      <li>Wähle <strong>Next Skills</strong> – dort findest du das Team deiner Klasse.</li>
+    </ol>
+    <div style="margin: 28px 0; text-align: center;">
+      <a href="https://teams.microsoft.com" style="display: inline-block; padding: 12px 24px; background: #030386; color: #ffffff; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 15px;">Teams öffnen</a>
+    </div>
+    <p style="font-size: 14px; color: #64748B;">Wirst du beim ersten Anmelden nach einem Bestätigungscode gefragt, bekommst du diesen automatisch per E-Mail von Microsoft. Es kann bis zu einen Tag dauern, bis das Team erscheint.</p>
+  </div>
+  <div style="padding-top: 16px; border-top: 1px solid #E2E8F0; font-size: 12px; color: #94A3B8;">
+    Next Skills · Copilot Partner Masterclass
+  </div>
+</div>`;
+
 /**
  * Registry aller konfigurierbaren Templates. Treibt die Editor-Hilfe, die
  * Beispieldaten für Vorschau/Test-Mail und das initiale Seeding.
@@ -100,6 +123,15 @@ export const TEMPLATE_REGISTRY: Record<string, TemplateDefinition> = {
     },
     defaultBetreff: "Deine Bestellung {{bestell_nr}}",
     defaultHtml: BESTELLUNG_DEFAULT_HTML,
+  },
+  teams_aufgenommen: {
+    key: "teams_aufgenommen",
+    name: "Teams – Aufnahme ins Klassen-Team",
+    beschreibung:
+      "Info-Mail an den Teilnehmer, nachdem er ins Teams-Team seiner Klasse aufgenommen wurde (Microsoft selbst verschickt bei der Gruppen-Aufnahme keine Benachrichtigung). Hinweis: Inaktiv = es wird KEINE Mail versendet (für dieses Template gibt es keinen n8n-Fallback).",
+    variables: { vorname: "Max", klasse: "Klasse 2" },
+    defaultBetreff: "Du bist im Teams-Team deiner Klasse {{klasse}}",
+    defaultHtml: TEAMS_AUFNAHME_DEFAULT_HTML,
   },
 };
 

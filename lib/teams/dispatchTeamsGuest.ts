@@ -2,6 +2,7 @@ import { after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getTeamsAufnahmeModus } from "@/lib/db/appSettings";
 import { isGraphConfigured, inviteGuestToTeam } from "@/lib/teams/graph";
+import { sendTeamsAufnahmeEmail } from "@/lib/email/sendTeamsAufnahme";
 import { fireTeamsGuestWebhook } from "@/lib/webhooks/teamsGuest";
 
 export interface TeamsInviteParticipant {
@@ -69,6 +70,12 @@ export async function dispatchTeamsGuestInvites(input: {
           await prisma.bestellungTeilnehmer.update({
             where: { id: p.id },
             data: { teamsEingeladenAm: new Date() },
+          });
+          // Eigene Benachrichtigung – Microsoft schickt bei Gruppen-Aufnahme keine.
+          await sendTeamsAufnahmeEmail({
+            email: p.email,
+            vorname: p.vorname,
+            klasseName: klasse.name,
           });
         } catch (err) {
           console.error(
