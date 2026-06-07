@@ -13,7 +13,7 @@ import {
   getOtpPendingEmail,
   clearOtpPendingCookie,
 } from "@/lib/auth/customer";
-import { fireTeamsGuestWebhook } from "@/lib/webhooks/teamsGuest";
+import { dispatchTeamsGuestInvites } from "@/lib/teams/dispatchTeamsGuest";
 import { geocodeAddress } from "@/lib/geocode";
 
 interface TeilnehmerInput {
@@ -230,7 +230,10 @@ export async function updateKundeBestellungAction(
 
   const bestellung = await prisma.bestellung.findUnique({
     where: { id: bestellungId },
-    select: { bestellNr: true },
+    select: {
+      bestellNr: true,
+      klasse: { select: { id: true, name: true, teamsGroupId: true } },
+    },
   });
   const toInvite = await prisma.bestellungTeilnehmer.findMany({
     where: {
@@ -240,13 +243,11 @@ export async function updateKundeBestellungAction(
     },
     select: { id: true, vorname: true, nachname: true, email: true },
   });
-  for (const t of toInvite) {
-    fireTeamsGuestWebhook({
-      teilnehmerId: t.id,
-      bestellNr: bestellung?.bestellNr ?? "",
-      vorname: t.vorname,
-      nachname: t.nachname,
-      email: t.email,
+  if (bestellung && toInvite.length > 0) {
+    await dispatchTeamsGuestInvites({
+      participants: toInvite,
+      klasse: bestellung.klasse,
+      bestellNr: bestellung.bestellNr,
     });
   }
 

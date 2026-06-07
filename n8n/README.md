@@ -53,6 +53,18 @@ Datei: `teams-guest-invite.json`
 
 Verarbeitet den Webhook `N8N_WEBHOOK_URL_teams_guest` aus `lib/webhooks/teamsGuest.ts`. Für jeden `BestellungTeilnehmer` mit ausgefüllter E-Mail wird eine Microsoft-Gast-Einladung erzeugt und die Person der M365-Gruppe hinzugefügt, die das Ziel-Team trägt (Team-Mitgliedschaft wird daraus automatisch synchronisiert). Anschließend meldet der Workflow den Erfolg via Callback an die App zurück, damit `teams_eingeladen_am` gesetzt wird und kein Teilnehmer mehrfach eingeladen wird.
 
+> **Hinweis – zwei Modi seit der Pro-Klasse-Umstellung.** Die App kann die Aufnahme
+> wahlweise **nativ** (Microsoft Graph direkt aus der App, Ziel-Team **pro Klasse** aus dem
+> Feld `Klasse.teamsGroupId`) oder über **diesen n8n-Workflow** abwickeln. Umgeschaltet wird
+> im Admin unter **/admin/klassen** (Schalter „Teams-Aufnahme"). **Default ist n8n**, ein
+> Deployment ändert das Verhalten also nicht. Der native Pfad braucht
+> `MS_GRAPH_TENANT_ID` / `MS_GRAPH_CLIENT_ID` / `MS_GRAPH_CLIENT_SECRET` (dieselbe Azure-App
+> mit denselben Permissions wie hier) und nutzt `lib/teams/graph.ts` +
+> `lib/teams/dispatchTeamsGuest.ts`. Dieser Workflow bleibt als Fallback bestehen und routet
+> weiterhin in **eine feste** Group-ID; für echtes Pro-Klasse-Routing den Schalter auf „Nativ"
+> stellen. Vor dem Umschalten lässt sich pro Klasse eine **Test-Einladung** auf der
+> Klassen-Detailseite auslösen.
+
 ### Voraussetzungen (einmalig)
 
 1. **Azure AD App Registration**:
