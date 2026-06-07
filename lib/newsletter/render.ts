@@ -1,4 +1,8 @@
-import type { NewsletterContent, NewsletterNewsItem } from "./types";
+import type {
+  NewsletterContent,
+  NewsletterNewsItem,
+  NewsletterEventItem,
+} from "./types";
 
 function esc(value: string | undefined | null): string {
   if (value == null) return "";
@@ -140,6 +144,107 @@ function eventBlock(content: NewsletterContent): string {
   </tr>`;
 }
 
+function truncate(s: string, max: number): string {
+  const t = s.trim();
+  return t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t;
+}
+
+// Termin-Datum in deutscher Schreibweise, gegen Europe/Berlin gerechnet
+// (die API liefert UTC-ISO-Zeitstempel).
+function formatEventDate(startsAt: string | null, endsAt: string | null): string {
+  if (!startsAt) return "";
+  const start = new Date(startsAt);
+  if (Number.isNaN(start.getTime())) return "";
+  const dateFmt = new Intl.DateTimeFormat("de-DE", {
+    timeZone: "Europe/Berlin",
+    weekday: "short",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  const timeFmt = new Intl.DateTimeFormat("de-DE", {
+    timeZone: "Europe/Berlin",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const datePart = dateFmt.format(start);
+  const startTime = timeFmt.format(start);
+  let timePart = `${startTime} Uhr`;
+  if (endsAt) {
+    const end = new Date(endsAt);
+    if (!Number.isNaN(end.getTime()) && dateFmt.format(end) === datePart) {
+      timePart = `${startTime}–${timeFmt.format(end)} Uhr`;
+    }
+  }
+  return `${datePart} · ${timePart}`;
+}
+
+function eventCard(ev: NewsletterEventItem): string {
+  const dateLabel = formatEventDate(ev.startsAt, ev.endsAt);
+  const role = (ev.role ?? "").toUpperCase();
+  const roleLabel = role === "SPEAKER" ? "Speaker" : role === "PROMOTE" ? "Event" : "Termin";
+
+  const meta: string[] = [];
+  if (dateLabel) meta.push(`&#128197;&nbsp; ${esc(dateLabel)}`);
+  if (ev.location) meta.push(`&#128205;&nbsp; ${esc(ev.location)}`);
+  const metaLine = meta.length
+    ? `<div style="margin-top:6px;color:${COLORS.gray};font-size:13px;line-height:1.5;font-family:'DM Sans',Arial,Helvetica,sans-serif;">${meta.join("&nbsp;&nbsp;&middot;&nbsp;&nbsp;")}</div>`
+    : "";
+
+  const desc = ev.description
+    ? `<div style="margin-top:8px;color:${COLORS.gray};font-size:13px;line-height:1.55;font-family:'DM Sans',Arial,Helvetica,sans-serif;">${esc(truncate(ev.description, 180))}</div>`
+    : "";
+
+  const link = ev.url
+    ? `<div style="margin-top:10px;font-family:'DM Sans',Arial,Helvetica,sans-serif;"><a href="${esc(ev.url)}" target="_blank" style="display:inline-block;font-size:13px;font-weight:600;color:${COLORS.accent};text-decoration:none;">Mehr erfahren &rarr;</a></div>`
+    : "";
+
+  return `
+  <tr>
+    <td style="padding:0 0 12px 0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLORS.eventBg};border:1px solid ${COLORS.cardStrongBorder};border-radius:14px;">
+        <tr>
+          <td style="padding:18px 20px;" valign="top">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+              <tr>
+                <td width="52" valign="top" style="padding-right:14px;">
+                  <div style="width:42px;height:42px;line-height:42px;border-radius:10px;background:${COLORS.accentSoft};text-align:center;font-size:20px;">&#128197;</div>
+                </td>
+                <td valign="top">
+                  <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${COLORS.accent};font-family:'DM Sans',Arial,Helvetica,sans-serif;">${esc(roleLabel)}</div>
+                  <div style="margin-top:4px;color:${COLORS.cool};font-size:16px;font-weight:600;font-family:'DM Sans',Arial,Helvetica,sans-serif;line-height:1.35;">${esc(ev.title)}</div>
+                  ${metaLine}
+                  ${desc}
+                  ${link}
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>`;
+}
+
+function eventsSection(content: NewsletterContent): string {
+  const events = Array.isArray(content.events) ? content.events.slice(0, 3) : [];
+  if (events.length === 0) return "";
+  const header = `
+  <tr>
+    <td style="padding:8px 0 14px 0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td width="160" style="color:${COLORS.accent};font-size:11px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;font-family:'DM Sans',Arial,Helvetica,sans-serif;white-space:nowrap;">Kommende Termine</td>
+          <td style="padding-left:10px;">
+            <div style="height:1px;background:${COLORS.cardStrongBorder};line-height:1px;font-size:0;">&nbsp;</div>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>`;
+  return header + events.map(eventCard).join("");
+}
+
 export interface RenderOptions {
   ausgabeNr: number;
   kw: number;
@@ -181,7 +286,6 @@ export function renderNewsletterHtml(
   );
 
   const prompt = content.prompt;
-  const zahl = content.zahl;
 
   return `<!doctype html>
 <html lang="de">
@@ -239,7 +343,10 @@ body, table, td, a { font-family: Arial, Helvetica, sans-serif !important; }
           </td>
         </tr>
 
-        <!-- EVENT -->
+        <!-- SECTION: KOMMENDE TERMINE -->
+        ${eventsSection(content)}
+
+        <!-- EVENT (manuell, optional) -->
         ${eventBlock(content)}
 
         <!-- SECTION: PROMPT DER WOCHE -->
@@ -287,25 +394,6 @@ body, table, td, a { font-family: Arial, Helvetica, sans-serif !important; }
             </table>
           </td>
         </tr>
-
-        <!-- Zahl der Woche -->
-        ${
-          zahl && zahl.wert
-            ? `<tr>
-          <td style="padding:0 0 20px 0;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLORS.statBg};border:1px solid ${themeFor("CHAT").border};border-radius:16px;">
-              <tr>
-                <td align="center" style="padding:40px 28px;">
-                  <div class="stat-num" style="color:${COLORS.accent};font-size:64px;font-weight:700;line-height:1;letter-spacing:-1px;font-family:'DM Sans',Arial,Helvetica,sans-serif;">${esc(zahl.wert)}</div>
-                  <div style="margin-top:12px;color:${COLORS.cool};font-size:17px;font-weight:500;font-family:'DM Sans',Arial,Helvetica,sans-serif;line-height:1.4;">${esc(zahl.titel)}</div>
-                  ${zahl.body ? `<div style="margin-top:10px;color:${COLORS.gray};font-size:14px;line-height:1.55;font-family:'DM Sans',Arial,Helvetica,sans-serif;max-width:460px;margin-left:auto;margin-right:auto;">${esc(zahl.body)}</div>` : ""}
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>`
-            : ""
-        }
 
         ${newsCards}
 

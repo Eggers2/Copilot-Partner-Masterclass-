@@ -24,17 +24,27 @@ export interface NewsletterPromptOfWeek {
   tipp: string;
 }
 
-export interface NewsletterZahlOfWeek {
-  wert: string;
-  titel: string;
-  body: string;
+export interface NewsletterEventItem {
+  id: string;
+  title: string;
+  description: string | null;
+  url: string | null;
+  location: string | null;
+  /** ISO-8601 (UTC) – Start des Termins */
+  startsAt: string | null;
+  /** ISO-8601 (UTC) – Ende, optional */
+  endsAt: string | null;
+  /** SPEAKER | PROMOTE (oder null) */
+  role: string | null;
+  imageUrl: string | null;
 }
 
 export interface NewsletterContent {
   candidates: NewsletterNewsItem[];
   selectedIds: string[];
   prompt: NewsletterPromptOfWeek;
-  zahl: NewsletterZahlOfWeek;
+  /** Bis zu 3 kommende Termine aus der Linksammlung (oben im Newsletter). */
+  events: NewsletterEventItem[];
   eventBlock?: {
     badge: string;
     titel: string;

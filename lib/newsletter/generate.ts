@@ -8,7 +8,7 @@ import {
 import {
   newsFromLinksammlung,
   generatePromptOfWeek,
-  generateZahlOfWeek,
+  eventsFromLinksammlung,
 } from "./research";
 import type { NewsletterContent } from "./types";
 
@@ -39,16 +39,16 @@ export async function generateNewsletterContent(id: string, count = 5) {
     })
     .catch((err) => logPartial(id, "Prompt der Woche", err));
 
-  const zahlTask = generateZahlOfWeek()
-    .then(async (zahl) => {
+  const eventsTask = eventsFromLinksammlung({ count: 3 })
+    .then(async (events) => {
       const nl = await getNewsletter(id);
       if (!nl) return;
       const content = readContent(nl) as NewsletterContent;
-      await updateContent(id, { content: { ...content, zahl } });
+      await updateContent(id, { content: { ...content, events } });
     })
-    .catch((err) => logPartial(id, "Zahl der Woche", err));
+    .catch((err) => logPartial(id, "Events (Linksammlung)", err));
 
-  await Promise.allSettled([newsTask, promptTask, zahlTask]);
+  await Promise.allSettled([newsTask, promptTask, eventsTask]);
 }
 
 async function logPartial(id: string, label: string, err: unknown) {
