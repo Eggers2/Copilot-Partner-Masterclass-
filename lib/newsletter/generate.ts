@@ -1,7 +1,12 @@
 import { prisma } from "@/lib/prisma";
-import { getNewsletter, readContent, updateContent } from "@/lib/db/newsletters";
 import {
-  researchNews,
+  getNewsletter,
+  readContent,
+  updateContent,
+  recentlyUsedSourceUrls,
+} from "@/lib/db/newsletters";
+import {
+  newsFromLinksammlung,
   generatePromptOfWeek,
   generateZahlOfWeek,
 } from "./research";
@@ -14,14 +19,16 @@ import type { NewsletterContent } from "./types";
  * wird und den Fortschritt per Polling abholen kann.
  */
 export async function generateNewsletterContent(id: string, count = 5) {
-  const newsTask = researchNews({ count })
+  const newsTask = recentlyUsedSourceUrls()
+    .catch(() => [] as string[])
+    .then((excludeUrls) => newsFromLinksammlung({ count, excludeUrls }))
     .then(async (candidates) => {
       const nl = await getNewsletter(id);
       if (!nl) return;
       const content = readContent(nl) as NewsletterContent;
       await updateContent(id, { content: { ...content, candidates } });
     })
-    .catch((err) => logPartial(id, "News-Recherche", err));
+    .catch((err) => logPartial(id, "News (Linksammlung)", err));
 
   const promptTask = generatePromptOfWeek()
     .then(async (prompt) => {
