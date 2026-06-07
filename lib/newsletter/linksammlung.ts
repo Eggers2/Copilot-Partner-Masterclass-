@@ -78,11 +78,14 @@ function normalizeRow(raw: unknown): LinkRow | null {
 }
 
 /**
- * Holt Links aus der Linksammlung-API (neueste zuerst). Wirft einen
- * sprechenden Fehler, wenn das Token fehlt oder die API nicht erreichbar ist –
- * dieser landet im Newsletter-Modul über logPartial in `fehlerText`.
+ * Generischer GET-Aufruf gegen die Linksammlung-API mit Bearer-Token. Wirft
+ * einen sprechenden Fehler, wenn das Token fehlt oder die API nicht erreichbar
+ * ist – dieser landet im Newsletter-Modul über logPartial in `fehlerText`.
  */
-export async function fetchLinks(opts: FetchLinksOptions = {}): Promise<LinkRow[]> {
+async function apiGet(
+  path: string,
+  params: Record<string, string | undefined>
+): Promise<unknown> {
   const token = process.env.LINKSAMMLUNG_API_TOKEN;
   if (!token) {
     throw new Error(
@@ -90,10 +93,10 @@ export async function fetchLinks(opts: FetchLinksOptions = {}): Promise<LinkRow[
     );
   }
 
-  const url = new URL(`${baseUrl()}/api/links`);
-  url.searchParams.set("limit", String(Math.min(Math.max(opts.limit ?? 100, 1), 500)));
-  if (opts.category) url.searchParams.set("category", opts.category);
-  if (opts.since) url.searchParams.set("since", opts.since);
+  const url = new URL(`${baseUrl()}${path}`);
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== "") url.searchParams.set(key, value);
+  }
 
   let res: Response;
   try {
@@ -114,7 +117,77 @@ export async function fetchLinks(opts: FetchLinksOptions = {}): Promise<LinkRow[
     );
   }
 
-  const data = (await res.json().catch(() => null)) as { links?: unknown[] } | null;
+  return res.json().catch(() => null);
+}
+
+/**
+ * Holt Links aus der Linksammlung-API (neueste zuerst).
+ */
+export async function fetchLinks(opts: FetchLinksOptions = {}): Promise<LinkRow[]> {
+  const data = (await apiGet("/api/links", {
+    limit: String(Math.min(Math.max(opts.limit ?? 100, 1), 500)),
+    category: opts.category,
+    since: opts.since,
+  })) as { links?: unknown[] } | null;
   const rows = Array.isArray(data?.links) ? data!.links : [];
   return rows.map(normalizeRow).filter((r): r is LinkRow => r !== null);
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Events / Termine (GET /api/events)
+// ───────────────────────────────────────────────────────────────────────────
+
+export interface EventRow {
+  id: string;
+  title: string;
+  description: string | null;
+  url: string | null;
+  location: string | null;
+  startsAt: string | null;
+  endsAt: string | null;
+  role: string | null;
+  imageUrl: string | null;
+}
+
+export interface FetchEventsOptions {
+  /** SPEAKER | PROMOTE – ohne Angabe liefert die API alle Rollen */
+  role?: string;
+  /** true = auch vergangene Termine */
+  all?: boolean;
+  /** max. Anzahl (clientseitig begrenzt; API liefert aufsteigend nach Start) */
+  limit?: number;
+}
+
+function normalizeEvent(raw: unknown): EventRow | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const title = str(r.title);
+  if (!title) return null; // ohne Titel nicht darstellbar
+  return {
+    id: str(r.id) ?? title,
+    title,
+    description: str(r.description),
+    url: str(r.url),
+    location: str(r.location),
+    startsAt: str(r.startsAt),
+    endsAt: str(r.endsAt),
+    role: str(r.role),
+    imageUrl: str(r.imageUrl),
+  };
+}
+
+/**
+ * Holt kommende Termine aus der Linksammlung-API (standardmäßig nur
+ * zukünftige, aufsteigend nach Startdatum).
+ */
+export async function fetchEvents(opts: FetchEventsOptions = {}): Promise<EventRow[]> {
+  const data = (await apiGet("/api/events", {
+    role: opts.role,
+    all: opts.all ? "true" : undefined,
+  })) as { events?: unknown[] } | null;
+  const rows = Array.isArray(data?.events) ? data!.events : [];
+  const events = rows
+    .map(normalizeEvent)
+    .filter((e): e is EventRow => e !== null);
+  return typeof opts.limit === "number" ? events.slice(0, opts.limit) : events;
 }

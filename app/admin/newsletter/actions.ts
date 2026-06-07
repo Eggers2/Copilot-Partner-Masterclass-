@@ -18,8 +18,8 @@ import {
 } from "@/lib/db/newsletters";
 import {
   generatePromptOfWeek,
-  generateZahlOfWeek,
   newsFromLinksammlung,
+  eventsFromLinksammlung,
 } from "@/lib/newsletter/research";
 import { generateNewsletterContent } from "@/lib/newsletter/generate";
 import { renderNewsletterHtml } from "@/lib/newsletter/render";
@@ -31,7 +31,7 @@ const EMPTY_CONTENT: NewsletterContent = {
   candidates: [],
   selectedIds: [],
   prompt: { badge: "", title: "", body: "", tipp: "" },
-  zahl: { wert: "", titel: "", body: "" },
+  events: [],
 };
 
 export async function createDraftAction() {
@@ -113,15 +113,15 @@ export async function regeneratePromptAction(
   return { content: next };
 }
 
-export async function regenerateZahlAction(
+export async function refreshEventsAction(
   id: string
 ): Promise<{ content: NewsletterContent }> {
   await requireAuth();
   const nl = await getNewsletter(id);
   if (!nl) throw new Error("Newsletter nicht gefunden");
   const content = readContent(nl);
-  const zahl = await generateZahlOfWeek();
-  const next: NewsletterContent = { ...content, zahl };
+  const events = await eventsFromLinksammlung({ count: 3 });
+  const next: NewsletterContent = { ...content, events };
   await updateContent(id, { content: next });
   revalidatePath(`/admin/newsletter/${id}`);
   return { content: next };

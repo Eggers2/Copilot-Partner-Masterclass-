@@ -17,14 +17,15 @@ import {
 import type {
   NewsletterContent,
   NewsletterNewsItem,
+  NewsletterEventItem,
 } from "@/lib/newsletter/types";
 import type { NewsletterStatus } from "@prisma/client";
 import { NewsletterStatusBadge } from "./NewsletterStatusBadge";
 import {
   deleteNewsletterAction,
   fetchMoreNewsAction,
+  refreshEventsAction,
   regeneratePromptAction,
-  regenerateZahlAction,
   saveContentAction,
   sendNewsletterAction,
   sendTestMailAction,
@@ -76,8 +77,8 @@ export function NewsletterEditor(props: NewsletterEditorProps) {
 
   const newsReady = content.candidates.length > 0;
   const promptReady = !!content.prompt?.title?.trim();
-  const zahlReady = !!content.zahl?.wert?.trim();
-  const isGenerating = !newsReady || !promptReady || !zahlReady;
+  const isGenerating = !newsReady || !promptReady;
+  const events = content.events ?? [];
 
   // Polling solange mindestens eine Sektion noch leer ist. Wir mergen vom
   // Server nur die Sektionen, die im Client noch nicht gefüllt sind, damit
@@ -109,7 +110,10 @@ export function NewsletterEditor(props: NewsletterEditorProps) {
           prompt: current.prompt?.title?.trim()
             ? current.prompt
             : data.content.prompt,
-          zahl: current.zahl?.wert?.trim() ? current.zahl : data.content.zahl,
+          events:
+            current.events && current.events.length > 0
+              ? current.events
+              : data.content.events ?? [],
         }));
       } catch {
         // leise ignorieren – nächster Tick probiert's wieder
@@ -237,7 +241,7 @@ export function NewsletterEditor(props: NewsletterEditorProps) {
     });
   }
 
-  function regenerateZahl() {
+  function refreshEvents() {
     startTransition(async () => {
       await saveContentAction(props.id, {
         content,
@@ -245,10 +249,31 @@ export function NewsletterEditor(props: NewsletterEditorProps) {
         subtitle,
         zusatzMails,
       });
-      const { content: next } = await regenerateZahlAction(props.id);
+      const { content: next } = await refreshEventsAction(props.id);
       setContent(next);
       await renderPreview(next, titel, subtitle);
-      flash("ok", "Zahl der Woche neu generiert.");
+      flash("ok", "Termine neu geladen.");
+    });
+  }
+
+  function removeEvent(eventId: string) {
+    setContent((c) => ({
+      ...c,
+      events: (c.events ?? []).filter((e) => e.id !== eventId),
+    }));
+  }
+
+  function fmtEventDate(startsAt: string | null): string {
+    if (!startsAt) return "";
+    const d = new Date(startsAt);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleString("de-DE", {
+      timeZone: "Europe/Berlin",
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   }
 
@@ -346,13 +371,12 @@ export function NewsletterEditor(props: NewsletterEditorProps) {
         <div className="flex items-start gap-3 px-4 py-3 rounded-lg text-sm bg-blue-50 text-blue-800 border border-blue-200">
           <Loader2 className="w-4 h-4 mt-0.5 flex-shrink-0 animate-spin" />
           <div className="flex-1">
-            <strong>Claude recherchiert…</strong> Die News, der Prompt der Woche
-            und die Zahl der Woche werden parallel generiert. Die Abschnitte
-            erscheinen hier, sobald sie fertig sind.
+            <strong>Wird generiert…</strong> News (aus der Linksammlung), der
+            Prompt der Woche und die kommenden Termine werden parallel geladen.
+            Die Abschnitte erscheinen hier, sobald sie fertig sind.
             <div className="flex gap-4 mt-2 text-xs">
               <GenStatus label="News" done={newsReady} />
               <GenStatus label="Prompt der Woche" done={promptReady} />
-              <GenStatus label="Zahl der Woche" done={zahlReady} />
             </div>
             {liveError && (
               <div className="mt-2 text-xs text-red-700">
@@ -470,51 +494,56 @@ export function NewsletterEditor(props: NewsletterEditorProps) {
         <div className="bg-white rounded-2xl border border-dark-slate-100 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-dark-slate-900 flex items-center gap-2">
-              Zahl der Woche
-              {!zahlReady && isGenerating && (
+              Kommende Termine
+              {isGenerating && events.length === 0 && (
                 <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
               )}
             </h2>
             <button
-              onClick={regenerateZahl}
+              onClick={refreshEvents}
               disabled={pending || readOnly}
               className="flex items-center gap-1.5 text-xs text-dark-slate-500 hover:text-[#030386] disabled:opacity-50"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              Neu generieren
+              Neu laden
             </button>
           </div>
-          <div className="space-y-3">
-            <input
-              type="text"
-              value={content.zahl.wert}
-              onChange={(e) =>
-                setContent((c) => ({ ...c, zahl: { ...c.zahl, wert: e.target.value } }))
-              }
-              disabled={readOnly}
-              placeholder="z.B. 90%"
-              className="w-full rounded-lg border border-dark-slate-200 px-3 py-2 text-2xl font-bold focus:border-[#030386] focus:outline-none disabled:bg-dark-slate-50"
-            />
-            <input
-              type="text"
-              value={content.zahl.titel}
-              onChange={(e) =>
-                setContent((c) => ({ ...c, zahl: { ...c.zahl, titel: e.target.value } }))
-              }
-              disabled={readOnly}
-              placeholder="Titel"
-              className="w-full rounded-lg border border-dark-slate-200 px-3 py-2 text-sm font-semibold focus:border-[#030386] focus:outline-none disabled:bg-dark-slate-50"
-            />
-            <textarea
-              value={content.zahl.body}
-              onChange={(e) =>
-                setContent((c) => ({ ...c, zahl: { ...c.zahl, body: e.target.value } }))
-              }
-              disabled={readOnly}
-              rows={3}
-              placeholder="Kontext"
-              className="w-full rounded-lg border border-dark-slate-200 px-3 py-2 text-sm focus:border-[#030386] focus:outline-none disabled:bg-dark-slate-50"
-            />
+          <p className="text-xs text-dark-slate-500 mb-3">
+            Bis zu 3 kommende Termine aus der Linksammlung – erscheinen oben im Newsletter.
+          </p>
+          <div className="space-y-2">
+            {events.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-dark-slate-200 bg-dark-slate-50 px-3 py-4 text-sm text-dark-slate-500">
+                Keine kommenden Termine gefunden.
+              </div>
+            ) : (
+              events.map((ev: NewsletterEventItem) => (
+                <div
+                  key={ev.id}
+                  className="flex items-start justify-between gap-2 rounded-lg border border-dark-slate-100 p-3"
+                >
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-dark-slate-900 truncate">
+                      {ev.title}
+                    </div>
+                    <div className="text-xs text-dark-slate-500 mt-0.5">
+                      {[fmtEventDate(ev.startsAt), ev.location]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </div>
+                  </div>
+                  {!readOnly && (
+                    <button
+                      onClick={() => removeEvent(ev.id)}
+                      className="flex-shrink-0 text-dark-slate-400 hover:text-red-600"
+                      title="Termin entfernen"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
