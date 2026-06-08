@@ -404,6 +404,12 @@ model FirstCallScore {
   followUpDate       DateTime? @map("follow_up_date") @db.Date
   contactSource      String?   @map("contact_source")
 
+  // KI-Auswertung (VTT-Transkript via Claude Sonnet)
+  transcriptText     String?   @map("transcript_text")
+  transcriptFilename String?   @map("transcript_filename")
+  scoreReasoning     Json?     @map("score_reasoning")
+  analyzedAt         DateTime? @map("analyzed_at")
+
   // Zeitstempel
   calledAt           DateTime  @default(now()) @map("called_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")

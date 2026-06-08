@@ -30,7 +30,17 @@ function parseBerlinDate(dateTimeLocal: string): Date {
   if (berlinHour(cet) === hour) return cet;
   return cest; // fallback to summer time
 }
-import { updateLead, addActivity, upsertFirstCallScore } from "@/lib/db/leads";
+import {
+  updateLead,
+  addActivity,
+  upsertFirstCallScore,
+  getLead,
+  saveTranscriptAnalysis,
+} from "@/lib/db/leads";
+import { analyzeFirstCall, type FirstCallAnalysis } from "@/lib/firstcall/analyze";
+import { sendEmail } from "@/lib/email/resend";
+import { readFile, readdir } from "fs/promises";
+import path from "path";
 import { dispatchTeamsGuestInvites } from "@/lib/teams/dispatchTeamsGuest";
 import { inviteGuestToTeam, isGraphConfigured } from "@/lib/teams/graph";
 import {
@@ -235,6 +245,131 @@ export async function saveFirstCallScoreAction(
   revalidatePath("/admin");
 
   return { success: true };
+}
+
+/** Wertet ein hochgeladenes VTT-Transkript per Claude Sonnet aus. */
+export async function analyzeFirstCallTranscriptAction(
+  leadId: string,
+  vttText: string,
+  filename: string
+): Promise<{ success?: boolean; error?: string; analysis?: FirstCallAnalysis }> {
+  await requireAuth();
+  if (!leadId) return { error: "Lead-ID fehlt." };
+  if (!vttText?.trim()) return { error: "Das Transkript ist leer." };
+
+  const lead = await getLead(leadId);
+  if (!lead) return { error: "Lead nicht gefunden." };
+
+  try {
+    const analysis = await analyzeFirstCall(
+      vttText,
+      {
+        name: lead.name,
+        company: lead.company,
+        city: lead.city,
+        email: lead.email,
+      },
+      new Date()
+    );
+
+    // Transkript + Begründungen festhalten – Scores bleiben unangetastet,
+    // sie werden erst nach Sichtprüfung über saveFirstCallScoreAction gespeichert.
+    await saveTranscriptAnalysis(leadId, {
+      transcriptText: vttText,
+      transcriptFilename: filename,
+      scoreReasoning: analysis.reasoning,
+    });
+
+    await addActivity(leadId, {
+      type: "CALL" as ActivityType,
+      content: `First-Call-Transkript ausgewertet (${filename})`,
+    });
+
+    revalidatePath(`/admin/leads/${leadId}`);
+    return { success: true, analysis };
+  } catch (err) {
+    const msg =
+      err instanceof Error ? err.message : "Unbekannter Fehler bei der Auswertung.";
+    return { error: msg };
+  }
+}
+
+/** Wandelt einen reinen Text in einfaches, klickbares E-Mail-HTML. */
+function plainTextToHtml(text: string): string {
+  const escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  const linked = escaped.replace(
+    /(https?:\/\/[^\s<]+)/g,
+    '<a href="$1">$1</a>'
+  );
+  const withBreaks = linked.replace(/\r?\n/g, "<br>");
+  return `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a;">${withBreaks}</div>`;
+}
+
+/**
+ * Lädt den One Pager aus public/dokumente/ als E-Mail-Anhang – unabhängig von
+ * der Groß-/Kleinschreibung (bevorzugt "onepager.pdf", sonst die erste PDF im
+ * Ordner). Gibt undefined zurück, wenn keine PDF vorhanden ist.
+ */
+async function loadOnePagerAttachment(): Promise<
+  { filename: string; content: Buffer } | undefined
+> {
+  const dir = path.join(process.cwd(), "public", "dokumente");
+  try {
+    const files = await readdir(dir);
+    const pdfs = files.filter((f) => f.toLowerCase().endsWith(".pdf"));
+    if (pdfs.length === 0) return undefined;
+    const chosen = pdfs.find((f) => f.toLowerCase() === "onepager.pdf") ?? pdfs[0];
+    const content = await readFile(path.join(dir, chosen));
+    return { filename: "Copilot-Masterclass-One-Pager.pdf", content };
+  } catch {
+    return undefined;
+  }
+}
+
+/** Versendet den (ggf. angepassten) Entscheidungs-Mail-Entwurf über Resend. */
+export async function sendFirstCallEmailAction(
+  leadId: string,
+  subject: string,
+  body: string
+): Promise<{ success?: boolean; error?: string; id?: string }> {
+  await requireAuth();
+  if (!leadId) return { error: "Lead-ID fehlt." };
+  if (!subject?.trim() || !body?.trim()) {
+    return { error: "Betreff und Text sind erforderlich." };
+  }
+
+  const lead = await getLead(leadId);
+  if (!lead) return { error: "Lead nicht gefunden." };
+  if (!lead.email) return { error: "Dem Lead fehlt eine E-Mail-Adresse." };
+
+  // One Pager als PDF-Anhang laden (fehlt die Datei: ohne Anhang versenden).
+  const onePager = await loadOnePagerAttachment();
+  const attachments = onePager ? [onePager] : undefined;
+
+  const res = await sendEmail({
+    to: lead.email,
+    subject: subject.trim(),
+    html: plainTextToHtml(body.trim()),
+    replyTo: process.env.FIRST_CALL_REPLY_TO || undefined,
+    templateKey: "first_call_followup",
+    attachments,
+  });
+
+  if (!res.ok) {
+    return { error: res.error ?? "E-Mail konnte nicht gesendet werden." };
+  }
+
+  await addActivity(leadId, {
+    type: "EMAIL" as ActivityType,
+    content: `Entscheidungs-Mail versendet: ${subject.trim()}${
+      attachments ? " (One Pager angehängt)" : " (ohne One Pager – PDF fehlt im Repo)"
+    }`,
+  });
+  revalidatePath(`/admin/leads/${leadId}`);
+  return { success: true, id: res.id };
 }
 
 // ─── WEBINAR ACTIONS ──────────────────────────────────
