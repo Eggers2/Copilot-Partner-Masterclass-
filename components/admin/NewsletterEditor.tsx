@@ -13,6 +13,8 @@ import {
   AlertCircle,
   Loader2,
   Trash2,
+  ShieldCheck,
+  Undo2,
 } from "lucide-react";
 import type {
   NewsletterContent,
@@ -22,10 +24,12 @@ import type {
 import type { NewsletterStatus } from "@prisma/client";
 import { NewsletterStatusBadge } from "./NewsletterStatusBadge";
 import {
+  approveNewsletterAction,
   deleteNewsletterAction,
   fetchMoreNewsAction,
   refreshEventsAction,
   regeneratePromptAction,
+  retractApprovalAction,
   saveContentAction,
   sendNewsletterAction,
   sendTestMailAction,
@@ -290,8 +294,31 @@ export function NewsletterEditor(props: NewsletterEditorProps) {
         zusatzMails,
       });
       const res = await sendTestMailAction(props.id, testEmail.trim());
-      if (res.ok) flash("ok", "Test-Mail an n8n übergeben.");
+      if (res.ok) flash("ok", "Test-Mail versendet.");
       else flash("err", res.error ?? "Test-Mail fehlgeschlagen.");
+    });
+  }
+
+  function approve() {
+    if (selectedCount === 0) {
+      flash("err", "Bitte mindestens eine News auswählen.");
+      return;
+    }
+    startTransition(async () => {
+      await saveContentAction(props.id, { content, titel, subtitle, zusatzMails });
+      const res = await approveNewsletterAction(props.id);
+      if (res.ok) flash("ok", "Freigegeben – automatischer Versand am Freitag 09:00 Uhr.");
+      else flash("err", res.error ?? "Freigabe fehlgeschlagen.");
+      router.refresh();
+    });
+  }
+
+  function retractApproval() {
+    startTransition(async () => {
+      const res = await retractApprovalAction(props.id);
+      if (res.ok) flash("ok", "Freigabe zurückgezogen.");
+      else flash("err", res.error ?? "Zurückziehen fehlgeschlagen.");
+      router.refresh();
     });
   }
 
@@ -320,7 +347,7 @@ export function NewsletterEditor(props: NewsletterEditorProps) {
       !confirm(
         `Newsletter #${props.ausgabeNr} jetzt an ${
           props.dbRecipientCount + manualMailCount
-        } Empfänger (DB + manuell) als BCC-Draft an n8n schicken?`
+        } Empfänger (DB + manuell) versenden? Jeder erhält eine eigene Mail mit Abmelde-Link.`
       )
     ) {
       return;
@@ -699,6 +726,43 @@ export function NewsletterEditor(props: NewsletterEditorProps) {
             Test an mich
           </button>
         </div>
+        {(props.status === "DRAFT" || props.status === "APPROVED") && (
+          <div className="mb-4 rounded-xl border border-dark-slate-100 bg-dark-slate-50 p-4">
+            {props.status === "APPROVED" ? (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm text-green-700">
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                  <span>
+                    <strong>Freigegeben</strong> – automatischer Versand am Freitag&nbsp;09:00&nbsp;Uhr.
+                  </span>
+                </div>
+                <button
+                  onClick={retractApproval}
+                  disabled={pending}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-white hover:bg-dark-slate-100 text-dark-slate-700 border border-dark-slate-200 rounded-lg font-medium text-sm transition-colors disabled:opacity-50"
+                >
+                  <Undo2 className="w-4 h-4" />
+                  Freigabe zurückziehen
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="text-sm text-dark-slate-600">
+                  Für den <strong>automatischen Versand am Freitag 09:00 Uhr</strong>{" "}
+                  freigeben – oder unten manuell versenden.
+                </div>
+                <button
+                  onClick={approve}
+                  disabled={pending || selectedCount === 0}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium text-sm transition-colors disabled:opacity-50"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  Für Freitag 09:00 freigeben
+                </button>
+              </div>
+            )}
+          </div>
+        )}
         <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={save}

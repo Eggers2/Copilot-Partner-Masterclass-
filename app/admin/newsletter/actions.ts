@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import {
   createDraft,
   deleteNewsletter,
@@ -24,6 +25,10 @@ import {
 import { generateNewsletterContent } from "@/lib/newsletter/generate";
 import { renderNewsletterHtml } from "@/lib/newsletter/render";
 import { buildRecipientList } from "@/lib/newsletter/recipients";
+import { sendNewsletter } from "@/lib/newsletter/send";
+import { signToken } from "@/lib/newsletter/tokens";
+import { isResendConfigured, sendEmail } from "@/lib/email/resend";
+import { resolveAppBaseUrl } from "@/lib/auth/customer";
 import { fireNewsletterWebhook } from "@/lib/webhooks/newsletter";
 import type { NewsletterContent } from "@/lib/newsletter/types";
 
@@ -152,6 +157,35 @@ export async function sendTestMailAction(id: string, toEmail: string) {
   if (!nl) return { ok: false, error: "Newsletter nicht gefunden" };
 
   const content = readContent(nl);
+  const subject = `[TEST] ${nl.titel} – Ausgabe #${nl.ausgabeNr} · KW ${nl.kw}`;
+  const to = toEmail.trim();
+
+  if (isResendConfigured()) {
+    const baseUrl = await resolveAppBaseUrl();
+    const unsubUrl = `${baseUrl}/newsletter/abmelden?token=${signToken("unsub", to.toLowerCase())}`;
+    const html = renderNewsletterHtml(content, {
+      ausgabeNr: nl.ausgabeNr,
+      kw: nl.kw,
+      jahr: nl.jahr,
+      titel: nl.titel,
+      subtitle: nl.subtitle,
+      unsubscribeUrl: unsubUrl,
+    });
+    const res = await sendEmail({
+      to,
+      subject,
+      html,
+      replyTo: process.env.NEWSLETTER_SENDER_EMAIL || undefined,
+      headers: {
+        "List-Unsubscribe": `<${unsubUrl}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      },
+      templateKey: "newsletter_test",
+    });
+    return res.ok ? { ok: true } : { ok: false, error: res.error };
+  }
+
+  // Fallback: n8n-Webhook (Outlook-Draft).
   const html = renderNewsletterHtml(content, {
     ausgabeNr: nl.ausgabeNr,
     kw: nl.kw,
@@ -159,19 +193,16 @@ export async function sendTestMailAction(id: string, toEmail: string) {
     titel: nl.titel,
     subtitle: nl.subtitle,
   });
-
-  const subject = `[TEST] ${nl.titel} – Ausgabe #${nl.ausgabeNr} · KW ${nl.kw}`;
-  const result = await fireNewsletterWebhook({
+  return fireNewsletterWebhook({
     newsletterId: nl.id,
     ausgabeNr: nl.ausgabeNr,
     kw: nl.kw,
     jahr: nl.jahr,
     subject,
     html,
-    bcc: [toEmail],
+    bcc: [to],
     testMail: true,
   });
-  return result;
 }
 
 export async function sendNewsletterAction(id: string) {
@@ -186,6 +217,19 @@ export async function sendNewsletterAction(id: string) {
     return { ok: false, error: "Bitte wähle mindestens eine News aus, bevor du versendest." };
   }
 
+  // Primär: Versand über Resend (je Empfänger eine Mail mit Abmelde-Link).
+  if (isResendConfigured()) {
+    const baseUrl = await resolveAppBaseUrl();
+    const res = await sendNewsletter(nl, baseUrl);
+    revalidatePath("/admin/newsletter");
+    revalidatePath(`/admin/newsletter/${id}`);
+    revalidatePath("/kundenportal/newsletter");
+    return res.ok
+      ? { ok: true, recipientCount: res.recipientCount }
+      : { ok: false, error: res.error };
+  }
+
+  // Fallback: n8n-Webhook (BCC-Draft in Outlook), wenn Resend nicht konfiguriert.
   const { all } = await buildRecipientList(nl.zusatzMails);
   if (all.length === 0) {
     return {
@@ -227,4 +271,42 @@ export async function sendNewsletterAction(id: string) {
     revalidatePath(`/admin/newsletter/${id}`);
     return { ok: false, error: result.error };
   }
+}
+
+/** Gibt einen Entwurf für den (automatischen) Versand am Freitag 09:00 frei. */
+export async function approveNewsletterAction(id: string) {
+  await requireAuth();
+  const nl = await getNewsletter(id);
+  if (!nl) return { ok: false, error: "Newsletter nicht gefunden" };
+  if (nl.status === "SENT" || nl.status === "SENDING") {
+    return { ok: false, error: "Newsletter ist bereits im Versand." };
+  }
+  const content = readContent(nl);
+  if (content.selectedIds.length === 0) {
+    return { ok: false, error: "Bitte wähle mindestens eine News aus, bevor du freigibst." };
+  }
+  await prisma.newsletter.update({
+    where: { id },
+    data: { status: "APPROVED", freigegebenAm: new Date() },
+  });
+  revalidatePath("/admin/newsletter");
+  revalidatePath(`/admin/newsletter/${id}`);
+  return { ok: true };
+}
+
+/** Zieht eine Freigabe zurück (APPROVED → DRAFT). */
+export async function retractApprovalAction(id: string) {
+  await requireAuth();
+  const nl = await getNewsletter(id);
+  if (!nl) return { ok: false, error: "Newsletter nicht gefunden" };
+  if (nl.status !== "APPROVED") {
+    return { ok: false, error: "Newsletter ist nicht im Status 'Freigegeben'." };
+  }
+  await prisma.newsletter.update({
+    where: { id },
+    data: { status: "DRAFT", freigegebenAm: null },
+  });
+  revalidatePath("/admin/newsletter");
+  revalidatePath(`/admin/newsletter/${id}`);
+  return { ok: true };
 }
