@@ -6,8 +6,9 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 /**
- * Von einem externen Scheduler (Railway-Cron-Service via scripts/trigger-cron.mjs)
- * angestoßener Endpoint. Geschützt über den Header `x-cron-secret` (CRON_SECRET).
+ * Von einem externen Scheduler (GitHub-Actions-Workflow
+ * .github/workflows/newsletter-cron.yml) angestoßener Endpoint. Geschützt über
+ * den Header `x-cron-secret` (CRON_SECRET).
  *
  * Die eigentliche Zeitentscheidung trifft `berlinNow()` gegen Europe/Berlin,
  * damit der UTC-laufende Cron Sommer-/Winterzeit automatisch korrekt abbildet:

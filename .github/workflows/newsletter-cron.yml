@@ -1,0 +1,62 @@
+name: Newsletter Cron
+
+# Stößt den geschützten Endpoint /api/cron/newsletter an. Die eigentliche Logik
+# (Entwurf Do, Versand Fr) und die Zeitprüfung liegen serverseitig: der Endpoint
+# prüft die echte Europe/Berlin-Zeit und arbeitet idempotent. Dieser Workflow
+# muss daher nur "oft genug im richtigen Fenster" feuern.
+#
+# Voraussetzungen (einmalig):
+#   • Repo-Secret  CRON_SECRET   (Settings → Secrets and variables → Actions)
+#   • Web-Service (Railway) hat denselben CRON_SECRET + NEWSLETTER_REVIEW_EMAIL
+#   • optional Repo-Variable APP_BASE_URL (sonst Default unten)
+
+on:
+  schedule:
+    # Zeiten in UTC. Fenster decken Do 18:00 und Fr 09:00 Europe/Berlin über
+    # Sommer-/Winterzeit ab. Mehrere Läufe je Fenster fangen GitHub-Verzögerungen
+    # ab; nur der Lauf in der exakten Berlin-Zielstunde wirkt, der Rest ist No-op,
+    # und Idempotenz (KW-Check / Claiming) verhindert Doppelaktionen.
+    - cron: "*/15 16-17 * * 4" # Do 18:00 Berlin = 16 UTC (CEST) / 17 UTC (CET)
+    - cron: "*/15 7-8 * * 5"   # Fr 09:00 Berlin = 07 UTC (CEST) / 08 UTC (CET)
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Manuell erzwingen (überspringt die Zeitprüfung)"
+        required: false
+        type: choice
+        default: ""
+        options:
+          - ""
+          - "thursday"
+          - "friday"
+
+concurrency:
+  group: newsletter-cron
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Endpoint anstoßen
+        env:
+          BASE_URL: ${{ vars.APP_BASE_URL || 'https://www.copilotberater.de' }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          FORCE: ${{ github.event.inputs.force }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::Repo-Secret CRON_SECRET ist nicht gesetzt (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+          URL="${BASE_URL%/}/api/cron/newsletter"
+          if [ -n "$FORCE" ]; then URL="$URL?force=$FORCE"; fi
+          echo "POST $URL"
+          code=$(curl -sS -m 60 -o /tmp/resp -w "%{http_code}" \
+            -X POST "$URL" -H "x-cron-secret: $CRON_SECRET")
+          echo "HTTP $code"
+          cat /tmp/resp || true
+          echo
+          if [ "$code" != "200" ]; then
+            echo "::error::Endpoint antwortete mit HTTP $code"
+            exit 1
+          fi
