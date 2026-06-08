@@ -39,7 +39,7 @@ import {
 } from "@/lib/db/leads";
 import { analyzeFirstCall, type FirstCallAnalysis } from "@/lib/firstcall/analyze";
 import { sendEmail } from "@/lib/email/resend";
-import { readFile } from "fs/promises";
+import { readFile, readdir } from "fs/promises";
 import path from "path";
 import { dispatchTeamsGuestInvites } from "@/lib/teams/dispatchTeamsGuest";
 import { inviteGuestToTeam, isGraphConfigured } from "@/lib/teams/graph";
@@ -308,6 +308,27 @@ function plainTextToHtml(text: string): string {
   return `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a;">${withBreaks}</div>`;
 }
 
+/**
+ * Lädt den One Pager aus public/dokumente/ als E-Mail-Anhang – unabhängig von
+ * der Groß-/Kleinschreibung (bevorzugt "onepager.pdf", sonst die erste PDF im
+ * Ordner). Gibt undefined zurück, wenn keine PDF vorhanden ist.
+ */
+async function loadOnePagerAttachment(): Promise<
+  { filename: string; content: Buffer } | undefined
+> {
+  const dir = path.join(process.cwd(), "public", "dokumente");
+  try {
+    const files = await readdir(dir);
+    const pdfs = files.filter((f) => f.toLowerCase().endsWith(".pdf"));
+    if (pdfs.length === 0) return undefined;
+    const chosen = pdfs.find((f) => f.toLowerCase() === "onepager.pdf") ?? pdfs[0];
+    const content = await readFile(path.join(dir, chosen));
+    return { filename: "Copilot-Masterclass-One-Pager.pdf", content };
+  } catch {
+    return undefined;
+  }
+}
+
 /** Versendet den (ggf. angepassten) Entscheidungs-Mail-Entwurf über Resend. */
 export async function sendFirstCallEmailAction(
   leadId: string,
@@ -325,14 +346,8 @@ export async function sendFirstCallEmailAction(
   if (!lead.email) return { error: "Dem Lead fehlt eine E-Mail-Adresse." };
 
   // One Pager als PDF-Anhang laden (fehlt die Datei: ohne Anhang versenden).
-  let attachments: { filename: string; content: Buffer }[] | undefined;
-  try {
-    const pdfPath = path.join(process.cwd(), "public", "dokumente", "onepager.pdf");
-    const pdf = await readFile(pdfPath);
-    attachments = [{ filename: "Copilot-Masterclass-One-Pager.pdf", content: pdf }];
-  } catch {
-    attachments = undefined;
-  }
+  const onePager = await loadOnePagerAttachment();
+  const attachments = onePager ? [onePager] : undefined;
 
   const res = await sendEmail({
     to: lead.email,
