@@ -26,6 +26,8 @@ export interface SendEmailInput {
   replyTo?: string;
   /** Template-Key für die Protokollierung (EmailLog) */
   templateKey?: string;
+  /** optionale Datei-Anhänge (content = Buffer oder base64-String) */
+  attachments?: { filename: string; content: Buffer | string }[];
 }
 
 export interface SendEmailResult {
@@ -56,6 +58,9 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
       subject: input.subject,
       html: input.html,
       ...(input.replyTo ? { replyTo: input.replyTo } : {}),
+      ...(input.attachments && input.attachments.length > 0
+        ? { attachments: input.attachments }
+        : {}),
     });
 
     if (error) {

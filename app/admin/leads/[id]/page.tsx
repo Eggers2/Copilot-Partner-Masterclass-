@@ -53,14 +53,22 @@ export default async function LeadDetailPage({
     firstTouchAt: lead.firstTouchAt?.toISOString() ?? null,
   };
 
-  // First-Call-Score serialisieren (Datumswerte → ISO-Strings)
+  // First-Call-Score serialisieren (Datumswerte → ISO-Strings). Das große
+  // Transkript bleibt serverseitig und wird nicht an den Client geschickt.
   const serializedFirstCallScore = firstCallScore
-    ? {
-        ...firstCallScore,
-        calledAt: firstCallScore.calledAt.toISOString(),
-        updatedAt: firstCallScore.updatedAt.toISOString(),
-        followUpDate: firstCallScore.followUpDate?.toISOString() ?? null,
-      }
+    ? (() => {
+        const { transcriptText: _transcriptText, scoreReasoning, ...rest } =
+          firstCallScore;
+        void _transcriptText;
+        return {
+          ...rest,
+          scoreReasoning: (scoreReasoning ?? null) as Record<string, string> | null,
+          calledAt: rest.calledAt.toISOString(),
+          updatedAt: rest.updatedAt.toISOString(),
+          followUpDate: rest.followUpDate?.toISOString() ?? null,
+          analyzedAt: rest.analyzedAt?.toISOString() ?? null,
+        };
+      })()
     : null;
 
   const serializedActivities = lead.activities.map((a) => ({

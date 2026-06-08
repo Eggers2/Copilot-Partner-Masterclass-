@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useEffect, useActionState } from "react";
-import { X, Star } from "lucide-react";
-import { saveFirstCallScoreAction } from "@/app/admin/actions";
+import { X, Star, Mail, Send, Check, AlertCircle, Loader2 } from "lucide-react";
+import {
+  saveFirstCallScoreAction,
+  sendFirstCallEmailAction,
+} from "@/app/admin/actions";
 import {
   FIRST_CALL_CRITERIA,
   getScoreTier,
@@ -29,13 +32,35 @@ export interface SerializedFirstCallScore {
   nextStep: string | null;
   followUpDate: string | null;
   contactSource: string | null;
+  scoreReasoning?: Record<string, string> | null;
+  transcriptFilename?: string | null;
+  analyzedAt?: string | null;
   calledAt: string;
   updatedAt: string;
+}
+
+/** Frische KI-Auswertung (noch nicht gespeichert) – füllt das Formular vor. */
+export interface FirstCallDraft {
+  scores: Record<string, number>;
+  reasoning: Record<string, string>;
+  notes: {
+    description: string;
+    painPoint: string;
+    teamSize: string;
+    recommendedPackage: string;
+    objections: string;
+    nextStep: string;
+    contactSource: string;
+    deadlineDate: string | null;
+    followUpDate: string | null;
+  };
+  email: { subject: string; body: string };
 }
 
 interface FirstCallModalProps {
   leadId: string;
   existingScore: SerializedFirstCallScore | null;
+  draft?: FirstCallDraft | null;
   onClose: () => void;
 }
 
@@ -76,11 +101,12 @@ type ScoreKey = (typeof FIRST_CALL_CRITERIA)[number]["key"];
 export function FirstCallModal({
   leadId,
   existingScore,
+  draft = null,
   onClose,
 }: FirstCallModalProps) {
   const [state, formAction] = useActionState(saveFirstCallScoreAction, null);
 
-  // Score-State initialisieren (aus bestehendem Score oder Default 1)
+  // Score-State initialisieren (KI-Entwurf > bestehender Score > Default 1)
   const [scores, setScores] = useState<Record<ScoreKey, number>>(() => {
     const defaults: Record<ScoreKey, number> = {
       copilotDemand: 1,
@@ -92,13 +118,38 @@ export function FirstCallModal({
       mindset: 1,
       msPartnerStatus: 1,
     };
-    if (existingScore) {
-      for (const c of FIRST_CALL_CRITERIA) {
+    for (const c of FIRST_CALL_CRITERIA) {
+      if (draft && typeof draft.scores[c.key] === "number") {
+        defaults[c.key] = draft.scores[c.key];
+      } else if (existingScore) {
         defaults[c.key] = existingScore[c.key];
       }
     }
     return defaults;
   });
+
+  // Begründungen je Kriterium (frischer Entwurf > gespeicherte Begründung)
+  const reasoning = draft?.reasoning ?? existingScore?.scoreReasoning ?? null;
+
+  // E-Mail-Entwurf-State (nur nach frischer KI-Auswertung relevant)
+  const [emailSubject, setEmailSubject] = useState(draft?.email.subject ?? "");
+  const [emailBody, setEmailBody] = useState(draft?.email.body ?? "");
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [emailSent, setEmailSent] = useState(false);
+
+  const handleSendEmail = async () => {
+    setEmailSending(true);
+    setEmailError("");
+    try {
+      const res = await sendFirstCallEmailAction(leadId, emailSubject, emailBody);
+      if (res.error) setEmailError(res.error);
+      else setEmailSent(true);
+    } catch {
+      setEmailError("E-Mail konnte nicht gesendet werden.");
+    }
+    setEmailSending(false);
+  };
 
   // Gesamt-Score live berechnen
   const totalScore = Object.values(scores).reduce((sum, v) => sum + v, 0);
@@ -126,7 +177,11 @@ export function FirstCallModal({
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-dark-slate-100 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
           <h2 className="text-lg font-bold text-dark-slate-900">
-            {existingScore ? "✏️ First Call bearbeiten" : "📞 First Call Scoring"}
+            {draft
+              ? "🤖 First Call – KI-Auswertung"
+              : existingScore
+                ? "✏️ First Call bearbeiten"
+                : "📞 First Call Scoring"}
           </h2>
           <button
             type="button"
@@ -166,19 +221,26 @@ export function FirstCallModal({
 
               <div className="space-y-4">
                 {FIRST_CALL_CRITERIA.map((c) => (
-                  <div key={c.key} className="flex items-center justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-dark-slate-800">
-                        {c.label}
-                      </p>
-                      <p className="text-xs text-dark-slate-400 truncate">
-                        {c.hint}
-                      </p>
+                  <div key={c.key}>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-dark-slate-800">
+                          {c.label}
+                        </p>
+                        <p className="text-xs text-dark-slate-400 truncate">
+                          {c.hint}
+                        </p>
+                      </div>
+                      <StarRating
+                        value={scores[c.key]}
+                        onChange={(v) => updateScore(c.key, v)}
+                      />
                     </div>
-                    <StarRating
-                      value={scores[c.key]}
-                      onChange={(v) => updateScore(c.key, v)}
-                    />
+                    {reasoning?.[c.key] && (
+                      <p className="mt-1 text-xs italic text-dark-slate-500">
+                        {reasoning[c.key]}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -199,7 +261,7 @@ export function FirstCallModal({
                   <textarea
                     name="description"
                     rows={3}
-                    defaultValue={existingScore?.description ?? ""}
+                    defaultValue={draft?.notes.description || existingScore?.description || ""}
                     className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none resize-none"
                     placeholder="Zusammenfassung des Gesprächs für den Follow-up Termin"
                   />
@@ -213,7 +275,7 @@ export function FirstCallModal({
                   <textarea
                     name="painPoint"
                     rows={2}
-                    defaultValue={existingScore?.painPoint ?? ""}
+                    defaultValue={draft?.notes.painPoint || existingScore?.painPoint || ""}
                     className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none resize-none"
                     placeholder="Was ist das größte Problem des Kunden?"
                   />
@@ -227,7 +289,7 @@ export function FirstCallModal({
                   <input
                     name="teamSize"
                     type="text"
-                    defaultValue={existingScore?.teamSize ?? ""}
+                    defaultValue={draft?.notes.teamSize || existingScore?.teamSize || ""}
                     className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none"
                     placeholder="z.B. 10 Personen"
                   />
@@ -240,7 +302,7 @@ export function FirstCallModal({
                   </label>
                   <select
                     name="recommendedPackage"
-                    defaultValue={existingScore?.recommendedPackage ?? ""}
+                    defaultValue={draft?.notes.recommendedPackage || existingScore?.recommendedPackage || ""}
                     className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none"
                   >
                     <option value="">– Bitte wählen –</option>
@@ -258,7 +320,7 @@ export function FirstCallModal({
                   <textarea
                     name="objections"
                     rows={2}
-                    defaultValue={existingScore?.objections ?? ""}
+                    defaultValue={draft?.notes.objections || existingScore?.objections || ""}
                     className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none resize-none"
                     placeholder="Welche Bedenken hat der Kunde?"
                   />
@@ -272,7 +334,7 @@ export function FirstCallModal({
                   <textarea
                     name="nextStep"
                     rows={2}
-                    defaultValue={existingScore?.nextStep ?? ""}
+                    defaultValue={draft?.notes.nextStep || existingScore?.nextStep || ""}
                     className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none resize-none"
                     placeholder="Was wurde als nächster Schritt vereinbart?"
                   />
@@ -287,7 +349,7 @@ export function FirstCallModal({
                     <input
                       name="followUpDate"
                       type="date"
-                      defaultValue={existingScore?.followUpDate?.slice(0, 10) ?? ""}
+                      defaultValue={draft?.notes.followUpDate || existingScore?.followUpDate?.slice(0, 10) || ""}
                       className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none"
                     />
                   </div>
@@ -299,7 +361,7 @@ export function FirstCallModal({
                     </label>
                     <select
                       name="contactSource"
-                      defaultValue={existingScore?.contactSource ?? ""}
+                      defaultValue={draft?.notes.contactSource || existingScore?.contactSource || ""}
                       className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none"
                     >
                       <option value="">– Bitte wählen –</option>
@@ -313,6 +375,84 @@ export function FirstCallModal({
                 </div>
               </div>
             </div>
+
+            {/* ─── Abschnitt C: E-Mail-Entwurf (nur nach KI-Auswertung) ─── */}
+            {draft?.email && (
+              <div>
+                <h3 className="text-sm font-semibold text-dark-slate-900 uppercase tracking-wider mb-1 flex items-center gap-2">
+                  <Mail className="w-4 h-4" />
+                  Entscheidungs-Mail
+                </h3>
+                <p className="text-xs text-dark-slate-400 mb-4">
+                  Entwurf prüfen, anpassen und per Resend senden. Der One Pager
+                  wird automatisch als PDF angehängt.
+                </p>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-dark-slate-600 mb-1">
+                      Betreff
+                    </label>
+                    <input
+                      type="text"
+                      value={emailSubject}
+                      onChange={(e) => setEmailSubject(e.target.value)}
+                      disabled={emailSent}
+                      className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none disabled:bg-dark-slate-50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-dark-slate-600 mb-1">
+                      Nachricht
+                    </label>
+                    <textarea
+                      value={emailBody}
+                      onChange={(e) => setEmailBody(e.target.value)}
+                      rows={12}
+                      disabled={emailSent}
+                      className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none resize-y disabled:bg-dark-slate-50"
+                    />
+                  </div>
+
+                  {emailError && (
+                    <div className="flex items-center gap-2 text-sm text-red-600">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      {emailError}
+                    </div>
+                  )}
+
+                  {emailSent ? (
+                    <div className="flex items-center gap-2 text-sm font-medium text-green-700">
+                      <Check className="w-4 h-4" />
+                      E-Mail wurde versendet.
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleSendEmail}
+                      disabled={
+                        emailSending ||
+                        !emailSubject.trim() ||
+                        !emailBody.trim()
+                      }
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#030386] hover:bg-[#05015B] rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      {emailSending ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Wird gesendet…
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4" />
+                          Per Resend senden
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Footer */}

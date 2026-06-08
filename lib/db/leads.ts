@@ -4,6 +4,7 @@ import type {
   LeadSource,
   ActivityType,
   AdnChannel,
+  Prisma,
 } from "@prisma/client";
 
 export interface LeadFilters {
@@ -174,6 +175,32 @@ export interface FirstCallScoreInput {
   nextStep?: string | null;
   followUpDate?: Date | null;
   contactSource?: string | null;
+}
+
+/**
+ * Speichert Transkript + KI-Begründungen am First-Call-Score, ohne die
+ * (ggf. bereits manuell gepflegten) Scorecard-Werte zu überschreiben. Beim
+ * ersten Mal greifen die Schema-Defaults für die Score-Felder.
+ */
+export async function saveTranscriptAnalysis(
+  leadId: string,
+  data: {
+    transcriptText: string;
+    transcriptFilename: string;
+    scoreReasoning: Record<string, string>;
+  }
+) {
+  const fields = {
+    transcriptText: data.transcriptText,
+    transcriptFilename: data.transcriptFilename,
+    scoreReasoning: data.scoreReasoning as Prisma.InputJsonValue,
+    analyzedAt: new Date(),
+  };
+  return prisma.firstCallScore.upsert({
+    where: { leadId },
+    create: { leadId, ...fields },
+    update: fields,
+  });
 }
 
 /** Erstellt oder aktualisiert den First-Call-Score für einen Lead */
