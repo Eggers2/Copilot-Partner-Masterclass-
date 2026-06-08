@@ -254,6 +254,11 @@ export interface RenderOptions {
   gesendetAm?: Date | null;
   autor?: string;
   lesezeit?: string;
+  /**
+   * Persönlicher Abmelde-Link für den Footer. Beim echten Versand wird hier pro
+   * Empfänger eine signierte URL eingesetzt (siehe lib/newsletter/send.ts).
+   */
+  unsubscribeUrl?: string;
 }
 
 export function renderNewsletterHtml(
@@ -407,7 +412,11 @@ body, table, td, a { font-family: Arial, Helvetica, sans-serif !important; }
           <td style="padding:12px 0 32px 0;text-align:center;">
             <div style="color:${COLORS.gray};font-size:12px;line-height:1.7;font-family:'DM Sans',Arial,Helvetica,sans-serif;">
               Copilot Partner Masterclass &middot; NextSkills GmbH &middot; <a href="https://www.copilotberater.de" style="color:${COLORS.accent};text-decoration:none;" target="_blank">copilotberater.de</a><br>
-              Fragen? Einfach auf die Mail antworten.
+              Fragen? Einfach auf die Mail antworten.${
+                opts.unsubscribeUrl
+                  ? `<br><a href="${opts.unsubscribeUrl}" style="color:${COLORS.gray};text-decoration:underline;" target="_blank">Vom Newsletter abmelden</a>`
+                  : ""
+              }
             </div>
           </td>
         </tr>

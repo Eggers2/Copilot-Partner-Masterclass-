@@ -58,6 +58,7 @@ enum RegistrationStatus {
 
 enum NewsletterStatus {
   DRAFT
+  APPROVED
   SENDING
   SENT
   FAILED
@@ -258,6 +259,7 @@ model Newsletter {
   html           String?
   zusatzMails    String?          @map("zusatz_mails")
   recipients     Json?
+  freigegebenAm  DateTime?        @map("freigegeben_am")
   gesendetAm     DateTime?        @map("gesendet_am")
   fehlerText     String?          @map("fehler_text")
   erstelltAm     DateTime         @default(now()) @map("erstellt_am")
@@ -265,6 +267,18 @@ model Newsletter {
 
   @@index([status, gesendetAm])
   @@map("newsletters")
+}
+
+// Abmeldungen vom Masterclass-Newsletter (Suppression-Liste). Wird beim Versand
+// herausgefiltert. Befüllt über den signierten Abmelde-Link bzw. die
+// List-Unsubscribe-One-Click-Funktion der Mail-Clients.
+model NewsletterAbmeldung {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  grund      String?
+  erstelltAm DateTime @default(now()) @map("erstellt_am")
+
+  @@map("newsletter_abmeldungen")
 }
 
 model KundenOtpCode {
