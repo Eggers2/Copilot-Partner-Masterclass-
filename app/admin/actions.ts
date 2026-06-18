@@ -841,7 +841,6 @@ export async function updateBestellungAction(
   }
 
   const {
-    PACKAGES,
     isPaketKey,
     isZahlungsmodell,
     getPreisNetto,
@@ -854,8 +853,11 @@ export async function updateBestellungAction(
   }
 
   const adnChannel: AdnChannel = input.adnChannel ?? "NONE";
-  const pkg = PACKAGES[input.paket];
-  const effectiveSlotCount = Math.max(pkg.users, input.userAnzahl);
+  // Plätze lassen sich unabhängig vom Paket nach oben erweitern oder nach
+  // unten reduzieren – mindestens bleibt ein Platz bestehen. Der Preis
+  // richtet sich allein nach Paket/Zahlungsmodell/Land/ADN, nicht nach der
+  // Anzahl der Teilnehmerplätze.
+  const effectiveSlotCount = Math.max(1, input.userAnzahl);
   const listPreisNetto = getPreisNetto(input.paket, input.zahlungsmodell);
   const preisNetto = getInvoicedPreisNetto(input.paket, input.zahlungsmodell, adnChannel);
   const { mwstSatz, mwstBetrag, preisBrutto, reverseCharge, reverseChargeHinweis } =
