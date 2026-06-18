@@ -108,14 +108,13 @@ export function BestellungEditForm({
   const paketInfo = PACKAGES[paket as keyof typeof PACKAGES] ?? PACKAGES.starter;
 
   const [slotCount, setSlotCount] = useState<number>(() => {
-    const paketUsers =
-      PACKAGES[bestellung.paket as keyof typeof PACKAGES]?.users ??
-      PACKAGES.starter.users;
+    // Gespeicherte Platzanzahl respektieren – sie kann vom Admin auch unter
+    // die Paketgröße reduziert worden sein (mindestens ein Platz).
     const maxPosition = bestellung.teilnehmer.reduce(
       (m, t) => Math.max(m, t.position + 1),
       0
     );
-    return Math.max(paketUsers, bestellung.userAnzahl, maxPosition);
+    return Math.max(1, bestellung.userAnzahl, maxPosition);
   });
 
   const [teilnehmer, setTeilnehmer] = useState<Teilnehmer[]>(() =>
@@ -127,7 +126,15 @@ export function BestellungEditForm({
     [teilnehmer, slotCount]
   );
 
-  const extraSlots = Math.max(0, slotCount - paketInfo.users);
+  // Der letzte Platz lässt sich nur entfernen, wenn er leer ist – so gehen
+  // bereits erfasste Teilnehmerdaten nicht versehentlich verloren.
+  const lastSlot = visibleTeilnehmer[visibleTeilnehmer.length - 1];
+  const lastSlotEmpty =
+    !lastSlot ||
+    (!lastSlot.vorname.trim() &&
+      !lastSlot.nachname.trim() &&
+      !lastSlot.email.trim());
+  const canReduce = slotCount > 1 && lastSlotEmpty;
 
   const updateTeilnehmer = (
     position: number,
@@ -170,7 +177,14 @@ export function BestellungEditForm({
           t.position > position ? { ...t, position: t.position - 1 } : t
         )
     );
-    setSlotCount((prev) => Math.max(paketInfo.users, prev - 1));
+    setSlotCount((prev) => Math.max(1, prev - 1));
+  };
+
+  // Symmetrisch zum Hinzufügen: entfernt den letzten (leeren) Platz. Es bleibt
+  // immer mindestens ein Platz bestehen; Paket und Preis ändern sich nicht.
+  const removeLastTeilnehmerRow = () => {
+    if (!canReduce) return;
+    removeTeilnehmerRow(slotCount - 1);
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -453,20 +467,20 @@ export function BestellungEditForm({
         <div className="flex items-center gap-2 mb-1">
           <Users className="w-4 h-4 text-[#030386]" />
           <h2 className="text-base font-semibold text-dark-slate-900">
-            Teilnehmer ({slotCount} Plätze)
+            Teilnehmer ({slotCount} {slotCount === 1 ? "Platz" : "Plätze"})
           </h2>
         </div>
         <p className="text-xs text-dark-slate-400 mb-4">
           Das Paket {paketInfo.label} enthält {paketInfo.users} User-Plätze.
-          {extraSlots > 0
-            ? ` Zusätzlich angelegt: ${extraSlots} ${extraSlots === 1 ? "Platz" : "Plätze"}.`
-            : " Bei Bedarf können weitere Plätze über das + hinzugefügt werden."}
+          Aktuell {slotCount === 1 ? "ist 1 Platz" : `sind ${slotCount} Plätze`}{" "}
+          angelegt. Die Anzahl lässt sich über die Buttons unten anpassen –
+          unabhängig von Paket und Preis und mindestens bis auf einen Platz.
         </p>
         <div className="space-y-3">
           {visibleTeilnehmer.map((t) => {
             const isEmpty =
               !t.vorname.trim() && !t.nachname.trim() && !t.email.trim();
-            const canRemove = isEmpty && slotCount > paketInfo.users;
+            const canRemove = isEmpty && slotCount > 1;
             return (
               <div
                 key={t.position}
@@ -530,18 +544,36 @@ export function BestellungEditForm({
           })}
         </div>
         <div className="mt-4">
-          <button
-            type="button"
-            onClick={addTeilnehmerRow}
-            disabled={isPending}
-            className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-[#030386] bg-white border border-[#030386]/30 rounded-lg hover:bg-[#030386]/5 transition-colors disabled:opacity-50"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Weiteren Teilnehmer hinzufügen
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={addTeilnehmerRow}
+              disabled={isPending}
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-[#030386] bg-white border border-[#030386]/30 rounded-lg hover:bg-[#030386]/5 transition-colors disabled:opacity-50"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Weiteren Teilnehmer hinzufügen
+            </button>
+            <button
+              type="button"
+              onClick={removeLastTeilnehmerRow}
+              disabled={isPending || !canReduce}
+              title={
+                slotCount <= 1
+                  ? "Mindestens ein Platz muss bestehen bleiben."
+                  : !lastSlotEmpty
+                    ? "Der letzte Platz enthält noch Teilnehmerdaten. Bitte zuerst leeren, dann lässt er sich entfernen."
+                    : "Letzten Platz entfernen"
+              }
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-dark-slate-600 bg-white border border-dark-slate-200 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-dark-slate-600 disabled:hover:border-dark-slate-200"
+            >
+              <Minus className="w-3.5 h-3.5" />
+              Platz entfernen
+            </button>
+          </div>
           <p className="text-xs text-dark-slate-400 mt-2">
             Das Paket und der Preis ändern sich dadurch nicht — es wird lediglich
-            ein zusätzlicher Platz freigeschaltet.
+            ein Platz freigeschaltet bzw. entfernt (mindestens 1 Platz).
           </p>
         </div>
       </section>
