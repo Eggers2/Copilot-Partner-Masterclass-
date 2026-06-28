@@ -23,12 +23,13 @@ interface FormState {
 }
 
 interface LandingPageProps {
-  klasse2Count: number;
-  klasse2Capacity: number;
+  partnerCount: number;
+  klasse3Capacity: number;
+  klasse3Belegt: number;
 }
 
-export default function LandingPage({ klasse2Count, klasse2Capacity }: LandingPageProps) {
-  const percent = klasse2Capacity > 0 ? Math.min(100, (klasse2Count / klasse2Capacity) * 100) : 0;
+export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Belegt }: LandingPageProps) {
+  const percent = klasse3Capacity > 0 ? Math.min(100, (klasse3Belegt / klasse3Capacity) * 100) : 0;
 
   const [email, setEmail] = useState("");
   const [formState, setFormState] = useState<FormState>({
@@ -186,7 +187,7 @@ export default function LandingPage({ klasse2Count, klasse2Capacity }: LandingPa
               </>
             ) : (
               <>
-                Jetzt einen der {klasse2Capacity} Plätze sichern
+                Jetzt einen der {klasse3Capacity} Plätze sichern
                 <ArrowRight className="w-5 h-5" />
               </>
             )}
@@ -289,7 +290,7 @@ export default function LandingPage({ klasse2Count, klasse2Capacity }: LandingPa
                 <span className="absolute inline-flex w-full h-full rounded-full opacity-75 animate-ping" style={{ background: "#00C896" }} />
                 <span className="relative inline-flex w-2 h-2 rounded-full" style={{ background: "#00C896" }} />
               </span>
-              Klasse 2: {klasse2Count} von {klasse2Capacity} Plätzen vergeben
+              Klasse 1 &amp; 2 ausgebucht &middot; Bewerbung Klasse 3 offen
             </span>
           </div>
 
@@ -308,13 +309,13 @@ export default function LandingPage({ klasse2Count, klasse2Capacity }: LandingPa
 
           {/* Subheadline */}
           <p className="text-white/60 text-lg md:text-xl max-w-[600px] mb-10 leading-relaxed">
-            Das einzige Copilot-Enablement-Programm für Microsoft-Partner im DACH-Raum. 31 Systemhäuser aus Klasse 1 können das bestätigen.
+            Das einzige Copilot-Enablement-Programm für Microsoft-Partner im DACH-Raum. Über 50 Systemhäuser aus Klasse 1 und 2 sind bereits dabei.
           </p>
 
           {/* CTA – single primary + text link */}
           <div className="flex flex-col sm:flex-row items-center gap-5 mb-16">
             <button onClick={scrollToWaitlist} className="btn-primary text-base">
-              Jetzt Klasse-2-Platz sichern <ArrowRight className="w-5 h-5" />
+              Jetzt für Klasse 3 bewerben <ArrowRight className="w-5 h-5" />
             </button>
             <a href="#solution" className="inline-flex items-center gap-1.5 text-white/50 hover:text-white/80 text-sm font-medium transition-colors">
               Programm kennenlernen <ChevronDown className="w-4 h-4" />
@@ -332,9 +333,9 @@ export default function LandingPage({ klasse2Count, klasse2Capacity }: LandingPa
         <div className="container-main">
           <div className="flex flex-col md:flex-row flex-wrap items-center justify-center gap-y-8 gap-x-10 md:gap-x-12">
             {[
-              { num: "31", label: <>Systemhäuser<br />in Klasse 1 aktiv<br /><span className="text-white/35 text-[11px]">seit 22. Mai 2026</span></> },
-              { num: "150+", label: <>Mitarbeiter<br />bereits im Programm<br /><span className="text-white/35 text-[11px]">ausgebildet</span></> },
-              { num: String(klasse2Count), label: <>Zusagen<br />für Klasse 2<br /><span className="text-white/35 text-[11px]">im Online-Shop</span></> },
+              { num: String(partnerCount), label: <>Systemhäuser<br />im Programm<br /><span className="text-white/35 text-[11px]">Klasse 1 &amp; 2</span></> },
+              { num: "250+", label: <>Mitarbeiter<br />in Ausbildung<br /><span className="text-white/35 text-[11px]">über beide Klassen</span></> },
+              { num: "2", label: <>Klassen<br />ausgebucht<br /><span className="text-white/35 text-[11px]">in unter 12 Monaten</span></> },
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-10 md:gap-12">
                 {i > 0 && <span className="hidden md:block w-px h-12 bg-white/10" />}
@@ -347,7 +348,7 @@ export default function LandingPage({ klasse2Count, klasse2Capacity }: LandingPa
               </div>
             ))}
             <span className="md:ml-2 inline-flex items-center px-4 py-2 rounded-full text-xs font-bold tracking-wider text-[#1A1A2E]" style={{ background: "#00C896" }}>
-              ✦ KLASSE 1 AUSGEBUCHT ✦
+              ✦ KLASSE 1 &amp; 2 AUSGEBUCHT ✦
             </span>
           </div>
         </div>
@@ -362,31 +363,35 @@ export default function LandingPage({ klasse2Count, klasse2Capacity }: LandingPa
               className="text-white font-bold mt-3"
               style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(24px, 3vw, 36px)", letterSpacing: "-0.025em" }}
             >
-              Klasse 1 ist ausgebucht. <span className="text-[#00C896]">Ihre Chance: Klasse 2.</span>
+              Zwei Klassen ausgebucht. <span className="text-[#00C896]">Jetzt startet Klasse 3.</span>
             </h2>
           </div>
 
           <div className="flex flex-col gap-6 max-w-[1100px] mx-auto reveal">
-            {/* Karte 1 – Klasse 1 (live gestartet) */}
+            {/* Karte 1 – Track-Record (Klasse 1 & 2 ausgebucht) */}
             <div
               className="relative rounded-2xl p-8 md:p-10 border border-white/10"
               style={{ background: "#1A1A2E" }}
             >
-              <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
-                <span className="text-white/50 text-xs font-semibold tracking-wider uppercase">
-                  Klasse 01 &middot; Start Mai 2026
+              <div className="mb-8">
+                <span className="text-white/50 text-xs font-semibold tracking-wider uppercase block mb-4">
+                  Der Track-Record
                 </span>
                 <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-white/15 text-white/70" style={{ background: "rgba(255,255,255,.04)" }}>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Klasse 01 &middot; Mai 2026 &middot; Ausgebucht
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-white/15 text-white/70" style={{ background: "rgba(255,255,255,.04)" }}>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Klasse 02 &middot; Ausgebucht
+                  </span>
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-[#00C896]" style={{ background: "rgba(0,200,150,.12)", border: "1px solid rgba(0,200,150,.45)" }}>
                     <span className="relative flex w-2 h-2">
                       <span className="absolute inline-flex w-full h-full rounded-full opacity-75 animate-ping" style={{ background: "#00C896" }} />
                       <span className="relative inline-flex w-2 h-2 rounded-full" style={{ background: "#00C896" }} />
                     </span>
-                    Live seit 22.05.2026
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-white/15 text-white/70" style={{ background: "rgba(255,255,255,.04)" }}>
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    Ausgebucht
+                    Klasse 03 &middot; Bewerbung offen
                   </span>
                 </div>
               </div>
@@ -413,14 +418,14 @@ export default function LandingPage({ klasse2Count, klasse2Capacity }: LandingPa
                     className="text-white font-bold mb-6"
                     style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(22px, 2.4vw, 30px)", letterSpacing: "-0.02em", lineHeight: 1.15 }}
                   >
-                    Klasse 1 läuft <span className="text-[#00C896]">bereits.</span>
+                    Klasse 1 &amp; 2 sind <span className="text-[#00C896]">ausgebucht.</span>
                   </h3>
 
                   <div className="grid grid-cols-3 gap-2 mb-6">
                     {[
-                      { num: "31", label: "Systemhäuser" },
-                      { num: "150", label: "Mitarbeiter" },
-                      { num: "22.05.", label: "Kick-off live" },
+                      { num: "52", label: "Systemhäuser" },
+                      { num: "250+", label: "Mitarbeiter" },
+                      { num: "2×", label: "ausgebucht" },
                     ].map((s) => (
                       <div key={s.label} className="rounded-lg p-3 text-center" style={{ background: "#23233D" }}>
                         <div className="text-[#00C896] text-xl md:text-2xl font-bold leading-tight" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>
@@ -442,10 +447,15 @@ export default function LandingPage({ klasse2Count, klasse2Capacity }: LandingPa
 
                   <div>
                     <div className="text-white/40 text-xs font-semibold tracking-wider uppercase mb-3">
-                      Mit dabei (Auswahl der Klasse 1)
+                      Mit dabei (Auswahl aus Klasse 1 &amp; 2)
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {[
+                        "ACP Holding Deutschland GmbH",
+                        "DATAGROUP Stuttgart GmbH",
+                        "Henrichsen AG",
+                        "Implement-IT GmbH",
+                        "bitfire GmbH",
                         "Cloudtastic GmbH",
                         "connecT Systemhaus AG",
                         "Gme GmbH",
@@ -464,7 +474,7 @@ export default function LandingPage({ klasse2Count, klasse2Capacity }: LandingPa
                         </span>
                       ))}
                       <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium text-white/40">
-                        … und 23 weitere
+                        … und 39 weitere
                       </span>
                     </div>
 
@@ -472,7 +482,7 @@ export default function LandingPage({ klasse2Count, klasse2Capacity }: LandingPa
                       href="/suche"
                       className="inline-flex items-center gap-1.5 mt-4 text-sm font-semibold text-[#00C896] hover:text-white transition-colors"
                     >
-                      Copilot-Partner auf der Karte finden
+                      Alle 52 Copilot-Partner auf der Karte finden
                       <ArrowRight className="w-4 h-4" />
                     </a>
                   </div>
@@ -480,14 +490,14 @@ export default function LandingPage({ klasse2Count, klasse2Capacity }: LandingPa
               </div>
             </div>
 
-            {/* Karte 2 – Klasse 2 (Bewerbung offen) */}
+            {/* Karte 2 – Klasse 3 (Bewerbung offen) */}
             <div
               className="relative rounded-2xl p-8 border border-[#00C896]/40"
               style={{ background: "#1A1A2E", boxShadow: "0 0 40px rgba(0,200,150,.12)" }}
             >
               <div className="flex items-center justify-between mb-6">
                 <span className="text-[#00C896] text-xs font-semibold tracking-wider uppercase">
-                  Klasse 02 &middot; Start vsl. Juni 2026
+                  Klasse 03 &middot; Start vsl. September 2026
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-[#1A1A2E]" style={{ background: "#00C896" }}>
                   Bewerbung offen
@@ -497,19 +507,19 @@ export default function LandingPage({ klasse2Count, klasse2Capacity }: LandingPa
               <div className="grid md:grid-cols-[1fr_auto] gap-6 items-center">
                 <div>
                   <div className="mb-3 flex items-baseline justify-between">
-                    <span className="text-white/80 text-sm font-medium">{klasse2Count} / {klasse2Capacity} Plätze vergeben</span>
-                    <span className="text-white/40 text-sm">Start: Juni 2026</span>
+                    <span className="text-white/80 text-sm font-medium">{klasse3Belegt} / {klasse3Capacity} Plätze vergeben</span>
+                    <span className="text-white/40 text-sm">Start: September 2026</span>
                   </div>
                   <div className="w-full h-2 rounded-full overflow-hidden mb-4 border border-[#00C896]/30" style={{ background: "rgba(0,200,150,.05)" }}>
                     <div className="h-full rounded-full" style={{ width: `${percent}%`, background: "#00C896" }} />
                   </div>
                   <p className="text-white/65 text-sm leading-relaxed">
-                    5 Systemhäuser haben sich innerhalb von 48 Stunden nach dem Klasse-1-Kickoff für Klasse 2 angemeldet. Ohne Zögern.
+                    Klasse 1 und 2 waren beide ausgebucht — Klasse 2 sogar schneller als Klasse 1. In Klasse 3 sind bereits {klasse3Belegt} der {klasse3Capacity} Plätze vergeben.
                   </p>
                 </div>
 
                 <button onClick={scrollToWaitlist} className="btn-primary justify-center whitespace-nowrap">
-                  Jetzt Klasse-2-Platz sichern <ArrowRight className="w-5 h-5" />
+                  Jetzt für Klasse 3 bewerben <ArrowRight className="w-5 h-5" />
                 </button>
               </div>
             </div>
@@ -945,7 +955,7 @@ export default function LandingPage({ klasse2Count, klasse2Capacity }: LandingPa
               },
               {
                 q: "Wir schauen noch, der Markt ist noch nicht reif.",
-                a: "Das Zeitfenster schließt sich in 12–18 Monaten. Wer sich jetzt positioniert, dominiert seinen regionalen Markt. Die 31 Systemhäuser in unserer ersten Klasse haben diesen Moment bereits erkannt – die Klasse läuft seit dem 22.05.2026. Wer wartet, verkauft weiterhin nur Lizenzen mit sinkenden Margen – und erklärt seinen Kunden, warum der Wettbewerber schon liefern kann.",
+                a: "Das Zeitfenster schließt sich in 12–18 Monaten. Wer sich jetzt positioniert, dominiert seinen regionalen Markt. Über 50 Systemhäuser in unseren ersten beiden Klassen haben diesen Moment bereits erkannt – beide Klassen sind ausgebucht. Wer wartet, verkauft weiterhin nur Lizenzen mit sinkenden Margen – und erklärt seinen Kunden, warum der Wettbewerber schon liefern kann.",
               },
               {
                 q: "Das können wir auch selbst aufbauen.",
@@ -1015,19 +1025,19 @@ export default function LandingPage({ klasse2Count, klasse2Capacity }: LandingPa
         <div className="relative container-main text-center">
           <div className="reveal">
             <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium border border-[#00C896]/30 text-[#00C896] mb-8" style={{ background: "rgba(0,200,150,.08)" }}>
-              Bewerbung Klasse 2 &middot; Start vsl. Juni 2026
+              Bewerbung Klasse 3 &middot; Start vsl. September 2026
             </span>
 
             <h2
               className="text-white font-bold mb-4 max-w-[700px] mx-auto"
               style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", letterSpacing: "-0.025em" }}
             >
-              {klasse2Capacity} Plätze.<br /><span className="text-[#00C896]">Klasse 2 startet im Juni 2026.</span>
+              {klasse3Capacity} Plätze.<br /><span className="text-[#00C896]">Klasse 3 startet im September 2026.</span>
             </h2>
 
             <div className="text-white/50 text-lg max-w-[560px] mx-auto mb-10 leading-relaxed">
-              <p className="text-white/75 font-medium mb-1">Klasse 1: 31 Systemhäuser gestartet. Ausgebucht.</p>
-              <p className="text-[#00C896] font-medium mb-5">Klasse 2: {klasse2Count} von {klasse2Capacity} Plätzen vergeben.</p>
+              <p className="text-white/75 font-medium mb-1">Klasse 1 &amp; 2: ausgebucht. Über 50 Systemhäuser sind bereits dabei.</p>
+              <p className="text-[#00C896] font-medium mb-5">Klasse 3: {klasse3Belegt} von {klasse3Capacity} Plätzen bereits vergeben.</p>
               <p>
                 Sie entscheiden, ob Ihr Systemhaus in 12 Monaten als führender Copilot-Partner in Ihrer Region positioniert ist — oder ob ein Wettbewerber diesen Platz einnimmt.
               </p>
