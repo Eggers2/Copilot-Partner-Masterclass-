@@ -1,22 +1,18 @@
-import { prisma } from "@/lib/prisma";
 import LandingPage from "./LandingPage";
 
-export const revalidate = 60;
+// Marketing-Kennzahlen – bewusst im Code gehalten, damit die Landing Page
+// konsistent liest, unabhängig von den Werten in der Datenbank.
+// Stand: Klasse 1 & 2 ausgebucht (52 Systemhäuser kumuliert), Klasse 3 in Bewerbung.
+const PARTNER_COUNT = 52;
+const KLASSE_3_CAPACITY = 25;
+const KLASSE_3_BELEGT = 4;
 
-// Marketing capacity — kept in code so the landing page reads consistently
-// regardless of the Klasse.capacity value in the database.
-const KLASSE_2_CAPACITY = 25;
-
-export default async function Page() {
-  let count = 0;
-  try {
-    const klasse = await prisma.klasse.findUnique({
-      where: { slug: "klasse-2" },
-      select: { _count: { select: { bestellungen: true } } },
-    });
-    count = klasse?._count.bestellungen ?? 0;
-  } catch {
-    // DB unavailable — fall back to safe defaults so the page still renders.
-  }
-  return <LandingPage klasse2Count={count} klasse2Capacity={KLASSE_2_CAPACITY} />;
+export default function Page() {
+  return (
+    <LandingPage
+      partnerCount={PARTNER_COUNT}
+      klasse3Capacity={KLASSE_3_CAPACITY}
+      klasse3Belegt={KLASSE_3_BELEGT}
+    />
+  );
 }
