@@ -4,6 +4,7 @@ import {
   FIRST_CALL_SYSTEM_PROMPT,
 } from "@/lib/claude";
 import { extractText, parseJson } from "@/lib/ai/json";
+import { vttToPlainText } from "@/lib/ai/transcript";
 
 /** Die 8 Scorecard-Kriterien (Reihenfolge wie im First Call Scoring). */
 export const SCORE_KEYS = [
@@ -44,22 +45,6 @@ export interface FirstCallLeadContext {
   company: string | null;
   city: string | null;
   email: string;
-}
-
-/** Entfernt VTT-Metadaten (Header, Cue-Nummern, Timestamps, NOTE) → reiner Text. */
-function vttToPlainText(vtt: string): string {
-  return vtt
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter((line) => {
-      if (!line) return false;
-      if (line === "WEBVTT") return false;
-      if (/^NOTE\b/.test(line)) return false;
-      if (/^\d+$/.test(line)) return false; // Cue-Nummer
-      if (/-->/.test(line)) return false; // Timestamp-Zeile
-      return true;
-    })
-    .join("\n");
 }
 
 function clampScore(v: unknown): number {

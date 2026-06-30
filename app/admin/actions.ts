@@ -38,7 +38,9 @@ import {
   saveTranscriptAnalysis,
 } from "@/lib/db/leads";
 import { analyzeFirstCall, type FirstCallAnalysis } from "@/lib/firstcall/analyze";
-import { sendEmail } from "@/lib/email/resend";
+import { sendEmail, sendBulk } from "@/lib/email/resend";
+import { plainTextToHtml } from "@/lib/email/format";
+import { summarizeTermin } from "@/lib/termine/summarize";
 import { readFile, readdir } from "fs/promises";
 import path from "path";
 import { dispatchTeamsGuestInvites } from "@/lib/teams/dispatchTeamsGuest";
@@ -299,20 +301,6 @@ export async function analyzeFirstCallTranscriptAction(
       err instanceof Error ? err.message : "Unbekannter Fehler bei der Auswertung.";
     return { error: msg };
   }
-}
-
-/** Wandelt einen reinen Text in einfaches, klickbares E-Mail-HTML. */
-function plainTextToHtml(text: string): string {
-  const escaped = text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-  const linked = escaped.replace(
-    /(https?:\/\/[^\s<]+)/g,
-    '<a href="$1">$1</a>'
-  );
-  const withBreaks = linked.replace(/\r?\n/g, "<br>");
-  return `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a;">${withBreaks}</div>`;
 }
 
 /**
@@ -1351,6 +1339,8 @@ export async function createTerminAction(
     thema: ((formData.get("thema") as string) || "").trim() || null,
     notizen: ((formData.get("notizen") as string) || "").trim() || null,
     status: isTerminStatus(statusRaw) ? statusRaw : "GEPLANT",
+    videoUrl: ((formData.get("videoUrl") as string) || "").trim() || null,
+    teamsLink: ((formData.get("teamsLink") as string) || "").trim() || null,
   });
 
   revalidatePath(`/admin/klassen/${slug}`);
@@ -1379,6 +1369,10 @@ export async function updateTerminAction(
     thema: ((formData.get("thema") as string) || "").trim() || null,
     notizen: ((formData.get("notizen") as string) || "").trim() || null,
     ...(isTerminStatus(statusRaw) ? { status: statusRaw } : {}),
+    videoUrl: ((formData.get("videoUrl") as string) || "").trim() || null,
+    teamsLink: ((formData.get("teamsLink") as string) || "").trim() || null,
+    zusammenfassung: ((formData.get("zusammenfassung") as string) || "").trim() || null,
+    protokoll: ((formData.get("protokoll") as string) || "").trim() || null,
   });
 
   revalidatePath(`/admin/klassen/${slug}`);
@@ -1418,4 +1412,207 @@ export async function getKlasseTeilnehmerEmailsAction(
 
   const list = await getKlasseTeilnehmerEmails(klasseId);
   return { emails: list.join("; "), count: list.length };
+}
+
+// ─── TERMIN: TRANSKRIPT-AUSWERTUNG & PROTOKOLL-VERSAND ──────────────────────
+
+/** Formatiert ein Datum als deutsches Datum+Uhrzeit in Europe/Berlin. */
+function formatTerminDatum(d: Date): string {
+  return d.toLocaleString("de-DE", {
+    timeZone: "Europe/Berlin",
+    weekday: "long",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+type TerminMailData = {
+  datum: Date;
+  thema: string | null;
+  protokoll: string | null;
+  videoUrl: string | null;
+};
+type NextTerminMailData = {
+  datum: Date;
+  thema: string | null;
+  teamsLink: string | null;
+} | null;
+
+/**
+ * Baut das Protokoll-Mail-HTML: ausführliches Protokoll + Aufzeichnungs-Link +
+ * Erinnerung an den nächsten Termin (Datum, Thema, Teams-Link). Identisch für
+ * Test- und Echtversand.
+ */
+function buildTerminProtokollHtml(
+  klasseName: string,
+  termin: TerminMailData,
+  next: NextTerminMailData
+): string {
+  const parts: string[] = [];
+  parts.push(
+    `<p style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a;">` +
+      `<strong>${klasseName}</strong> · Termin vom ${formatTerminDatum(termin.datum)}` +
+      (termin.thema ? `<br>Thema: ${termin.thema}` : "") +
+      `</p>`
+  );
+  parts.push(plainTextToHtml(termin.protokoll ?? ""));
+
+  if (termin.videoUrl) {
+    parts.push(
+      `<p style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a;margin-top:16px;">` +
+        `<strong>Aufzeichnung:</strong> <a href="${termin.videoUrl}">Video ansehen</a></p>`
+    );
+  }
+
+  if (next) {
+    const nextLines = [
+      `<strong>Nächster Termin:</strong> ${formatTerminDatum(next.datum)}`,
+      next.thema ? `Thema: ${next.thema}` : "",
+      next.teamsLink ? `Teams-Meeting: <a href="${next.teamsLink}">${next.teamsLink}</a>` : "",
+    ].filter(Boolean);
+    parts.push(
+      `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a;margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb;">` +
+        nextLines.join("<br>") +
+        `</div>`
+    );
+  }
+
+  return parts.join("\n");
+}
+
+function terminProtokollSubject(klasseName: string, termin: TerminMailData): string {
+  const themaTeil = termin.thema ? `: ${termin.thema}` : "";
+  return `Protokoll${themaTeil} – ${klasseName}`;
+}
+
+/** Wertet ein hochgeladenes Termin-Transkript per Claude aus (Thema/Zusammenfassung/Protokoll). */
+export async function analyzeTerminTranscriptAction(
+  terminId: string,
+  transcriptText: string,
+  filename: string
+): Promise<{ success?: boolean; error?: string }> {
+  await requireAuth();
+  if (!terminId) return { error: "Termin-ID fehlt." };
+  if (!transcriptText?.trim()) return { error: "Das Transkript ist leer." };
+
+  const termin = await prisma.klasseTermin.findUnique({
+    where: { id: terminId },
+    include: { klasse: { select: { name: true, slug: true } } },
+  });
+  if (!termin) return { error: "Termin nicht gefunden." };
+
+  try {
+    const result = await summarizeTermin(transcriptText, {
+      klasseName: termin.klasse.name,
+      datum: termin.datum,
+      thema: termin.thema,
+    });
+
+    await updateTermin(terminId, {
+      transkript: transcriptText,
+      transkriptDateiname: filename,
+      zusammenfassung: result.zusammenfassung || null,
+      protokoll: result.protokoll || null,
+      // Thema nur setzen, wenn noch keins hinterlegt ist (Vorschlag der KI).
+      ...(!termin.thema && result.thema ? { thema: result.thema } : {}),
+    });
+
+    revalidatePath(`/admin/klassen/${termin.klasse.slug}`);
+    return { success: true };
+  } catch (err) {
+    const msg =
+      err instanceof Error ? err.message : "Unbekannter Fehler bei der Auswertung.";
+    return { error: msg };
+  }
+}
+
+/** Lädt Termin + Klasse + nächsten Termin für den Protokoll-Versand. */
+async function loadTerminForProtokoll(terminId: string) {
+  const termin = await prisma.klasseTermin.findUnique({
+    where: { id: terminId },
+    include: { klasse: { select: { id: true, name: true, slug: true } } },
+  });
+  if (!termin) return null;
+  const next = await prisma.klasseTermin.findFirst({
+    where: { klasseId: termin.klasseId, datum: { gt: termin.datum } },
+    orderBy: { datum: "asc" },
+    select: { datum: true, thema: true, teamsLink: true },
+  });
+  return { termin, next };
+}
+
+/** Versendet das Protokoll an alle Teilnehmer der Klasse (eine Mail pro Empfänger). */
+export async function sendTerminProtokollAction(
+  terminId: string
+): Promise<{ success?: boolean; error?: string; sent?: number; failed?: number }> {
+  await requireAuth();
+  if (!terminId) return { error: "Termin-ID fehlt." };
+
+  const loaded = await loadTerminForProtokoll(terminId);
+  if (!loaded) return { error: "Termin nicht gefunden." };
+  const { termin, next } = loaded;
+  if (!termin.protokoll?.trim()) {
+    return { error: "Kein Protokoll vorhanden. Bitte zuerst ein Transkript auswerten." };
+  }
+
+  const recipients = await getKlasseTeilnehmerEmails(termin.klasseId);
+  if (recipients.length === 0) {
+    return { error: "Keine Teilnehmer mit E-Mail in dieser Klasse." };
+  }
+
+  const subject = terminProtokollSubject(termin.klasse.name, termin);
+  const html = buildTerminProtokollHtml(termin.klasse.name, termin, next);
+
+  const result = await sendBulk(
+    recipients.map((to) => ({ to, subject, html })),
+    { templateKey: "termin_protokoll" }
+  );
+
+  if (result.sent === 0) {
+    return {
+      error: result.error ?? "Versand fehlgeschlagen.",
+      sent: 0,
+      failed: result.failed.length,
+    };
+  }
+
+  await updateTermin(terminId, { protokollGesendetAm: new Date() });
+  revalidatePath(`/admin/klassen/${termin.klasse.slug}`);
+  return { success: true, sent: result.sent, failed: result.failed.length };
+}
+
+/** Sendet das Protokoll als Vorschau an eine einzelne Test-Adresse (kein Status-Update). */
+export async function sendTerminProtokollTestAction(
+  terminId: string,
+  testEmail: string
+): Promise<{ success?: boolean; error?: string }> {
+  await requireAuth();
+  if (!terminId) return { error: "Termin-ID fehlt." };
+
+  const email = testEmail.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { error: "Bitte eine gültige E-Mail-Adresse eingeben." };
+  }
+
+  const loaded = await loadTerminForProtokoll(terminId);
+  if (!loaded) return { error: "Termin nicht gefunden." };
+  const { termin, next } = loaded;
+  if (!termin.protokoll?.trim()) {
+    return { error: "Kein Protokoll vorhanden. Bitte zuerst ein Transkript auswerten." };
+  }
+
+  const res = await sendEmail({
+    to: email,
+    subject: `[TEST] ${terminProtokollSubject(termin.klasse.name, termin)}`,
+    html: buildTerminProtokollHtml(termin.klasse.name, termin, next),
+    templateKey: "termin_protokoll_test",
+  });
+
+  if (!res.ok) {
+    return { error: res.error ?? "Test-E-Mail konnte nicht gesendet werden." };
+  }
+  return { success: true };
 }

@@ -14,6 +14,8 @@ export async function createTermin(data: {
   thema?: string | null;
   notizen?: string | null;
   status?: TerminStatus;
+  videoUrl?: string | null;
+  teamsLink?: string | null;
 }) {
   return prisma.klasseTermin.create({ data });
 }
@@ -25,6 +27,13 @@ export async function updateTermin(
     thema?: string | null;
     notizen?: string | null;
     status?: TerminStatus;
+    videoUrl?: string | null;
+    teamsLink?: string | null;
+    zusammenfassung?: string | null;
+    protokoll?: string | null;
+    transkript?: string | null;
+    transkriptDateiname?: string | null;
+    protokollGesendetAm?: Date | null;
   }
 ) {
   return prisma.klasseTermin.update({ where: { id }, data });

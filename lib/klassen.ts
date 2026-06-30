@@ -65,10 +65,39 @@ export async function listKlassenMitBelegung() {
   });
   const countMap = new Map(counts.map((c) => [c.klasseId, c._count.id]));
 
+  // Termin-Statistik pro Klasse: gesamt, durchgeführt und nächster anstehender Termin.
+  const terminCounts = await prisma.klasseTermin.groupBy({
+    by: ["klasseId", "status"],
+    _count: { id: true },
+  });
+  const terminTotal = new Map<string, number>();
+  const terminDone = new Map<string, number>();
+  for (const tc of terminCounts) {
+    terminTotal.set(tc.klasseId, (terminTotal.get(tc.klasseId) ?? 0) + tc._count.id);
+    if (tc.status === "DURCHGEFUEHRT") {
+      terminDone.set(tc.klasseId, (terminDone.get(tc.klasseId) ?? 0) + tc._count.id);
+    }
+  }
+
+  const upcoming = await prisma.klasseTermin.findMany({
+    where: { datum: { gte: new Date() } },
+    orderBy: { datum: "asc" },
+    select: { klasseId: true, datum: true, thema: true },
+  });
+  const nextTermin = new Map<string, { datum: Date; thema: string | null }>();
+  for (const t of upcoming) {
+    if (!nextTermin.has(t.klasseId)) {
+      nextTermin.set(t.klasseId, { datum: t.datum, thema: t.thema });
+    }
+  }
+
   return klassen.map((k) => ({
     ...k,
     belegung: countMap.get(k.id) ?? 0,
     isFull: k.capacity != null && (countMap.get(k.id) ?? 0) >= k.capacity,
+    termineGesamt: terminTotal.get(k.id) ?? 0,
+    termineDurchgefuehrt: terminDone.get(k.id) ?? 0,
+    naechsterTermin: nextTermin.get(k.id) ?? null,
   }));
 }
 
