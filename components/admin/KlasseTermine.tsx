@@ -15,6 +15,7 @@ import {
   Link as LinkIcon,
   ChevronDown,
   ChevronUp,
+  CalendarPlus,
 } from "lucide-react";
 import type { TerminStatus } from "@prisma/client";
 import {
@@ -25,6 +26,7 @@ import {
   analyzeTerminTranscriptAction,
   sendTerminProtokollAction,
   sendTerminProtokollTestAction,
+  generateNextTermineAction,
 } from "@/app/admin/actions";
 
 export interface TerminView {
@@ -537,17 +539,75 @@ function TerminRow({
   );
 }
 
+function GenerateTermineButton({
+  klasseId,
+  hasRegel,
+}: {
+  klasseId: string;
+  hasRegel: boolean;
+}) {
+  const [isPending, startTransition] = useTransition();
+  const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+
+  function handleClick() {
+    setMsg(null);
+    startTransition(async () => {
+      const res = await generateNextTermineAction(klasseId);
+      if (res.error) {
+        setMsg({ kind: "err", text: res.error });
+      } else if (res.created === 0) {
+        setMsg({ kind: "ok", text: "Alle anstehenden Termine sind bereits angelegt." });
+      } else {
+        setMsg({ kind: "ok", text: `${res.created} Termin(e) angelegt.` });
+      }
+    });
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={!hasRegel || isPending}
+        title={
+          hasRegel
+            ? undefined
+            : "Keine Termin-Regel hinterlegt – bitte zuerst in den Stammdaten anlegen."
+        }
+        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#030386] hover:bg-[#05015B] rounded-lg transition-colors disabled:opacity-50"
+      >
+        <CalendarPlus className="w-4 h-4" />
+        {isPending ? "Wird angelegt…" : "Nächste 2 Termine anlegen"}
+      </button>
+      {!hasRegel && (
+        <span className="text-xs text-dark-slate-500">
+          Keine Termin-Regel hinterlegt (in den Stammdaten oben).
+        </span>
+      )}
+      {msg && (
+        <span className={`text-sm ${msg.kind === "ok" ? "text-green-600" : "text-red-600"}`}>
+          {msg.text}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function KlasseTermine({
   klasseId,
+  hasRegel,
   termine,
 }: {
   klasseId: string;
+  hasRegel: boolean;
   termine: TerminView[];
 }) {
   const [isAdding, setIsAdding] = useState(false);
 
   return (
     <div className="space-y-4">
+      <GenerateTermineButton klasseId={klasseId} hasRegel={hasRegel} />
+
       {termine.length === 0 ? (
         <p className="text-sm text-dark-slate-400">
           Noch keine Termine angelegt. Lege den ersten Termin mit Datum und Thema an.

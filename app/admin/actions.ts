@@ -4,32 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { setAuthCookie, clearAuthCookie, requireAuth } from "@/lib/auth";
 import { requestOtpCode } from "@/lib/auth/customer";
-
-/**
- * Parses a datetime-local string (e.g. "2026-03-31T17:00") as Europe/Berlin time.
- * datetime-local inputs have no timezone – new Date() on a UTC server would treat
- * it as UTC, causing a 1–2h offset. This tries both CET (+01:00) and CEST (+02:00)
- * and returns the one that round-trips correctly to the intended Berlin hour.
- */
-function parseBerlinDate(dateTimeLocal: string): Date {
-  const hour = parseInt(dateTimeLocal.split("T")[1]?.split(":")[0] ?? "0", 10);
-
-  const cest = new Date(dateTimeLocal + ":00+02:00"); // summer
-  const cet = new Date(dateTimeLocal + ":00+01:00");  // winter
-
-  const berlinHour = (d: Date) =>
-    Number(
-      new Intl.DateTimeFormat("en-US", {
-        timeZone: "Europe/Berlin",
-        hour: "numeric",
-        hour12: false,
-      }).format(d)
-    );
-
-  if (berlinHour(cest) === hour) return cest;
-  if (berlinHour(cet) === hour) return cet;
-  return cest; // fallback to summer time
-}
+import { parseBerlinDate } from "@/lib/datetime";
 import {
   updateLead,
   addActivity,
@@ -41,6 +16,11 @@ import { analyzeFirstCall, type FirstCallAnalysis } from "@/lib/firstcall/analyz
 import { sendEmail, sendBulk } from "@/lib/email/resend";
 import { plainTextToHtml } from "@/lib/email/format";
 import { summarizeTermin } from "@/lib/termine/summarize";
+import {
+  parseTerminRegel,
+  computeNextTermine,
+  type TerminRegel,
+} from "@/lib/termine/regel";
 import { readFile, readdir } from "fs/promises";
 import path from "path";
 import { dispatchTeamsGuestInvites } from "@/lib/teams/dispatchTeamsGuest";
@@ -73,6 +53,7 @@ import type {
   TerminStatus,
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { isAdnChannelKey } from "@/lib/packages";
 
 export async function loginAction(
@@ -1120,6 +1101,17 @@ function slugify(name: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+/** Liest die Termin-Regel aus dem (Hidden-)Formularfeld terminRegelJson. */
+function readTerminRegel(formData: FormData): TerminRegel {
+  const raw = formData.get("terminRegelJson");
+  if (typeof raw !== "string" || !raw.trim()) return [];
+  try {
+    return parseTerminRegel(JSON.parse(raw));
+  } catch {
+    return [];
+  }
+}
+
 export async function createKlasseAction(
   _prev: unknown,
   formData: FormData
@@ -1164,6 +1156,7 @@ export async function createKlasseAction(
         status: statusRaw as KlasseStatus,
         teilnehmerSperre,
         teamsGroupId,
+        terminRegel: readTerminRegel(formData) as unknown as Prisma.InputJsonValue,
         description: ((formData.get("description") as string) || "").trim() || null,
       },
     });
@@ -1214,6 +1207,7 @@ export async function updateKlasseAction(
       status: statusRaw as KlasseStatus,
       teilnehmerSperre,
       teamsGroupId,
+      terminRegel: readTerminRegel(formData) as unknown as Prisma.InputJsonValue,
       description: ((formData.get("description") as string) || "").trim() || null,
     },
   });
@@ -1412,6 +1406,48 @@ export async function getKlasseTeilnehmerEmailsAction(
 
   const list = await getKlasseTeilnehmerEmails(klasseId);
   return { emails: list.join("; "), count: list.length };
+}
+
+/**
+ * Legt automatisch die nächsten zwei künftigen Termine gemäß der Termin-Regel
+ * der Klasse an (n-ter Wochentag im Monat). Bereits vorhandene Zeitpunkte werden
+ * übersprungen, sodass mehrfaches Klicken keine Duplikate erzeugt.
+ */
+export async function generateNextTermineAction(
+  klasseId: string
+): Promise<{ success?: boolean; error?: string; created?: number }> {
+  await requireAuth();
+  if (!klasseId) return { error: "Klasse fehlt." };
+
+  const klasse = await prisma.klasse.findUnique({
+    where: { id: klasseId },
+    select: {
+      slug: true,
+      terminRegel: true,
+      termine: { select: { datum: true } },
+    },
+  });
+  if (!klasse) return { error: "Klasse nicht gefunden." };
+
+  const regel = parseTerminRegel(klasse.terminRegel);
+  if (regel.length === 0) {
+    return {
+      error: "Für diese Klasse ist keine Termin-Regel hinterlegt. Bitte zuerst in den Stammdaten anlegen.",
+    };
+  }
+
+  const existing = klasse.termine.map((t) => t.datum);
+  const next = computeNextTermine(regel, 2, new Date(), existing);
+  if (next.length === 0) {
+    return { success: true, created: 0 };
+  }
+
+  for (const datum of next) {
+    await createTermin({ klasseId, datum, status: "GEPLANT" });
+  }
+
+  revalidatePath(`/admin/klassen/${klasse.slug}`);
+  return { success: true, created: next.length };
 }
 
 // ─── TERMIN: TRANSKRIPT-AUSWERTUNG & PROTOKOLL-VERSAND ──────────────────────
