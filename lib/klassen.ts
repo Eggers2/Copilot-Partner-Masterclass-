@@ -71,3 +71,43 @@ export async function listKlassenMitBelegung() {
     isFull: k.capacity != null && (countMap.get(k.id) ?? 0) >= k.capacity,
   }));
 }
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function normalizeEmail(email: string): string | null {
+  const clean = email.trim().toLowerCase();
+  if (!clean || !EMAIL_RE.test(clean)) return null;
+  return clean;
+}
+
+/**
+ * Liefert alle Teilnehmer-E-Mails einer Klasse, dedupliziert und sortiert.
+ * Umfasst die einzelnen Teilnehmer-Plätze (BestellungTeilnehmer) sowie den
+ * Besteller-Kontakt (Bestellung.email) – analog zu getMasterclassRecipients,
+ * aber auf eine Klasse eingegrenzt. Für den Export in neue Termine.
+ */
+export async function getKlasseTeilnehmerEmails(
+  klasseId: string
+): Promise<string[]> {
+  const [bestellungen, teilnehmer] = await Promise.all([
+    prisma.bestellung.findMany({
+      where: { klasseId },
+      select: { email: true },
+    }),
+    prisma.bestellungTeilnehmer.findMany({
+      where: { bestellung: { klasseId } },
+      select: { email: true },
+    }),
+  ]);
+
+  const set = new Set<string>();
+  for (const b of bestellungen) {
+    const n = normalizeEmail(b.email ?? "");
+    if (n) set.add(n);
+  }
+  for (const t of teilnehmer) {
+    const n = normalizeEmail(t.email ?? "");
+    if (n) set.add(n);
+  }
+  return [...set].sort();
+}

@@ -78,6 +78,11 @@ enum KlasseStatus {
   COMPLETED
 }
 
+enum TerminStatus {
+  GEPLANT
+  DURCHGEFUEHRT
+}
+
 model Klasse {
   id                String       @id @default(cuid())
   name              String
@@ -96,10 +101,29 @@ model Klasse {
   webinars          Webinar[]
   bestellungen      Bestellung[]
   leads             Lead[]
+  termine           KlasseTermin[]
   createdAt         DateTime     @default(now()) @map("created_at")
   updatedAt         DateTime     @updatedAt @map("updated_at")
 
   @@map("klassen")
+}
+
+// Termine einer Klasse (typ. zwei pro Monat). Hält fest, welches Thema an
+// welchem Termin behandelt wurde bzw. geplant ist – getrennt vom Webinar-Modell,
+// das öffentliche Online-Events mit Anmeldungen abbildet.
+model KlasseTermin {
+  id        String       @id @default(cuid())
+  klasseId  String       @map("klasse_id")
+  klasse    Klasse       @relation(fields: [klasseId], references: [id], onDelete: Cascade)
+  datum     DateTime
+  thema     String?
+  notizen   String?
+  status    TerminStatus @default(GEPLANT)
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  @@index([klasseId])
+  @@map("klasse_termine")
 }
 
 model Lead {
