@@ -93,6 +93,21 @@ export default async function KlassenPage() {
                     {k.isFull ? " · voll" : ""}
                   </span>
                 </p>
+                <p>
+                  <span className="text-dark-slate-400">Nächster Termin:</span>{" "}
+                  {k.naechsterTermin ? (
+                    <>
+                      {k.naechsterTermin.datum.toLocaleDateString("de-DE")}
+                      {k.naechsterTermin.thema ? ` – ${k.naechsterTermin.thema}` : ""}
+                    </>
+                  ) : (
+                    <span className="text-dark-slate-400">keiner geplant</span>
+                  )}
+                </p>
+                <p>
+                  <span className="text-dark-slate-400">Termine:</span>{" "}
+                  {k.termineDurchgefuehrt} durchgeführt / {k.termineGesamt} gesamt
+                </p>
               </div>
             </Link>
           );

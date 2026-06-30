@@ -119,6 +119,17 @@ model KlasseTermin {
   thema     String?
   notizen   String?
   status    TerminStatus @default(GEPLANT)
+  // Links für schnellen Zugriff: SharePoint-Aufzeichnung und Teams-Meeting.
+  videoUrl            String?   @map("video_url")
+  teamsLink           String?   @map("teams_link")
+  // Transkript-Upload nach dem Termin + KI-Ausgaben:
+  // zusammenfassung = kompakte Spiegelstrichliste (Admin-Überblick),
+  // protokoll = ausführliches Meetingprotokoll (Versand an Teilnehmer).
+  transkript          String?
+  transkriptDateiname String?   @map("transkript_dateiname")
+  zusammenfassung     String?
+  protokoll           String?
+  protokollGesendetAm DateTime? @map("protokoll_gesendet_am")
   createdAt DateTime     @default(now()) @map("created_at")
   updatedAt DateTime     @updatedAt @map("updated_at")
 

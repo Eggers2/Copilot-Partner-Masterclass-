@@ -48,6 +48,12 @@ export default async function KlasseDetailPage({
           thema: true,
           notizen: true,
           status: true,
+          videoUrl: true,
+          teamsLink: true,
+          zusammenfassung: true,
+          protokoll: true,
+          transkriptDateiname: true,
+          protokollGesendetAm: true,
         },
         orderBy: { datum: "asc" },
       },
@@ -143,6 +149,14 @@ export default async function KlasseDetailPage({
               thema: t.thema,
               notizen: t.notizen,
               status: t.status,
+              videoUrl: t.videoUrl,
+              teamsLink: t.teamsLink,
+              zusammenfassung: t.zusammenfassung,
+              protokoll: t.protokoll,
+              transkriptDateiname: t.transkriptDateiname,
+              protokollGesendetAm: t.protokollGesendetAm
+                ? t.protokollGesendetAm.toISOString()
+                : null,
             }))}
           />
         </section>
