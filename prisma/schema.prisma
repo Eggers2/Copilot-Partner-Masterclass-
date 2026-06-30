@@ -98,6 +98,10 @@ model Klasse {
   // in welches Teams-Team die Gäste dieser Klasse aufgenommen werden. NULL = kein
   // Team hinterlegt → die Aufnahme wird übersprungen (siehe lib/teams/dispatchTeamsGuest.ts).
   teamsGroupId      String?      @map("teams_group_id")
+  // Regel zur automatischen Terminerzeugung (n-ter Wochentag im Monat).
+  // Array von Mustern: [{ week: 1-4 | -1 (=letzter), weekday: 1-7 (ISO, 1=Mo),
+  // time: "HH:mm" }]. Siehe lib/termine/regel.ts.
+  terminRegel       Json?        @map("termin_regel")
   webinars          Webinar[]
   bestellungen      Bestellung[]
   leads             Lead[]

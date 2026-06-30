@@ -10,6 +10,7 @@ import { isGraphConfigured } from "@/lib/teams/graph";
 import { TeamsTestInvite } from "@/components/admin/TeamsTestInvite";
 import { KlasseTermine } from "@/components/admin/KlasseTermine";
 import { TeilnehmerExportButton } from "@/components/admin/TeilnehmerExportButton";
+import { parseTerminRegel } from "@/lib/termine/regel";
 
 export default async function KlasseDetailPage({
   params,
@@ -62,6 +63,7 @@ export default async function KlasseDetailPage({
 
   if (!klasse) notFound();
 
+  const terminRegel = parseTerminRegel(klasse.terminRegel);
   const conf = KLASSE_STATUS_CONFIG[klasse.status];
   const isOpen = klasse.status === "OPEN";
   const isClosed = klasse.status === "CLOSED";
@@ -128,6 +130,7 @@ export default async function KlasseDetailPage({
               teilnehmerSperre: klasse.teilnehmerSperre,
               teamsGroupId: klasse.teamsGroupId,
               description: klasse.description,
+              terminRegel,
             }}
           />
         </section>
@@ -143,6 +146,7 @@ export default async function KlasseDetailPage({
           </p>
           <KlasseTermine
             klasseId={klasse.id}
+            hasRegel={terminRegel.length > 0}
             termine={klasse.termine.map((t) => ({
               id: t.id,
               datum: t.datum.toISOString(),

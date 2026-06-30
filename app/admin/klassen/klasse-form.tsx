@@ -1,11 +1,29 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save } from "lucide-react";
+import { Save, Plus, Trash2 } from "lucide-react";
 import type { KlasseStatus } from "@prisma/client";
 import { createKlasseAction, updateKlasseAction } from "@/app/admin/actions";
 import { KLASSE_STATUS_CONFIG } from "@/lib/constants/lead-config";
+import type { TerminRegelMuster } from "@/lib/termine/regel";
+
+const ORDINAL_OPTIONS: { value: number; label: string }[] = [
+  { value: 1, label: "1." },
+  { value: 2, label: "2." },
+  { value: 3, label: "3." },
+  { value: 4, label: "4." },
+  { value: -1, label: "letzter" },
+];
+const WEEKDAY_OPTIONS: { value: number; label: string }[] = [
+  { value: 1, label: "Montag" },
+  { value: 2, label: "Dienstag" },
+  { value: 3, label: "Mittwoch" },
+  { value: 4, label: "Donnerstag" },
+  { value: 5, label: "Freitag" },
+  { value: 6, label: "Samstag" },
+  { value: 7, label: "Sonntag" },
+];
 
 const inputClass =
   "w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none";
@@ -23,6 +41,79 @@ interface KlasseValues {
   teilnehmerSperre: boolean;
   teamsGroupId: string | null;
   description: string | null;
+  terminRegel: TerminRegelMuster[];
+}
+
+/** Editor für die Termin-Regel (n-ter Wochentag im Monat). Serialisiert nach JSON. */
+function TerminRegelEditor({ initial }: { initial: TerminRegelMuster[] }) {
+  const [rows, setRows] = useState<TerminRegelMuster[]>(initial);
+
+  const update = (i: number, patch: Partial<TerminRegelMuster>) =>
+    setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
+  const remove = (i: number) => setRows((rs) => rs.filter((_, idx) => idx !== i));
+  const add = () =>
+    setRows((rs) => [...rs, { week: 1, weekday: 1, time: "16:00" }]);
+
+  return (
+    <div>
+      <label className={labelClass}>Termin-Regel (automatische Terminerzeugung)</label>
+      <input type="hidden" name="terminRegelJson" value={JSON.stringify(rows)} />
+      <div className="space-y-2">
+        {rows.map((r, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <select
+              value={r.week}
+              onChange={(e) => update(i, { week: parseInt(e.target.value, 10) })}
+              className={inputClass}
+            >
+              {ORDINAL_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={r.weekday}
+              onChange={(e) => update(i, { weekday: parseInt(e.target.value, 10) })}
+              className={inputClass}
+            >
+              {WEEKDAY_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            <input
+              type="time"
+              value={r.time}
+              onChange={(e) => update(i, { time: e.target.value })}
+              className={inputClass}
+            />
+            <button
+              type="button"
+              onClick={() => remove(i)}
+              title="Muster entfernen"
+              className="p-2 text-dark-slate-400 hover:text-red-600 rounded shrink-0"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={add}
+        className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-[#030386] hover:underline"
+      >
+        <Plus className="w-4 h-4" />
+        Muster hinzufügen
+      </button>
+      <p className="text-xs text-dark-slate-500 mt-1">
+        Je Muster: n-ter Wochentag im Monat + Uhrzeit (z.B. „1. Montag 16:00“). Der Button
+        „Nächste 2 Termine anlegen“ auf der Klassenseite erzeugt daraus automatisch Termine.
+      </p>
+    </div>
+  );
 }
 
 function toInputDate(iso: string): string {
@@ -167,6 +258,8 @@ export function KlasseForm({
           <code>groupId</code>.)
         </p>
       </div>
+
+      <TerminRegelEditor initial={initial?.terminRegel ?? []} />
 
       <div>
         <label className={labelClass}>Beschreibung</label>
