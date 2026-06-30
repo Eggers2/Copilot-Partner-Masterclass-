@@ -54,6 +54,12 @@ import {
   updateRegistrationStatus,
   bulkUpdateRegistrationStatus,
 } from "@/lib/db/webinars";
+import {
+  createTermin,
+  updateTermin,
+  deleteTermin,
+} from "@/lib/db/termine";
+import { getKlasseTeilnehmerEmails } from "@/lib/klassen";
 import type {
   LeadStatus,
   LeadSource,
@@ -62,6 +68,7 @@ import type {
   RegistrationStatus,
   AdnChannel,
   KlasseStatus,
+  TerminStatus,
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { isAdnChannelKey } from "@/lib/packages";
@@ -1305,4 +1312,110 @@ export async function sendTeamsTestInviteAction(
     };
   }
   return { ok: true };
+}
+
+// ─── KLASSEN-TERMINE & THEMEN ───────────────────────
+
+/** Lädt den Slug einer Klasse für gezieltes revalidatePath. */
+async function getKlasseSlug(klasseId: string): Promise<string | null> {
+  const klasse = await prisma.klasse.findUnique({
+    where: { id: klasseId },
+    select: { slug: true },
+  });
+  return klasse?.slug ?? null;
+}
+
+function isTerminStatus(value: unknown): value is TerminStatus {
+  return value === "GEPLANT" || value === "DURCHGEFUEHRT";
+}
+
+export async function createTerminAction(
+  _prev: unknown,
+  formData: FormData
+): Promise<{ success?: boolean; error?: string }> {
+  await requireAuth();
+
+  const klasseId = formData.get("klasseId") as string;
+  const datumRaw = formData.get("datum") as string;
+  if (!klasseId || !datumRaw) {
+    return { error: "Klasse und Datum sind erforderlich." };
+  }
+
+  const slug = await getKlasseSlug(klasseId);
+  if (!slug) return { error: "Klasse nicht gefunden." };
+
+  const statusRaw = formData.get("status");
+  await createTermin({
+    klasseId,
+    datum: parseBerlinDate(datumRaw),
+    thema: ((formData.get("thema") as string) || "").trim() || null,
+    notizen: ((formData.get("notizen") as string) || "").trim() || null,
+    status: isTerminStatus(statusRaw) ? statusRaw : "GEPLANT",
+  });
+
+  revalidatePath(`/admin/klassen/${slug}`);
+  return { success: true };
+}
+
+export async function updateTerminAction(
+  _prev: unknown,
+  formData: FormData
+): Promise<{ success?: boolean; error?: string }> {
+  await requireAuth();
+
+  const id = formData.get("id") as string;
+  const klasseId = formData.get("klasseId") as string;
+  const datumRaw = formData.get("datum") as string;
+  if (!id || !klasseId || !datumRaw) {
+    return { error: "Datum ist erforderlich." };
+  }
+
+  const slug = await getKlasseSlug(klasseId);
+  if (!slug) return { error: "Klasse nicht gefunden." };
+
+  const statusRaw = formData.get("status");
+  await updateTermin(id, {
+    datum: parseBerlinDate(datumRaw),
+    thema: ((formData.get("thema") as string) || "").trim() || null,
+    notizen: ((formData.get("notizen") as string) || "").trim() || null,
+    ...(isTerminStatus(statusRaw) ? { status: statusRaw } : {}),
+  });
+
+  revalidatePath(`/admin/klassen/${slug}`);
+  return { success: true };
+}
+
+export async function setTerminStatusAction(
+  id: string,
+  klasseId: string,
+  status: TerminStatus
+): Promise<void> {
+  await requireAuth();
+  await updateTermin(id, { status });
+  const slug = await getKlasseSlug(klasseId);
+  if (slug) revalidatePath(`/admin/klassen/${slug}`);
+}
+
+export async function deleteTerminAction(
+  id: string,
+  klasseId: string
+): Promise<void> {
+  await requireAuth();
+  await deleteTermin(id);
+  const slug = await getKlasseSlug(klasseId);
+  if (slug) revalidatePath(`/admin/klassen/${slug}`);
+}
+
+/**
+ * Sammelt alle Teilnehmer-E-Mails einer Klasse zum Klickzeitpunkt und gibt sie
+ * semikolongetrennt zurück – zum Einfügen in einen neuen Kalender-/Teams-Termin.
+ */
+export async function getKlasseTeilnehmerEmailsAction(
+  klasseId: string
+): Promise<{ emails: string; count: number; error?: string }> {
+  await requireAuth();
+  if (!klasseId) return { emails: "", count: 0, error: "Klasse fehlt." };
+
+  const list = await getKlasseTeilnehmerEmails(klasseId);
+  return { emails: list.join("; "), count: list.length };
 }

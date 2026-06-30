@@ -8,6 +8,8 @@ import { KlasseForm } from "../klasse-form";
 import { KLASSE_STATUS_CONFIG } from "@/lib/constants/lead-config";
 import { isGraphConfigured } from "@/lib/teams/graph";
 import { TeamsTestInvite } from "@/components/admin/TeamsTestInvite";
+import { KlasseTermine } from "@/components/admin/KlasseTermine";
+import { TeilnehmerExportButton } from "@/components/admin/TeilnehmerExportButton";
 
 export default async function KlasseDetailPage({
   params,
@@ -38,6 +40,16 @@ export default async function KlasseDetailPage({
       webinars: {
         select: { id: true, title: true, scheduledAt: true, status: true },
         orderBy: { scheduledAt: "asc" },
+      },
+      termine: {
+        select: {
+          id: true,
+          datum: true,
+          thema: true,
+          notizen: true,
+          status: true,
+        },
+        orderBy: { datum: "asc" },
       },
     },
   });
@@ -112,6 +124,38 @@ export default async function KlasseDetailPage({
               description: klasse.description,
             }}
           />
+        </section>
+
+        <section className="bg-white rounded-2xl border border-dark-slate-100 p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-dark-slate-900 mb-1">
+            Termine & Themen ({klasse.termine.length})
+          </h2>
+          <p className="text-sm text-dark-slate-500 mb-4">
+            Lege fest, welches Thema an welchem Termin behandelt wird. Termine sind nach
+            Datum sortiert – erledigte als „durchgeführt“ markieren, um den Überblick zu
+            behalten.
+          </p>
+          <KlasseTermine
+            klasseId={klasse.id}
+            termine={klasse.termine.map((t) => ({
+              id: t.id,
+              datum: t.datum.toISOString(),
+              thema: t.thema,
+              notizen: t.notizen,
+              status: t.status,
+            }))}
+          />
+        </section>
+
+        <section className="bg-white rounded-2xl border border-dark-slate-100 p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-dark-slate-900 mb-1">
+            Teilnehmer-E-Mails exportieren
+          </h2>
+          <p className="text-sm text-dark-slate-500 mb-4">
+            Gibt alle Teilnehmer-Adressen dieser Klasse semikolongetrennt aus – zum
+            Einfügen in einen neuen Kalender- oder Teams-Termin.
+          </p>
+          <TeilnehmerExportButton klasseId={klasse.id} />
         </section>
 
         <section className="bg-white rounded-2xl border border-dark-slate-100 p-6 shadow-sm">
