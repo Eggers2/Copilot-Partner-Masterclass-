@@ -277,8 +277,13 @@ export async function createInvoice(
   const isV2 = version.startsWith("2");
 
   const invoiceDate = new Date().toISOString().slice(0, 10);
+  // Auch unter Rechnungswesen 2.0 (taxRule) verlangt sevDesk ein befülltes
+  // taxRate am Invoice-Objekt (DB-Spalte tax_rate ist NOT NULL).
   const taxFields = isV2
-    ? { taxRule: { id: TAX_RULE_IDS[input.taxCase], objectName: "TaxRule" } }
+    ? {
+        taxRule: { id: TAX_RULE_IDS[input.taxCase], objectName: "TaxRule" },
+        taxRate: input.taxRate,
+      }
     : { taxType: input.taxCase, taxRate: input.taxRate };
 
   const res = await sevdeskFetch<{
