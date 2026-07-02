@@ -2,7 +2,9 @@ import { prisma } from "@/lib/prisma";
 import {
   createInvoice,
   ensureContact,
+  getInvoice,
   getSevdeskMode,
+  renderInvoice,
   sendInvoiceByEmail,
 } from "@/lib/sevdesk";
 
@@ -131,7 +133,18 @@ export async function createAndSendConnectDayInvoice(
       });
     }
 
-    // 3. Rechnung per E-Mail versenden (sevDesk rendert das PDF)
+    // 3. PDF rendern (best-effort: sendViaEmail rendert notfalls selbst)
+    step = "Rechnung rendern";
+    try {
+      await renderInvoice(invoiceId);
+    } catch (renderErr) {
+      console.error(
+        `[ConnectDay] PDF-Render für Rechnung ${invoiceId} fehlgeschlagen (Versand wird trotzdem versucht):`,
+        renderErr
+      );
+    }
+
+    // 4. Rechnung per E-Mail versenden – hebt den Entwurf auf "Offen" an
     step = "Rechnung versenden";
     await sendInvoiceByEmail({
       invoiceId,
@@ -144,12 +157,25 @@ export async function createAndSendConnectDayInvoice(
         `Viele Grüße\nNext Skills`,
     });
 
+    // 5. Endgültige Rechnungsnummer übernehmen (Entwürfe haben teils noch
+    //    keine Nummer; sie wird beim Versand aus dem Nummernkreis vergeben).
+    let finalInvoiceNr: string | null = null;
+    try {
+      finalInvoiceNr = (await getInvoice(invoiceId)).invoiceNumber;
+    } catch (nrErr) {
+      console.error(
+        `[ConnectDay] Rechnungsnummer für ${invoiceId} konnte nicht nachgeladen werden:`,
+        nrErr
+      );
+    }
+
     await prisma.eventRegistration.update({
       where: { id: registrationId },
       data: {
         invoiceStatus: "SENT",
         invoiceSentAt: new Date(),
         invoiceError: null,
+        ...(finalInvoiceNr ? { sevdeskInvoiceNr: finalInvoiceNr } : {}),
       },
     });
   } catch (err) {

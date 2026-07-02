@@ -220,10 +220,7 @@ export function ConnectDayTable({
                         </p>
                       )}
                       {r.invoiceError && (
-                        <p
-                          className="text-xs text-red-500 mt-0.5 max-w-[220px] truncate"
-                          title={r.invoiceError}
-                        >
+                        <p className="text-xs text-red-500 mt-0.5 max-w-xs whitespace-pre-wrap break-words">
                           {r.invoiceError}
                         </p>
                       )}
