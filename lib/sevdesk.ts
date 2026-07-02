@@ -256,8 +256,10 @@ const TAX_RULE_IDS: Record<CreateInvoiceInput["taxCase"], number> = {
 };
 
 /**
- * Erstellt eine Rechnung (Status 200 = offen, sevDesk vergibt die
- * Rechnungsnummer aus dem Nummernkreis). Unterstützt beide
+ * Erstellt eine Rechnung als ENTWURF (Status 100) – sevDesk erlaubt über
+ * Factory/saveInvoice nur noch Status 100; der Status wird beim Versand über
+ * sendViaEmail automatisch auf "Offen" angehoben und die endgültige
+ * Rechnungsnummer aus dem Nummernkreis vergeben. Unterstützt beide
  * Rechnungswesen-Versionen (taxType/taxRate vs. taxRule).
  */
 export async function createInvoice(
@@ -287,7 +289,7 @@ export async function createInvoice(
       invoice: {
         objectName: "Invoice",
         invoiceType: "RE",
-        status: 200,
+        status: 100,
         invoiceDate,
         header: input.header,
         headText: input.headText ?? null,
@@ -324,7 +326,43 @@ export async function createInvoice(
 }
 
 /**
+ * Rendert das Rechnungs-PDF in sevDesk (nötig, bevor ein Entwurf per E-Mail
+ * versendet werden kann).
+ */
+export async function renderInvoice(invoiceId: string): Promise<void> {
+  if (getSevdeskMode() === "mock") {
+    console.log("[sevDesk:mock] renderInvoice", { invoiceId });
+    return;
+  }
+  await sevdeskFetch(`Invoice/${invoiceId}/render`, {
+    method: "POST",
+    body: { forceReload: true },
+  });
+}
+
+/**
+ * Lädt eine Rechnung nach (z.B. um die nach dem Versand endgültig vergebene
+ * Rechnungsnummer zu übernehmen).
+ */
+export async function getInvoice(
+  invoiceId: string
+): Promise<{ invoiceNumber: string | null; status: string | null }> {
+  if (getSevdeskMode() === "mock") {
+    return { invoiceNumber: "MOCK-0001", status: "200" };
+  }
+  const res = await sevdeskFetch<{
+    objects?: { invoiceNumber?: string | null; status?: string | null }[];
+  }>(`Invoice/${invoiceId}`);
+  const invoice = res.objects?.[0];
+  return {
+    invoiceNumber: invoice?.invoiceNumber ?? null,
+    status: invoice?.status ?? null,
+  };
+}
+
+/**
  * Versendet die Rechnung als PDF-Anhang per E-Mail direkt aus sevDesk.
+ * Hebt den Rechnungsstatus dabei automatisch von Entwurf auf "Offen" an.
  */
 export async function sendInvoiceByEmail(params: {
   invoiceId: string;
