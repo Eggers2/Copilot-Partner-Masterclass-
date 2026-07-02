@@ -15,6 +15,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { CONNECT_DAY_SLUG } from "@/lib/events/connectDay";
 import { ConnectDayCountdown } from "@/components/ConnectDayCountdown";
+import { ImgFallback } from "@/components/ImgFallback";
 
 // Öffentliche Event-Landingpage mit Live-Zähler – nie statisch cachen.
 export const dynamic = "force-dynamic";
@@ -26,11 +27,18 @@ export const metadata: Metadata = {
 };
 
 const SPEAKERS = [
-  { name: "Tanja Wiehoff", thema: "Copilot Studio / Agenten" },
-  { name: "Raphael Köllner", thema: "Compliance / Datenschutz" },
-  { name: "Michael Greth", thema: "Copilot / SharePoint" },
-  { name: "Alex Eggers", thema: "Copilot / Adoption" },
+  { name: "Tanja Wiehoff", thema: "Copilot Studio / Agenten", bild: "/trainer-tanja-wiehoff.png" },
+  { name: "Raphael Köllner", thema: "Compliance / Datenschutz", bild: "/trainer-raphael-koellner.png" },
+  { name: "Michael Greth", thema: "Copilot / SharePoint", bild: "/trainer-michael-greth.png" },
+  { name: "Alex Eggers", thema: "Copilot / Adoption", bild: "/trainer-alexander-eggers.png" },
 ];
+
+function initialen(name: string): string {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("");
+}
 
 const LEISTUNGEN = [
   { icon: BedDouble, text: "Hotelübernachtung im nhow Hotel Frankfurt" },
@@ -49,11 +57,15 @@ const FAQ = [
   },
   {
     q: "Wie melde ich mich an?",
-    a: "Die Anmeldung läuft über das Kundenportal (Login mit deiner E-Mail-Adresse). First Come, First Serve – es gibt genau 100 Plätze, der Live-Zähler zeigt jederzeit den Stand.",
+    a: "Die Anmeldung läuft über das Kundenportal. Einloggen kann sich die Person, die die Masterclass für euer Unternehmen gebucht hat – euer Masterclass-Koordinator. Er wählt die Teilnehmer aus und meldet sie an. First Come, First Serve: Es gibt genau 100 Plätze, der Live-Zähler zeigt jederzeit den Stand.",
   },
   {
     q: "Was kostet die Teilnahme?",
-    a: "Der Eigenanteil beträgt 199 € netto pro Person – Hotelübernachtung, Verpflegung, Abendessen und Skybar sind bereits enthalten. Die Rechnung kommt automatisch per E-Mail; der Platz ist nach Zahlungseingang verbindlich bestätigt.",
+    a: "Der Eigenanteil beträgt 199 € netto pro Person – Hotelübernachtung, Verpflegung, Abendessen und Skybar sind bereits enthalten. Die An- und Abreise nach Frankfurt organisiert und trägt jeder Teilnehmer selbst. Die Rechnung kommt automatisch per E-Mail; der Platz ist nach Zahlungseingang verbindlich bestätigt.",
+  },
+  {
+    q: "Gibt es schon eine Agenda?",
+    a: "Das genaue Programm steht noch nicht final. Sobald die Agenda feststeht, veröffentlichen wir sie hier auf dieser Seite – schaut also gerne wieder vorbei.",
   },
   {
     q: "Kann ich stornieren oder jemanden anderen schicken?",
@@ -190,9 +202,11 @@ export default async function ConnectDayLandingPage() {
                 <span className="text-[#00C896]">7. Juli 2026, 0:00 Uhr</span>
               </p>
               <ConnectDayCountdown targetIso={event.anmeldestart.toISOString()} />
-              <p className="text-white/50 text-sm">
-                Die Anmeldung läuft über das Kundenportal – Login einfach mit
-                deiner E-Mail-Adresse.
+              <p className="text-white/50 text-sm max-w-md mx-auto">
+                Die Anmeldung läuft über das Kundenportal. Einloggen kann sich,
+                wer die Masterclass für euer Unternehmen gebucht hat – also euer
+                Masterclass-Koordinator. Er stimmt die Teilnehmer ab und meldet
+                sie an.
               </p>
             </div>
           ) : anmeldungOffen ? (
@@ -229,24 +243,53 @@ export default async function ConnectDayLandingPage() {
                 key={s.name}
                 className="rounded-2xl border border-white/10 bg-white/5 p-5 text-center"
               >
-                <div
-                  className="w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center text-[#1A1A2E] font-bold text-lg"
-                  style={{ background: "#00C896" }}
-                >
-                  {s.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
-                </div>
+                <ImgFallback
+                  src={s.bild}
+                  alt={s.name}
+                  className="w-20 h-20 mx-auto mb-3 rounded-full object-cover"
+                  fallback={
+                    <div
+                      className="w-20 h-20 mx-auto mb-3 rounded-full flex items-center justify-center text-[#1A1A2E] font-bold text-xl"
+                      style={{ background: "#00C896" }}
+                    >
+                      {initialen(s.name)}
+                    </div>
+                  }
+                />
                 <p className="text-white font-semibold">{s.name}</p>
                 <p className="text-white/50 text-sm mt-1">{s.thema}</p>
               </div>
             ))}
           </div>
-          <p className="text-white/40 text-sm text-center mt-8">
-            Mit dabei: die <strong className="text-white/70">ADN</strong> als
-            Distributor und Sponsor des Events.
+        </div>
+      </section>
+
+      {/* ═══ SPONSOR (ADN) ═══ */}
+      <section className="border-t border-white/10 py-16">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
+          <p className="text-white/40 text-xs uppercase tracking-[0.2em] mb-6">
+            Präsentiert mit unserem Distributor &amp; Sponsor
           </p>
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-8 py-10">
+            <ImgFallback
+              src="/adn-logo.png"
+              alt="ADN"
+              className="h-16 md:h-20 mx-auto mb-6 object-contain"
+              fallback={
+                <div
+                  className="text-5xl md:text-6xl font-extrabold mb-6"
+                  style={{ color: "#00C896", letterSpacing: "-0.03em" }}
+                >
+                  ADN
+                </div>
+              }
+            />
+            <p className="text-white/70 text-base md:text-lg max-w-xl mx-auto leading-relaxed">
+              Die <strong className="text-white">ADN</strong> ist als Distributor
+              vor Ort und Sponsor des Copilot Connect Day 2026 – und bringt ihre
+              Expertise direkt an eure Tische.
+            </p>
+          </div>
         </div>
       </section>
 
