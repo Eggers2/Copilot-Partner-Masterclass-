@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { Package, ChevronRight, Users } from "lucide-react";
+import { Package, ChevronRight, Users, CalendarDays, CheckCircle2 } from "lucide-react";
 import { requireCustomerSession } from "@/lib/auth/customer";
 import { prisma } from "@/lib/prisma";
 import { PACKAGES } from "@/lib/packages";
+import { getConnectDayContext } from "@/lib/events/connectDay";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   neu: { label: "Neu", color: "bg-blue-50 text-blue-700 border-blue-200" },
@@ -27,6 +28,12 @@ function formatDate(d: Date): string {
 export default async function KundeBestellungenPage() {
   const session = await requireCustomerSession();
 
+  const connectDay = await getConnectDayContext(session.email);
+  const zeigeConnectDayTeaser =
+    connectDay !== null &&
+    connectDay.isOpen &&
+    connectDay.eligibleBestellungen.length > 0;
+
   const bestellungen = await prisma.bestellung.findMany({
     where: { email: session.email },
     orderBy: { erstelltAm: "desc" },
@@ -43,6 +50,51 @@ export default async function KundeBestellungenPage() {
 
   return (
     <div>
+      {zeigeConnectDayTeaser && connectDay && (
+        <Link
+          href="/kundenportal/connect-day"
+          className="block mb-8 bg-slate rounded-2xl p-6 hover:ring-2 hover:ring-green/50 transition-all"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-green text-xs font-semibold uppercase tracking-wider mb-1">
+                Exklusiv für Klasse 1 &amp; 2
+              </p>
+              <h2 className="text-xl font-bold text-white font-heading mb-1">
+                Copilot Connect Day 2026
+              </h2>
+              <p className="text-white/70 text-sm flex items-center gap-2">
+                <CalendarDays className="w-4 h-4 text-green" />
+                10. &amp; 11. Dezember 2026 · nhow Hotel Frankfurt
+              </p>
+              {connectDay.registration ? (
+                <p className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-green">
+                  <CheckCircle2 className="w-4 h-4" />
+                  Ihr seid mit {connectDay.registration.personen}{" "}
+                  {connectDay.registration.personen === 1 ? "Person" : "Personen"}{" "}
+                  angemeldet
+                </p>
+              ) : connectDay.isFull ? (
+                <p className="mt-3 text-sm font-medium text-red-400">Ausgebucht</p>
+              ) : connectDay.deadlinePassed ? (
+                <p className="mt-3 text-sm font-medium text-white/60">
+                  Anmeldeschluss vorbei
+                </p>
+              ) : (
+                <p className="mt-3 text-sm font-medium text-white">
+                  <span className="text-green font-bold">
+                    Nur noch {connectDay.seatsFrei}{" "}
+                    {connectDay.seatsFrei === 1 ? "Platz" : "Plätze"} frei
+                  </span>{" "}
+                  · jetzt anmelden
+                </p>
+              )}
+            </div>
+            <ChevronRight className="w-5 h-5 text-white/40 flex-shrink-0 mt-1" />
+          </div>
+        </Link>
+      )}
+
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate font-heading">
           Meine Bestellungen

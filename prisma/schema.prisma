@@ -83,6 +83,24 @@ enum TerminStatus {
   DURCHGEFUEHRT
 }
 
+enum EventStatus {
+  DRAFT
+  OPEN
+  CLOSED
+}
+
+enum EventRegistrationStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+enum EventInvoiceStatus {
+  PENDING
+  CREATED
+  SENT
+  FAILED
+}
+
 model Klasse {
   id                String       @id @default(cuid())
   name              String
@@ -262,9 +280,13 @@ model Bestellung {
   adnChannel           AdnChannel @default(NONE) @map("adn_channel")
   klasseId             String   @map("klasse_id")
   klasse               Klasse   @relation(fields: [klasseId], references: [id])
+  // sevDesk-Kontakt-Cache: gesetzt, sobald für diese Bestellung einmal ein
+  // Kontakt in sevDesk gefunden/angelegt wurde (siehe lib/sevdesk.ts).
+  sevdeskContactId     String?  @map("sevdesk_contact_id")
   erstelltAm           DateTime @default(now()) @map("erstellt_am")
   aktualisiertAm       DateTime @updatedAt @map("aktualisiert_am")
   teilnehmer           BestellungTeilnehmer[]
+  eventRegistrations   EventRegistration[]
 
   @@map("bestellungen")
 }
@@ -280,10 +302,101 @@ model BestellungTeilnehmer {
   teamsEingeladenAm DateTime? @map("teams_eingeladen_am")
   erstelltAm   DateTime   @default(now()) @map("erstellt_am")
   aktualisiertAm DateTime @updatedAt @map("aktualisiert_am")
+  eventTeilnahmen EventTeilnehmer[]
 
   @@unique([bestellungId, position])
   @@index([bestellungId])
   @@map("bestellung_teilnehmer")
+}
+
+// ─── Events (z.B. Connect Day) ───────────────────────────────────────────────
+// Präsenz-Events mit hartem Personenlimit, auf die sich Bestandskunden im
+// Kundenportal anmelden. `seatsTaken` ist der atomare Belegungszähler: Plätze
+// werden per konditionalem UPDATE reserviert (kein Count-then-Insert, siehe
+// lib/events/connectDay.ts) – so ist Überbuchung auch bei parallelen
+// Anmeldungen ausgeschlossen.
+model Event {
+  id                   String      @id @default(cuid())
+  slug                 String      @unique
+  name                 String
+  ort                  String?
+  startAt              DateTime    @map("start_at")
+  endAt                DateTime    @map("end_at")
+  anmeldeschluss       DateTime
+  capacity             Int         @default(100)
+  seatsTaken           Int         @default(0) @map("seats_taken")
+  maxProBestellung     Int         @default(3) @map("max_pro_bestellung")
+  preisNettoProPerson  Decimal     @db.Decimal(10, 2) @map("preis_netto_pro_person")
+  status               EventStatus @default(DRAFT)
+  // Nur Bestellungen dieser Klassen dürfen sich anmelden (z.B. ["klasse-1","klasse-2"]).
+  erlaubteKlassenSlugs String[]    @map("erlaubte_klassen_slugs")
+  beschreibung         String?
+  erstelltAm           DateTime    @default(now()) @map("erstellt_am")
+  aktualisiertAm       DateTime    @updatedAt @map("aktualisiert_am")
+  registrations        EventRegistration[]
+
+  @@map("events")
+}
+
+model EventRegistration {
+  id             String                  @id @default(cuid())
+  eventId        String                  @map("event_id")
+  event          Event                   @relation(fields: [eventId], references: [id])
+  bestellungId   Int                     @map("bestellung_id")
+  bestellung     Bestellung              @relation(fields: [bestellungId], references: [id])
+  status         EventRegistrationStatus @default(CONFIRMED)
+  personen       Int
+  // Preis-Snapshot zum Anmeldezeitpunkt (Preisänderungen am Event wirken
+  // nicht rückwirkend auf bereits erstellte Rechnungen).
+  preisNetto     Decimal                 @db.Decimal(10, 2) @map("preis_netto")
+  mwstSatz       Decimal                 @db.Decimal(4, 2) @map("mwst_satz")
+  mwstBetrag     Decimal                 @db.Decimal(10, 2) @map("mwst_betrag")
+  preisBrutto    Decimal                 @db.Decimal(10, 2) @map("preis_brutto")
+  reverseCharge  Boolean                 @default(false) @map("reverse_charge")
+  // sevDesk-Rechnung (automatisch nach der Anmeldung; Retry im Admin)
+  invoiceStatus    EventInvoiceStatus @default(PENDING) @map("invoice_status")
+  sevdeskContactId String?            @map("sevdesk_contact_id")
+  sevdeskInvoiceId String?            @map("sevdesk_invoice_id")
+  sevdeskInvoiceNr String?            @map("sevdesk_invoice_nr")
+  invoiceError     String?            @map("invoice_error")
+  invoiceSentAt    DateTime?          @map("invoice_sent_at")
+  angemeldetVon  String                  @map("angemeldet_von")
+  stornoAm       DateTime?               @map("storno_am")
+  stornoNotiz    String?                 @map("storno_notiz")
+  erstelltAm     DateTime                @default(now()) @map("erstellt_am")
+  aktualisiertAm DateTime                @updatedAt @map("aktualisiert_am")
+  teilnehmer     EventTeilnehmer[]
+
+  // Doppelanmeldung wird über einen partiellen Unique-Index
+  // (event_id, bestellung_id) WHERE status = 'CONFIRMED' verhindert –
+  // per Hand in der Migration angelegt, da Prisma keine Partial-Indexes kennt.
+  // Stornierte Anmeldungen bleiben so als Audit-Zeilen stehen.
+  @@index([eventId])
+  @@index([bestellungId])
+  @@map("event_registrations")
+}
+
+// Einzelne Plätze einer Event-Anmeldung. Es sind nur Personen wählbar, die
+// bereits Masterclass-Teilnehmer der Bestellung sind (FK auf
+// BestellungTeilnehmer); Name/E-Mail werden zusätzlich als Snapshot zum
+// Anmeldezeitpunkt gespeichert.
+model EventTeilnehmer {
+  id                     String               @id @default(cuid())
+  registrationId         String               @map("registration_id")
+  registration           EventRegistration    @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  position               Int
+  bestellungTeilnehmerId Int                  @map("bestellung_teilnehmer_id")
+  bestellungTeilnehmer   BestellungTeilnehmer @relation(fields: [bestellungTeilnehmerId], references: [id])
+  vorname                String
+  nachname               String
+  email                  String
+  hinweise               String?
+  erstelltAm             DateTime             @default(now()) @map("erstellt_am")
+  aktualisiertAm         DateTime             @updatedAt @map("aktualisiert_am")
+
+  @@unique([registrationId, position])
+  @@unique([registrationId, bestellungTeilnehmerId])
+  @@map("event_teilnehmer")
 }
 
 model Newsletter {

@@ -1,0 +1,353 @@
+/**
+ * Dünner Client für die sevDesk-REST-API (Faktura).
+ *
+ * Modi über SEVDESK_MODE:
+ *   - "live": echte API-Calls (braucht SEVDESK_API_KEY)
+ *   - "mock": kein API-Call, Payloads werden geloggt, Fake-IDs zurückgegeben
+ *             (für lokale Tests ohne sevDesk-Account)
+ *   - "off":  Integration deaktiviert – Aufrufer bekommen einen Fehler und
+ *             lassen die Rechnung auf FAILED stehen (Admin-Retry möglich)
+ * Ohne SEVDESK_MODE gilt: API-Key vorhanden → live, sonst off.
+ *
+ * Alle Funktionen werfen SevdeskError; der Orchestrator in
+ * lib/events/connectDayInvoice.ts fängt das ab und schreibt den Status fort.
+ */
+
+export type SevdeskMode = "live" | "mock" | "off";
+
+export class SevdeskError extends Error {
+  constructor(message: string, public status?: number) {
+    super(message);
+    this.name = "SevdeskError";
+  }
+}
+
+function getApiUrl(): string {
+  return (
+    process.env.SEVDESK_API_URL?.replace(/\/$/, "") ??
+    "https://my.sevdesk.de/api/v1"
+  );
+}
+
+export function getSevdeskMode(): SevdeskMode {
+  const raw = process.env.SEVDESK_MODE?.trim().toLowerCase();
+  if (raw === "live" || raw === "mock" || raw === "off") return raw;
+  return process.env.SEVDESK_API_KEY ? "live" : "off";
+}
+
+let mockSequence = 0;
+function nextMockId(prefix: string): string {
+  mockSequence += 1;
+  return `${prefix}-mock-${mockSequence}`;
+}
+
+interface FetchOptions {
+  method?: "GET" | "POST" | "PUT";
+  query?: Record<string, string>;
+  body?: unknown;
+}
+
+async function sevdeskFetch<T>(path: string, opts: FetchOptions = {}): Promise<T> {
+  const apiKey = process.env.SEVDESK_API_KEY;
+  if (!apiKey) {
+    throw new SevdeskError("SEVDESK_API_KEY ist nicht konfiguriert.");
+  }
+
+  const url = new URL(`${getApiUrl()}/${path.replace(/^\//, "")}`);
+  for (const [key, value] of Object.entries(opts.query ?? {})) {
+    url.searchParams.set(key, value);
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(url.toString(), {
+      method: opts.method ?? "GET",
+      headers: {
+        Authorization: apiKey,
+        Accept: "application/json",
+        ...(opts.body ? { "Content-Type": "application/json" } : {}),
+      },
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+      cache: "no-store",
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new SevdeskError(`sevDesk nicht erreichbar: ${message}`);
+  }
+
+  const text = await res.text();
+  if (!res.ok) {
+    throw new SevdeskError(
+      `sevDesk ${opts.method ?? "GET"} /${path} → HTTP ${res.status}: ${text.slice(0, 500)}`,
+      res.status
+    );
+  }
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new SevdeskError(`sevDesk /${path}: Antwort ist kein JSON.`);
+  }
+}
+
+// ─── Stammdaten-Lookups (gecacht pro Prozess) ────────────────────────────────
+
+let cachedBookkeepingVersion: string | null = null;
+
+/**
+ * "1.0" (Legacy: taxType/taxRate) oder "2.0" (sevdesk-Update: taxRule).
+ */
+export async function getBookkeepingVersion(): Promise<string> {
+  if (cachedBookkeepingVersion) return cachedBookkeepingVersion;
+  const res = await sevdeskFetch<{ objects?: { version?: string } }>(
+    "Tools/bookkeepingSystemVersion"
+  );
+  cachedBookkeepingVersion = res.objects?.version ?? "1.0";
+  return cachedBookkeepingVersion;
+}
+
+let cachedSevUserId: string | null = null;
+
+/** SevUser (Kontaktperson der Rechnung): aus ENV oder erster Benutzer. */
+async function getSevUserId(): Promise<string> {
+  const fromEnv = process.env.SEVDESK_SEV_USER_ID?.trim();
+  if (fromEnv) return fromEnv;
+  if (cachedSevUserId) return cachedSevUserId;
+  const res = await sevdeskFetch<{ objects?: { id: string }[] }>("SevUser", {
+    query: { limit: "1" },
+  });
+  const id = res.objects?.[0]?.id;
+  if (!id) throw new SevdeskError("Kein SevUser gefunden (SEVDESK_SEV_USER_ID setzen).");
+  cachedSevUserId = id;
+  return id;
+}
+
+let cachedCountries: Map<string, string> | null = null;
+
+/** StaticCountry-ID zu ISO-Code ("DE"/"AT"/"CH"). */
+async function getCountryId(landCode: string): Promise<string | null> {
+  if (!cachedCountries) {
+    const res = await sevdeskFetch<{
+      objects?: { id: string; code?: string }[];
+    }>("StaticCountry", { query: { limit: "300" } });
+    cachedCountries = new Map(
+      (res.objects ?? [])
+        .filter((c) => c.code)
+        .map((c) => [c.code!.toLowerCase(), c.id])
+    );
+  }
+  return cachedCountries.get(landCode.toLowerCase()) ?? null;
+}
+
+// ─── Kontakte ────────────────────────────────────────────────────────────────
+
+export interface ContactInput {
+  firma: string;
+  strasse: string;
+  plz: string;
+  ort: string;
+  land: string; // "DE" | "AT" | "CH"
+  ustId: string | null;
+  email: string;
+}
+
+/**
+ * Findet einen Organisations-Kontakt per exaktem Namen oder legt ihn neu an
+ * (inkl. Rechnungsadresse + E-Mail). Gibt die sevDesk-Kontakt-ID zurück.
+ */
+export async function ensureContact(input: ContactInput): Promise<string> {
+  if (getSevdeskMode() === "mock") {
+    console.log("[sevDesk:mock] ensureContact", { firma: input.firma });
+    return nextMockId("contact");
+  }
+
+  // 1. Suche nach exaktem Firmennamen (name-Filter ist ein Substring-Match,
+  //    daher client-seitig exakt nachprüfen).
+  const search = await sevdeskFetch<{
+    objects?: { id: string; name?: string }[];
+  }>("Contact", { query: { depth: "1", limit: "100", name: input.firma } });
+  const match = (search.objects ?? []).find(
+    (c) => (c.name ?? "").trim().toLowerCase() === input.firma.trim().toLowerCase()
+  );
+  if (match) return match.id;
+
+  // 2. Kontakt anlegen (category 3 = Standard "Kunde")
+  const categoryId = process.env.SEVDESK_CONTACT_CATEGORY_ID?.trim() || "3";
+  const created = await sevdeskFetch<{ objects?: { id: string } }>("Contact", {
+    method: "POST",
+    body: {
+      name: input.firma,
+      category: { id: Number(categoryId), objectName: "Category" },
+      ...(input.ustId ? { vatNumber: input.ustId } : {}),
+    },
+  });
+  const contactId = created.objects?.id;
+  if (!contactId) throw new SevdeskError("Kontakt konnte nicht angelegt werden.");
+
+  // 3. Rechnungsadresse (best-effort: fehlendes Land bricht nicht ab)
+  const countryId = await getCountryId(input.land);
+  await sevdeskFetch("ContactAddress", {
+    method: "POST",
+    body: {
+      contact: { id: contactId, objectName: "Contact" },
+      street: input.strasse,
+      zip: input.plz,
+      city: input.ort,
+      ...(countryId
+        ? { country: { id: Number(countryId), objectName: "StaticCountry" } }
+        : {}),
+    },
+  });
+
+  // 4. E-Mail als Kommunikationsweg (key 2 = "Geschäftlich")
+  await sevdeskFetch("CommunicationWay", {
+    method: "POST",
+    body: {
+      contact: { id: contactId, objectName: "Contact" },
+      type: "EMAIL",
+      value: input.email,
+      key: { id: 2, objectName: "CommunicationWayKey" },
+      main: true,
+    },
+  });
+
+  return contactId;
+}
+
+// ─── Rechnungen ──────────────────────────────────────────────────────────────
+
+export interface InvoicePosition {
+  name: string;
+  text?: string;
+  quantity: number;
+  /** Netto-Einzelpreis */
+  price: number;
+  taxRate: number;
+}
+
+export interface CreateInvoiceInput {
+  contactId: string;
+  header: string;
+  headText?: string;
+  footText?: string;
+  positions: InvoicePosition[];
+  taxRate: number;
+  /**
+   * Steuerfall der Rechnung:
+   *   "default"  → umsatzsteuerpflichtig (taxRule 1 bzw. taxType "default")
+   *   "eu"       → Reverse Charge EU (taxRule 21 bzw. taxType "eu")
+   *   "noteu"    → nicht im Inland steuerbar / Drittland (taxRule 17 / "noteu")
+   */
+  taxCase: "default" | "eu" | "noteu";
+  /** Hinweistext, z.B. Reverse-Charge-Klausel */
+  taxText?: string;
+}
+
+export interface CreateInvoiceResult {
+  invoiceId: string;
+  invoiceNumber: string | null;
+}
+
+const TAX_RULE_IDS: Record<CreateInvoiceInput["taxCase"], number> = {
+  // sevdesk-Update 2.0 (taxRule): 1 = Umsatzsteuerpflichtige Umsätze,
+  // 21 = Reverse Charge gem. §18b UStG, 17 = Nicht im Inland steuerbare Leistung
+  default: 1,
+  eu: 21,
+  noteu: 17,
+};
+
+/**
+ * Erstellt eine Rechnung (Status 200 = offen, sevDesk vergibt die
+ * Rechnungsnummer aus dem Nummernkreis). Unterstützt beide
+ * Rechnungswesen-Versionen (taxType/taxRate vs. taxRule).
+ */
+export async function createInvoice(
+  input: CreateInvoiceInput
+): Promise<CreateInvoiceResult> {
+  if (getSevdeskMode() === "mock") {
+    console.log("[sevDesk:mock] createInvoice", JSON.stringify(input, null, 2));
+    return { invoiceId: nextMockId("invoice"), invoiceNumber: "MOCK-0001" };
+  }
+
+  const [version, sevUserId] = await Promise.all([
+    getBookkeepingVersion(),
+    getSevUserId(),
+  ]);
+  const isV2 = version.startsWith("2");
+
+  const invoiceDate = new Date().toISOString().slice(0, 10);
+  const taxFields = isV2
+    ? { taxRule: { id: TAX_RULE_IDS[input.taxCase], objectName: "TaxRule" } }
+    : { taxType: input.taxCase, taxRate: input.taxRate };
+
+  const res = await sevdeskFetch<{
+    objects?: { invoice?: { id: string; invoiceNumber?: string | null } };
+  }>("Invoice/Factory/saveInvoice", {
+    method: "POST",
+    body: {
+      invoice: {
+        objectName: "Invoice",
+        invoiceType: "RE",
+        status: 200,
+        invoiceDate,
+        header: input.header,
+        headText: input.headText ?? null,
+        footText: input.footText ?? null,
+        currency: "EUR",
+        discount: 0,
+        contact: { id: Number(input.contactId), objectName: "Contact" },
+        contactPerson: { id: Number(sevUserId), objectName: "SevUser" },
+        taxText: input.taxText ?? `Umsatzsteuer ${input.taxRate}%`,
+        ...taxFields,
+        mapAll: true,
+      },
+      invoicePosSave: input.positions.map((pos) => ({
+        objectName: "InvoicePos",
+        name: pos.name,
+        text: pos.text ?? null,
+        quantity: pos.quantity,
+        price: pos.price,
+        taxRate: input.taxCase === "default" ? pos.taxRate : 0,
+        unity: { id: 1, objectName: "Unity" }, // 1 = Stück
+        mapAll: true,
+      })),
+      invoicePosDelete: null,
+      discountSave: null,
+      discountDelete: null,
+    },
+  });
+
+  const invoice = res.objects?.invoice;
+  if (!invoice?.id) {
+    throw new SevdeskError("Rechnung wurde nicht angelegt (keine ID in der Antwort).");
+  }
+  return { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber ?? null };
+}
+
+/**
+ * Versendet die Rechnung als PDF-Anhang per E-Mail direkt aus sevDesk.
+ */
+export async function sendInvoiceByEmail(params: {
+  invoiceId: string;
+  toEmail: string;
+  subject: string;
+  text: string;
+}): Promise<void> {
+  if (getSevdeskMode() === "mock") {
+    console.log("[sevDesk:mock] sendInvoiceByEmail", {
+      invoiceId: params.invoiceId,
+      toEmail: params.toEmail,
+      subject: params.subject,
+    });
+    return;
+  }
+
+  await sevdeskFetch(`Invoice/${params.invoiceId}/sendViaEmail`, {
+    method: "POST",
+    body: {
+      toEmail: params.toEmail,
+      subject: params.subject,
+      text: params.text,
+      copy: false,
+    },
+  });
+}
