@@ -322,7 +322,11 @@ model Event {
   ort                  String?
   startAt              DateTime    @map("start_at")
   endAt                DateTime    @map("end_at")
+  // Ab wann die Anmeldung im Kundenportal möglich ist (NULL = sofort).
+  anmeldestart         DateTime?
   anmeldeschluss       DateTime
+  // Admin-Schalter: öffnet die Anmeldung VOR dem Anmeldestart (Testmodus).
+  manuellFreigeschaltet Boolean    @default(false) @map("manuell_freigeschaltet")
   capacity             Int         @default(100)
   seatsTaken           Int         @default(0) @map("seats_taken")
   maxProBestellung     Int         @default(3) @map("max_pro_bestellung")
@@ -360,6 +364,9 @@ model EventRegistration {
   sevdeskInvoiceNr String?            @map("sevdesk_invoice_nr")
   invoiceError     String?            @map("invoice_error")
   invoiceSentAt    DateTime?          @map("invoice_sent_at")
+  // Zahlungseingang – wird manuell im Admin abgehakt; erst dann gilt der
+  // Platz als verbindlich bestätigt.
+  bezahltAm        DateTime?          @map("bezahlt_am")
   angemeldetVon  String                  @map("angemeldet_von")
   stornoAm       DateTime?               @map("storno_am")
   stornoNotiz    String?                 @map("storno_notiz")

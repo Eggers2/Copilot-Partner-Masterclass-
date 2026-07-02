@@ -21,6 +21,7 @@ import {
 const REGISTER_ERRORS: Record<RegisterErrorCode, string> = {
   event_not_found: "Das Event wurde nicht gefunden.",
   event_closed: "Die Anmeldung ist geschlossen.",
+  not_yet_open: "Die Anmeldung öffnet erst am 07.07.2026 um 0 Uhr.",
   deadline_passed: "Der Anmeldeschluss (17.07.2026) ist leider vorbei.",
   not_eligible:
     "Diese Bestellung ist nicht berechtigt – der Connect Day ist für Klasse 1 und 2.",

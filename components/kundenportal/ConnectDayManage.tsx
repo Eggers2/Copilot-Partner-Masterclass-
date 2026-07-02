@@ -41,6 +41,7 @@ export function ConnectDayManage({
     id: string;
     personen: number;
     invoiceStatus: string;
+    bezahlt: boolean;
     firma: string;
     teilnehmer: TeilnehmerRow[];
   };
@@ -115,6 +116,20 @@ export function ConnectDayManage({
           </p>
         </div>
       </div>
+
+      {registration.bezahlt ? (
+        <div className="mb-5 bg-ice border border-green/30 rounded-xl px-4 py-3 text-sm text-slate">
+          <strong>Zahlung eingegangen</strong> – euer Platz ist verbindlich
+          bestätigt. Alle weiteren Informationen (Agenda, Ablauf, Hotel-Check-in)
+          erhaltet ihr rechtzeitig vor dem Termin.
+        </div>
+      ) : (
+        <div className="mb-5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+          <strong>Wichtig:</strong> Der Platz ist erst nach Zahlungseingang
+          verbindlich bestätigt. Bitte begleicht die Rechnung innerhalb der
+          Zahlungsfrist.
+        </div>
+      )}
 
       {!editing ? (
         <>

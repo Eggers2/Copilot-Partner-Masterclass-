@@ -5,11 +5,13 @@ import {
   FileWarning,
   AlertTriangle,
   CalendarDays,
+  Wallet,
 } from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { CONNECT_DAY_SLUG } from "@/lib/events/connectDay";
 import { ConnectDayTable } from "@/components/admin/ConnectDayTable";
+import { ConnectDayFreischaltung } from "@/components/admin/ConnectDayFreischaltung";
 
 export const dynamic = "force-dynamic";
 
@@ -48,8 +50,19 @@ export default async function AdminConnectDayPage() {
   const invoiceProblem = confirmed.filter(
     (r) => r.invoiceStatus === "FAILED" || r.invoiceStatus === "PENDING"
   ).length;
+  const bezahlt = confirmed.filter((r) => r.bezahltAm !== null).length;
+  const zahlungOffen = confirmed.length - bezahlt;
   // Konsistenz: der atomare Zähler muss zur Summe der bestätigten Plätze passen.
   const zaehlerKonsistent = event.seatsTaken === personenGesamt;
+  const startErreicht =
+    !event.anmeldestart || new Date() >= event.anmeldestart;
+  const anmeldestartLabel = event.anmeldestart
+    ? new Intl.DateTimeFormat("de-DE", {
+        dateStyle: "medium",
+        timeStyle: "short",
+        timeZone: "Europe/Berlin",
+      }).format(event.anmeldestart) + " Uhr"
+    : "sofort";
 
   return (
     <div>
@@ -67,8 +80,16 @@ export default async function AdminConnectDayPage() {
         </p>
       </div>
 
+      <div className="mb-6">
+        <ConnectDayFreischaltung
+          manuellFreigeschaltet={event.manuellFreigeschaltet}
+          anmeldestartLabel={anmeldestartLabel}
+          startErreicht={startErreicht}
+        />
+      </div>
+
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <div className="bg-white rounded-2xl border border-dark-slate-100 shadow-sm p-5">
           <div className="flex items-center gap-2 text-dark-slate-500 text-xs font-semibold uppercase tracking-wider mb-2">
             <Users className="w-4 h-4" />
@@ -125,6 +146,24 @@ export default async function AdminConnectDayPage() {
             fehlgeschlagen oder ausstehend
           </p>
         </div>
+        <div className="bg-white rounded-2xl border border-dark-slate-100 shadow-sm p-5">
+          <div className="flex items-center gap-2 text-dark-slate-500 text-xs font-semibold uppercase tracking-wider mb-2">
+            <Wallet className="w-4 h-4" />
+            Zahlungen
+          </div>
+          <p className="text-2xl font-bold text-dark-slate-900">
+            {bezahlt}
+            <span className="text-base font-medium text-dark-slate-400">
+              {" "}
+              / {confirmed.length}
+            </span>
+          </p>
+          <p
+            className={`text-xs mt-1 ${zahlungOffen > 0 ? "text-red-600 font-semibold" : "text-dark-slate-400"}`}
+          >
+            {zahlungOffen > 0 ? `${zahlungOffen} offen!` : "alle bezahlt"}
+          </p>
+        </div>
       </div>
 
       {!zaehlerKonsistent && (
@@ -151,6 +190,7 @@ export default async function AdminConnectDayPage() {
           invoiceStatus: r.invoiceStatus,
           sevdeskInvoiceNr: r.sevdeskInvoiceNr,
           invoiceError: r.invoiceError,
+          bezahltAm: r.bezahltAm?.toISOString() ?? null,
           angemeldetAm: r.erstelltAm.toISOString(),
           stornoAm: r.stornoAm?.toISOString() ?? null,
           teilnehmer: r.teilnehmer.map((t) => ({

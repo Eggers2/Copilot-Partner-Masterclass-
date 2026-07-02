@@ -16,6 +16,7 @@ export const CONNECT_DAY_SLUG = "connect-day-2026";
 export type RegisterErrorCode =
   | "event_not_found"
   | "event_closed"
+  | "not_yet_open"
   | "deadline_passed"
   | "not_eligible"
   | "invalid_teilnehmer"
@@ -113,9 +114,21 @@ export async function getConnectDayContext(sessionEmail: string) {
     registration,
     seatsFrei,
     isFull: seatsFrei <= 0,
+    // Anmeldestart noch nicht erreicht? Der Admin-Schalter
+    // `manuellFreigeschaltet` öffnet die Anmeldung vorab (Testmodus).
+    notYetOpen: !isAnmeldestartErreicht(event),
     deadlinePassed: now > event.anmeldeschluss,
     isOpen: event.status === "OPEN",
   };
+}
+
+function isAnmeldestartErreicht(event: {
+  anmeldestart: Date | null;
+  manuellFreigeschaltet: boolean;
+}): boolean {
+  if (event.manuellFreigeschaltet) return true;
+  if (!event.anmeldestart) return true;
+  return new Date() >= event.anmeldestart;
 }
 
 export interface RegisterInput {
@@ -142,6 +155,7 @@ export async function registerForConnectDay(
   });
   if (!event) throw new RegisterError("event_not_found");
   if (event.status !== "OPEN") throw new RegisterError("event_closed");
+  if (!isAnmeldestartErreicht(event)) throw new RegisterError("not_yet_open");
   if (new Date() > event.anmeldeschluss) {
     throw new RegisterError("deadline_passed");
   }

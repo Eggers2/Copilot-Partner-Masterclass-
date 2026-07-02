@@ -246,6 +246,8 @@ export interface CreateInvoiceInput {
   taxCase: "default" | "eu" | "noteu";
   /** Hinweistext, z.B. Reverse-Charge-Klausel */
   taxText?: string;
+  /** Zahlungsziel in Tagen (erscheint als Fälligkeit auf der Rechnung) */
+  timeToPayDays?: number;
 }
 
 export interface CreateInvoiceResult {
@@ -308,6 +310,7 @@ export async function createInvoice(
         footText: input.footText ?? null,
         currency: "EUR",
         discount: 0,
+        ...(input.timeToPayDays ? { timeToPay: input.timeToPayDays } : {}),
         contact: { id: Number(input.contactId), objectName: "Contact" },
         contactPerson: { id: Number(sevUserId), objectName: "SevUser" },
         taxText: input.taxText ?? `Umsatzsteuer ${input.taxRate}%`,
@@ -373,8 +376,56 @@ export async function getInvoice(
 }
 
 /**
+ * Holt das Rechnungs-PDF aus sevDesk, OHNE die Rechnung dabei als versendet
+ * zu markieren (preventSendBy) – das passiert erst nach erfolgreichem
+ * Mailversand über markInvoiceSent().
+ */
+export async function getInvoicePdf(
+  invoiceId: string
+): Promise<{ filename: string; contentBase64: string }> {
+  if (getSevdeskMode() === "mock") {
+    console.log("[sevDesk:mock] getInvoicePdf", { invoiceId });
+    return {
+      filename: `Rechnung-${invoiceId}.pdf`,
+      contentBase64: Buffer.from("%PDF-1.4 mock").toString("base64"),
+    };
+  }
+  const res = await sevdeskFetch<{
+    objects?: { filename?: string; content?: string };
+  }>(`Invoice/${invoiceId}/getPdf`, {
+    query: { preventSendBy: "true", download: "true" },
+  });
+  const content = res.objects?.content;
+  if (!content) {
+    throw new SevdeskError("PDF-Abruf lieferte keinen Inhalt.");
+  }
+  return {
+    filename: res.objects?.filename ?? `Rechnung-${invoiceId}.pdf`,
+    contentBase64: content,
+  };
+}
+
+/**
+ * Markiert die Rechnung in sevDesk als versendet (Versandart PDF) und hebt
+ * den Status damit von Entwurf auf "Offen" an – analog zu sendViaEmail, nur
+ * dass die E-Mail selbst über unsere eigene Infrastruktur (Resend) rausgeht.
+ */
+export async function markInvoiceSent(invoiceId: string): Promise<void> {
+  if (getSevdeskMode() === "mock") {
+    console.log("[sevDesk:mock] markInvoiceSent", { invoiceId });
+    return;
+  }
+  await sevdeskFetch(`Invoice/${invoiceId}/sendBy`, {
+    method: "PUT",
+    body: { sendType: "VPDF", sendDraft: false },
+  });
+}
+
+/**
  * Versendet die Rechnung als PDF-Anhang per E-Mail direkt aus sevDesk.
  * Hebt den Rechnungsstatus dabei automatisch von Entwurf auf "Offen" an.
+ * Fallback-Weg, wenn Resend nicht konfiguriert ist (Mail kommt dann vom
+ * sevDesk-Absender, ohne Branddesign).
  */
 export async function sendInvoiceByEmail(params: {
   invoiceId: string;

@@ -81,6 +81,57 @@ export async function sendConnectDayConfirmation(
   }
 }
 
+export interface ConnectDayInvoiceEmailInput {
+  email: string;
+  vorname: string;
+  firma: string;
+  personen: number;
+  teilnehmerListe: string;
+  rechnungNr: string;
+  preisBrutto: number;
+  zahlungszielTage: number;
+  pdf: { filename: string; contentBase64: string };
+}
+
+/**
+ * Rechnungs-Mail im Branddesign über Resend, mit dem sevDesk-PDF im Anhang.
+ * WIRFT bei Versandfehlern (anders als die Best-effort-Mails) – der
+ * Orchestrator entscheidet dann über Fallback bzw. FAILED-Status, damit
+ * keine Rechnung unbemerkt liegen bleibt.
+ * Gibt false zurück, wenn Resend gar nicht konfiguriert ist (→ Fallback).
+ */
+export async function sendConnectDayInvoiceEmail(
+  input: ConnectDayInvoiceEmailInput
+): Promise<boolean> {
+  if (!isResendConfigured()) return false;
+
+  const template = await loadTemplate("connect_day_rechnung");
+  if (!template) return false;
+
+  const vars = {
+    vorname: input.vorname,
+    firma: input.firma,
+    personen: String(input.personen),
+    teilnehmer_liste: input.teilnehmerListe,
+    rechnung_nr: input.rechnungNr,
+    preis_brutto: formatEuro(input.preisBrutto),
+    zahlungsziel: String(input.zahlungszielTage),
+  };
+  const result = await sendEmail({
+    to: input.email,
+    subject: renderTemplate(template.betreff, vars),
+    html: renderTemplate(template.html, vars),
+    templateKey: "connect_day_rechnung",
+    attachments: [
+      { filename: input.pdf.filename, content: input.pdf.contentBase64 },
+    ],
+  });
+  if (!result.ok) {
+    throw new Error(`Rechnungs-Mail über Resend fehlgeschlagen: ${result.error}`);
+  }
+  return true;
+}
+
 export interface ConnectDayStornoInternInput {
   firma: string;
   bestellNr: string;
