@@ -97,6 +97,45 @@ const TEAMS_AUFNAHME_DEFAULT_HTML = `<div style="font-family: -apple-system, Bli
   </div>
 </div>`;
 
+const CONNECT_DAY_BESTAETIGUNG_DEFAULT_HTML = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #0F172A;">
+  <div style="padding: 16px 0; border-bottom: 1px solid #E2E8F0;">
+    <h1 style="margin: 0; font-size: 20px; color: #030386;">Anmeldung bestätigt: Copilot Connect Day 2026</h1>
+  </div>
+  <div style="padding: 24px 0; line-height: 1.6; font-size: 15px;">
+    <p>Hallo {{vorname}},</p>
+    <p>eure Anmeldung zum <strong>Copilot Connect Day 2026</strong> ist bestätigt. Wir freuen uns auf euch!</p>
+    <div style="margin: 20px 0; padding: 16px 20px; background: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 12px;">
+      <p style="margin: 0 0 8px;"><strong>10. &amp; 11. Dezember 2026</strong> · nhow Hotel Frankfurt am Main<br>Donnerstag 12:00 Uhr bis Freitag 14:00 Uhr</p>
+      <p style="margin: 0 0 8px;">Firma: <strong>{{firma}}</strong></p>
+      <p style="margin: 0;">Angemeldete Teilnehmer ({{personen}}): <strong>{{teilnehmer_liste}}</strong></p>
+    </div>
+    <p>Im Eigenanteil enthalten: Hotelübernachtung im nhow Hotel Frankfurt, Mittagssnack und Kaffeepause an beiden Tagen, Abendessen sowie 2 Stunden in der höchsten Skybar Deutschlands mit freiem Bier/Wein/Softdrinks.</p>
+    <p><strong>Eigenanteil:</strong> {{preis_netto}} € netto zzgl. {{mwst_betrag}} € USt = <strong>{{preis_brutto}} €</strong> — die Rechnung folgt separat per E-Mail.</p>
+    <p style="font-size: 14px; color: #64748B;">Die Anmeldung ist verbindlich. Eine Absage ist jederzeit möglich, kostet aber 399 Euro, falls wir den Platz nicht nachbesetzen können. Teilnehmer könnt ihr bis Eventbeginn jederzeit im Kundenportal tauschen.</p>
+  </div>
+  <div style="padding-top: 16px; border-top: 1px solid #E2E8F0; font-size: 12px; color: #94A3B8;">
+    Next Skills · Copilot Partner Masterclass
+  </div>
+</div>`;
+
+const CONNECT_DAY_STORNO_INTERN_DEFAULT_HTML = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #0F172A;">
+  <div style="padding: 16px 0; border-bottom: 1px solid #E2E8F0;">
+    <h1 style="margin: 0; font-size: 20px; color: #B91C1C;">Connect Day: Storno eingegangen</h1>
+  </div>
+  <div style="padding: 24px 0; line-height: 1.6; font-size: 15px;">
+    <p><strong>{{firma}}</strong> (Bestellung {{bestell_nr}}) hat die Anmeldung zum Copilot Connect Day 2026 storniert.</p>
+    <ul style="padding-left: 20px; margin: 12px 0;">
+      <li>Freigewordene Plätze: <strong>{{personen}}</strong></li>
+      <li>Teilnehmer: {{teilnehmer_liste}}</li>
+      <li>sevDesk-Rechnung: <strong>{{rechnung_nr}}</strong></li>
+    </ul>
+    <p>Die Rechnungs-/Stornoabwicklung (ggf. 399 € bei Nichtnachbesetzung) läuft manuell in sevDesk — bitte prüfen.</p>
+  </div>
+  <div style="padding-top: 16px; border-top: 1px solid #E2E8F0; font-size: 12px; color: #94A3B8;">
+    Automatische Benachrichtigung aus dem Kundenportal
+  </div>
+</div>`;
+
 /**
  * Registry aller konfigurierbaren Templates. Treibt die Editor-Hilfe, die
  * Beispieldaten für Vorschau/Test-Mail und das initiale Seeding.
@@ -132,6 +171,38 @@ export const TEMPLATE_REGISTRY: Record<string, TemplateDefinition> = {
     variables: { vorname: "Max", klasse: "Klasse 2" },
     defaultBetreff: "Du bist im Teams-Team deiner Klasse {{klasse}}",
     defaultHtml: TEAMS_AUFNAHME_DEFAULT_HTML,
+  },
+  connect_day_bestaetigung: {
+    key: "connect_day_bestaetigung",
+    name: "Connect Day – Anmeldebestätigung",
+    beschreibung:
+      "Bestätigung nach der Anmeldung zum Connect Day im Kundenportal. Die Rechnung kommt separat aus sevDesk. Hinweis: Ist das Template inaktiv, wird trotzdem mit dem Standard-HTML versendet (die Bestätigung darf nicht ausfallen).",
+    variables: {
+      vorname: "Max",
+      firma: "Muster GmbH",
+      personen: "2",
+      teilnehmer_liste: "Max Mustermann, Erika Musterfrau",
+      preis_netto: "398,00",
+      mwst_betrag: "75,62",
+      preis_brutto: "473,62",
+    },
+    defaultBetreff: "Anmeldung bestätigt: Copilot Connect Day 2026",
+    defaultHtml: CONNECT_DAY_BESTAETIGUNG_DEFAULT_HTML,
+  },
+  connect_day_storno_intern: {
+    key: "connect_day_storno_intern",
+    name: "Connect Day – Storno (interne Benachrichtigung)",
+    beschreibung:
+      "Geht an den Betreiber (CONNECT_DAY_NOTIFY_EMAIL, sonst NEWSLETTER_REVIEW_EMAIL), wenn ein Partner seine Connect-Day-Anmeldung storniert. Die Rechnungs-/Stornoabwicklung läuft bewusst manuell in sevDesk. Auch bei inaktivem Template wird mit dem Standard-HTML versendet.",
+    variables: {
+      firma: "Muster GmbH",
+      bestell_nr: "NS-2026-0042",
+      personen: "2",
+      teilnehmer_liste: "Max Mustermann, Erika Musterfrau",
+      rechnung_nr: "RE-1042",
+    },
+    defaultBetreff: "Connect Day Storno: {{firma}} ({{personen}} Plätze frei)",
+    defaultHtml: CONNECT_DAY_STORNO_INTERN_DEFAULT_HTML,
   },
 };
 

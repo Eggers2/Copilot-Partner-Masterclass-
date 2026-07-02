@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ShoppingBag, Mail } from "lucide-react";
+import { ShoppingBag, Mail, CalendarDays } from "lucide-react";
 import { getCustomerSession } from "@/lib/auth/customer";
 import { logoutCustomerAction } from "./actions";
 
@@ -35,6 +35,13 @@ export default async function KundenportalLayout({
                 >
                   <ShoppingBag className="w-4 h-4" />
                   Meine Bestellungen
+                </Link>
+                <Link
+                  href="/kundenportal/connect-day"
+                  className="hidden sm:flex items-center gap-2 px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-slate-2 rounded-lg transition-all"
+                >
+                  <CalendarDays className="w-4 h-4" />
+                  Connect Day
                 </Link>
                 <Link
                   href="/kundenportal/newsletter"

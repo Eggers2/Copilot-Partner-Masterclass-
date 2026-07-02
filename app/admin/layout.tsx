@@ -8,6 +8,7 @@ import {
   Mail,
   Send,
   GraduationCap,
+  CalendarDays,
 } from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
 import { logoutAction } from "./actions";
@@ -49,6 +50,7 @@ export default async function AdminLayout({
                 <NavLink href="/admin/tasks" icon={CheckSquare} label="Follow-ups" />
                 <NavLink href="/admin/webinars" icon={Video} label="Webinare" />
                 <NavLink href="/admin/klassen" icon={GraduationCap} label="Klassen" />
+                <NavLink href="/admin/connect-day" icon={CalendarDays} label="Connect Day" />
                 <NavLink href="/admin/shop" icon={ShoppingCart} label="Online Shop" badge={neuCount} />
                 <NavLink href="/admin/newsletter" icon={Mail} label="Newsletter" />
                 <NavLink href="/admin/emails" icon={Send} label="E-Mails" />
