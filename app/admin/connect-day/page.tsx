@@ -10,8 +10,10 @@ import {
 import { isAuthenticated } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { CONNECT_DAY_SLUG } from "@/lib/events/connectDay";
+import { getEinladungEmpfaenger } from "@/lib/events/connectDayInvite";
 import { ConnectDayTable } from "@/components/admin/ConnectDayTable";
 import { ConnectDayFreischaltung } from "@/components/admin/ConnectDayFreischaltung";
+import { ConnectDayEinladung } from "@/components/admin/ConnectDayEinladung";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +56,7 @@ export default async function AdminConnectDayPage() {
   const zahlungOffen = confirmed.length - bezahlt;
   // Konsistenz: der atomare Zähler muss zur Summe der bestätigten Plätze passen.
   const zaehlerKonsistent = event.seatsTaken === personenGesamt;
+  const einladungEmpfaenger = await getEinladungEmpfaenger();
   const startErreicht =
     !event.anmeldestart || new Date() >= event.anmeldestart;
   const anmeldestartLabel = event.anmeldestart
@@ -80,11 +83,19 @@ export default async function AdminConnectDayPage() {
         </p>
       </div>
 
-      <div className="mb-6">
+      <div className="mb-6 space-y-4">
         <ConnectDayFreischaltung
           manuellFreigeschaltet={event.manuellFreigeschaltet}
           anmeldestartLabel={anmeldestartLabel}
           startErreicht={startErreicht}
+        />
+        <ConnectDayEinladung
+          empfaengerAnzahl={einladungEmpfaenger.length}
+          defaultTestEmail={
+            process.env.CONNECT_DAY_NOTIFY_EMAIL ??
+            process.env.NEWSLETTER_REVIEW_EMAIL ??
+            ""
+          }
         />
       </div>
 

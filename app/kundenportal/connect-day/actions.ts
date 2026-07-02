@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
 import { requireCustomerSession } from "@/lib/auth/customer";
 import {
   cancelConnectDayRegistration,
@@ -13,10 +12,7 @@ import {
   type UpdateErrorCode,
 } from "@/lib/events/connectDay";
 import { createAndSendConnectDayInvoice } from "@/lib/events/connectDayInvoice";
-import {
-  sendConnectDayConfirmation,
-  sendConnectDayStornoIntern,
-} from "@/lib/email/sendConnectDay";
+import { sendConnectDayStornoIntern } from "@/lib/email/sendConnectDay";
 
 const REGISTER_ERRORS: Record<RegisterErrorCode, string> = {
   event_not_found: "Das Event wurde nicht gefunden.",
@@ -71,31 +67,10 @@ export async function registerConnectDayAction(input: {
     return { error: "Anmeldung fehlgeschlagen. Bitte versuche es erneut." };
   }
 
-  // Anmeldung ist committet – Rechnung + Bestätigung laufen fehlerisoliert
-  // hinterher (ein sevDesk-/Mail-Fehler macht die Anmeldung nicht kaputt).
+  // Anmeldung ist committet – die EINE Bestätigungs-/Rechnungs-Mail (mit
+  // PDF-Anhang) verschickt der Orchestrator fehlerisoliert hinterher; ein
+  // sevDesk-/Mail-Fehler macht die Anmeldung nicht kaputt (Admin-Retry).
   await createAndSendConnectDayInvoice(registrationId);
-
-  const registration = await prisma.eventRegistration.findUnique({
-    where: { id: registrationId },
-    include: {
-      bestellung: { select: { vorname: true, firma: true, email: true } },
-      teilnehmer: { orderBy: { position: "asc" } },
-    },
-  });
-  if (registration) {
-    await sendConnectDayConfirmation({
-      email: registration.bestellung.email,
-      vorname: registration.bestellung.vorname,
-      firma: registration.bestellung.firma,
-      personen: registration.personen,
-      teilnehmerListe: registration.teilnehmer
-        .map((t) => `${t.vorname} ${t.nachname}`)
-        .join(", "),
-      preisNetto: Number(registration.preisNetto),
-      mwstBetrag: Number(registration.mwstBetrag),
-      preisBrutto: Number(registration.preisBrutto),
-    });
-  }
 
   revalidatePath("/kundenportal/connect-day");
   revalidatePath("/kundenportal/bestellungen");
