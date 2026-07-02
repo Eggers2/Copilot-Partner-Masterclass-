@@ -32,55 +32,6 @@ async function loadTemplate(
   return { betreff: definition.defaultBetreff, html: definition.defaultHtml };
 }
 
-export interface ConnectDayConfirmationInput {
-  email: string;
-  vorname: string;
-  firma: string;
-  personen: number;
-  teilnehmerListe: string;
-  preisNetto: number;
-  mwstBetrag: number;
-  preisBrutto: number;
-}
-
-/**
- * Anmeldebestätigung an den Partner (die Rechnung kommt separat aus sevDesk).
- * Best-effort: Fehler werden geloggt, blockieren die Anmeldung aber nie.
- */
-export async function sendConnectDayConfirmation(
-  input: ConnectDayConfirmationInput
-): Promise<void> {
-  if (!isResendConfigured()) return;
-  try {
-    const template = await loadTemplate("connect_day_bestaetigung");
-    if (!template) return;
-
-    const vars = {
-      vorname: input.vorname,
-      firma: input.firma,
-      personen: String(input.personen),
-      teilnehmer_liste: input.teilnehmerListe,
-      preis_netto: formatEuro(input.preisNetto),
-      mwst_betrag: formatEuro(input.mwstBetrag),
-      preis_brutto: formatEuro(input.preisBrutto),
-    };
-    const result = await sendEmail({
-      to: input.email,
-      subject: renderTemplate(template.betreff, vars),
-      html: renderTemplate(template.html, vars),
-      templateKey: "connect_day_bestaetigung",
-    });
-    if (!result.ok) {
-      console.error(
-        `[ConnectDay] Bestätigung an ${input.email} fehlgeschlagen:`,
-        result.error
-      );
-    }
-  } catch (err) {
-    console.error("[ConnectDay] Bestätigungs-Mail fehlgeschlagen:", err);
-  }
-}
-
 export interface ConnectDayInvoiceEmailInput {
   email: string;
   vorname: string;
@@ -94,7 +45,8 @@ export interface ConnectDayInvoiceEmailInput {
 }
 
 /**
- * Rechnungs-Mail im Branddesign über Resend, mit dem sevDesk-PDF im Anhang.
+ * EINE Mail nach der Anmeldung: Bestätigung + Rechnung (sevDesk-PDF im Anhang),
+ * im Branddesign über Resend.
  * WIRFT bei Versandfehlern (anders als die Best-effort-Mails) – der
  * Orchestrator entscheidet dann über Fallback bzw. FAILED-Status, damit
  * keine Rechnung unbemerkt liegen bleibt.
