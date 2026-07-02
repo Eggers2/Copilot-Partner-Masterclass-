@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Download, RefreshCw, XCircle, Loader2 } from "lucide-react";
+import { Download, RefreshCw, XCircle, Loader2, Wallet, Undo2 } from "lucide-react";
 import {
   adminStornoConnectDayAction,
+  markConnectDayBezahltAction,
   retryConnectDayInvoiceAction,
 } from "@/app/admin/connect-day/actions";
 
@@ -26,6 +27,7 @@ interface RegistrationRow {
   invoiceStatus: string;
   sevdeskInvoiceNr: string | null;
   invoiceError: string | null;
+  bezahltAm: string | null;
   angemeldetAm: string;
   stornoAm: string | null;
   teilnehmer: TeilnehmerRow[];
@@ -64,6 +66,13 @@ export function ConnectDayTable({
     router.refresh();
   };
 
+  const toggleBezahlt = async (id: string, bezahlt: boolean) => {
+    setLoading(id);
+    await markConnectDayBezahltAction(id, bezahlt);
+    setLoading(null);
+    router.refresh();
+  };
+
   // CSV: eine Zeile pro Teilnehmer – direkt verwendbar für Hotel/Catering.
   const downloadCSV = () => {
     const headers = [
@@ -77,6 +86,7 @@ export function ConnectDayTable({
       "Status",
       "Rechnung",
       "Rechnungs-Nr",
+      "Bezahlt am",
       "Angemeldet am",
     ];
     const rows = registrations.flatMap((r) =>
@@ -91,6 +101,7 @@ export function ConnectDayTable({
         r.status === "CONFIRMED" ? "Angemeldet" : "Storniert",
         INVOICE_BADGES[r.invoiceStatus]?.label ?? r.invoiceStatus,
         r.sevdeskInvoiceNr ?? "",
+        r.bezahltAm ? new Date(r.bezahltAm).toLocaleDateString("de-DE") : "offen",
         new Date(r.angemeldetAm).toLocaleString("de-DE"),
       ])
     );
@@ -137,7 +148,7 @@ export function ConnectDayTable({
         <table className="w-full">
           <thead>
             <tr className="bg-dark-slate-50 border-b border-dark-slate-100">
-              {["Firma", "Teilnehmer", "Plätze", "Brutto", "Rechnung", "Angemeldet", "Aktionen"].map(
+              {["Firma", "Teilnehmer", "Plätze", "Brutto", "Rechnung", "Zahlung", "Angemeldet", "Aktionen"].map(
                 (h) => (
                   <th
                     key={h}
@@ -153,7 +164,7 @@ export function ConnectDayTable({
             {registrations.length === 0 ? (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   className="px-4 py-12 text-center text-dark-slate-400 text-sm"
                 >
                   Noch keine Anmeldungen.
@@ -223,6 +234,39 @@ export function ConnectDayTable({
                         <p className="text-xs text-red-500 mt-0.5 max-w-xs whitespace-pre-wrap break-words">
                           {r.invoiceError}
                         </p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {storniert ? (
+                        <span className="text-xs text-dark-slate-400">–</span>
+                      ) : r.bezahltAm ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border bg-green-50 text-green-700 border-green-200">
+                            Bezahlt {new Date(r.bezahltAm).toLocaleDateString("de-DE")}
+                          </span>
+                          <button
+                            onClick={() => toggleBezahlt(r.id, false)}
+                            disabled={loading === r.id}
+                            className="p-1 rounded text-dark-slate-400 hover:bg-dark-slate-50 disabled:opacity-30"
+                            title="Zahlung zurücknehmen"
+                          >
+                            <Undo2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => toggleBezahlt(r.id, true)}
+                          disabled={loading === r.id}
+                          className="flex items-center gap-1 px-2 py-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 disabled:opacity-50"
+                          title="Zahlungseingang abhaken"
+                        >
+                          {loading === r.id ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Wallet className="w-3 h-3" />
+                          )}
+                          Offen – abhaken
+                        </button>
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm text-dark-slate-400">

@@ -3,10 +3,16 @@ import {
   createInvoice,
   ensureContact,
   getInvoice,
+  getInvoicePdf,
   getSevdeskMode,
+  markInvoiceSent,
   renderInvoice,
   sendInvoiceByEmail,
 } from "@/lib/sevdesk";
+import { sendConnectDayInvoiceEmail } from "@/lib/email/sendConnectDay";
+
+/** Zahlungsziel in Tagen – steht auf der Rechnung und in der Rechnungs-Mail. */
+const ZAHLUNGSZIEL_TAGE = 14;
 
 /**
  * Erstellt und versendet die sevDesk-Rechnung zu einer Event-Anmeldung.
@@ -114,8 +120,11 @@ export async function createAndSendConnectDayInvoice(
           `Teilnehmer (${registration.personen}): ${teilnehmerListe}.<br>` +
           `Bezug: Anmeldung über das Kundenportal, Bestellung ${bestellung.bestellNr}.`,
         footText:
-          "Die Anmeldung ist verbindlich. Eine Absage ist jederzeit möglich, " +
-          "kostet aber 399 Euro, falls wir den Platz nicht nachbesetzen können.",
+          "Der Platz ist erst nach Zahlungseingang verbindlich bestätigt. " +
+          "Die Anmeldung ist verbindlich; eine Absage ist jederzeit möglich, " +
+          "kostet aber 399 Euro, falls wir den Platz nicht nachbesetzen können. " +
+          "Alle weiteren Informationen erhaltet ihr rechtzeitig vor dem Termin.",
+        timeToPayDays: ZAHLUNGSZIEL_TAGE,
         positions: [
           {
             name: `${event.name} – Eigenanteil`,
@@ -155,18 +164,60 @@ export async function createAndSendConnectDayInvoice(
       );
     }
 
-    // 4. Rechnung per E-Mail versenden – hebt den Entwurf auf "Offen" an
+    // 4. Rechnung per E-Mail versenden.
+    //    Bevorzugt über Resend im Branddesign (Absender Next Skills, Template
+    //    connect_day_rechnung, PDF aus sevDesk im Anhang); die Rechnung wird
+    //    danach in sevDesk als versendet markiert (Entwurf → "Offen").
+    //    Fallback ohne Resend: Versand direkt aus sevDesk (alte Optik).
     step = "Rechnung versenden";
-    await sendInvoiceByEmail({
-      invoiceId,
-      toEmail: bestellung.email,
-      subject: `Deine Rechnung – ${event.name}`,
-      text:
-        `Hallo ${bestellung.vorname},\n\n` +
-        `anbei die Rechnung für eure Anmeldung zum ${event.name} ` +
-        `(${registration.personen} ${registration.personen === 1 ? "Person" : "Personen"}).\n\n` +
-        `Viele Grüße\nNext Skills`,
+    const teilnehmerListe = registration.teilnehmer
+      .map((t) => `${t.vorname} ${t.nachname}`)
+      .join(", ");
+    let rechnungNr = registration.sevdeskInvoiceNr;
+    if (!rechnungNr) {
+      try {
+        rechnungNr = (await getInvoice(invoiceId)).invoiceNumber;
+      } catch {
+        rechnungNr = null;
+      }
+    }
+
+    const pdf = await getInvoicePdf(invoiceId);
+    const viaResend = await sendConnectDayInvoiceEmail({
+      email: bestellung.email,
+      vorname: bestellung.vorname,
+      firma: bestellung.firma,
+      personen: registration.personen,
+      teilnehmerListe,
+      rechnungNr: rechnungNr ?? "zur Anmeldung",
+      preisBrutto: Number(registration.preisBrutto),
+      zahlungszielTage: ZAHLUNGSZIEL_TAGE,
+      pdf,
     });
+
+    if (viaResend) {
+      // Best-effort: schlägt nur die Versand-Markierung in sevDesk fehl,
+      // KEIN Retry-Fehler auslösen – sonst bekäme der Kunde die Mail doppelt.
+      try {
+        await markInvoiceSent(invoiceId);
+      } catch (markErr) {
+        console.error(
+          `[ConnectDay] Rechnung ${invoiceId} konnte in sevDesk nicht als versendet markiert werden (bitte manuell festschreiben):`,
+          markErr
+        );
+      }
+    } else {
+      await sendInvoiceByEmail({
+        invoiceId,
+        toEmail: bestellung.email,
+        subject: `Deine Rechnung – ${event.name}`,
+        text:
+          `Hallo ${bestellung.vorname},\n\n` +
+          `anbei die Rechnung für eure Anmeldung zum ${event.name} ` +
+          `(${registration.personen} ${registration.personen === 1 ? "Person" : "Personen"}).\n\n` +
+          `Viele Grüße\nNext Skills`,
+      });
+    }
 
     // 5. Endgültige Rechnungsnummer übernehmen (Entwürfe haben teils noch
     //    keine Nummer; sie wird beim Versand aus dem Nummernkreis vergeben).

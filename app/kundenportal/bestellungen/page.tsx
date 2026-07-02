@@ -74,6 +74,13 @@ export default async function KundeBestellungenPage() {
                   {connectDay.registration.personen === 1 ? "Person" : "Personen"}{" "}
                   angemeldet
                 </p>
+              ) : connectDay.notYetOpen ? (
+                <p className="mt-3 text-sm font-medium text-white">
+                  <span className="text-green font-bold">
+                    Anmeldung öffnet am 07.07.2026
+                  </span>{" "}
+                  · nur 100 Plätze · First Come, First Serve
+                </p>
               ) : connectDay.isFull ? (
                 <p className="mt-3 text-sm font-medium text-red-400">Ausgebucht</p>
               ) : connectDay.deadlinePassed ? (

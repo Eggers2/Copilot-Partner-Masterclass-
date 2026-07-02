@@ -51,7 +51,10 @@ export default async function ConnectDayPage() {
   const belegt = event.capacity - seatsFrei;
   const prozent = Math.min(100, Math.round((belegt / event.capacity) * 100));
   const anmeldungOffen =
-    context.isOpen && !context.deadlinePassed && !context.isFull;
+    context.isOpen &&
+    !context.notYetOpen &&
+    !context.deadlinePassed &&
+    !context.isFull;
 
   return (
     <div className="space-y-6">
@@ -94,7 +97,9 @@ export default async function ConnectDayPage() {
             />
           </div>
           <p className="text-xs text-white/50 mt-2">
-            First Come, First Serve · Verbindliche Anmeldung bis 17.07.2026
+            {context.notYetOpen
+              ? "Anmeldung ab 07.07.2026, 0:00 Uhr · First Come, First Serve · bis 17.07.2026"
+              : "First Come, First Serve · Verbindliche Anmeldung bis 17.07.2026"}
           </p>
         </div>
       </div>
@@ -159,6 +164,7 @@ export default async function ConnectDayPage() {
             id: registration.id,
             personen: registration.personen,
             invoiceStatus: registration.invoiceStatus,
+            bezahlt: registration.bezahltAm !== null,
             firma: registration.bestellung.firma,
             teilnehmer: registration.teilnehmer.map((t) => ({
               position: t.position,
@@ -191,17 +197,32 @@ export default async function ConnectDayPage() {
         </div>
       ) : !anmeldungOffen ? (
         <div className="bg-white rounded-2xl border border-cool shadow-sm p-10 text-center">
-          <Lock className="w-10 h-10 text-cool mx-auto mb-3" />
-          <p className="text-slate font-medium">
-            {context.isFull
-              ? "Der Connect Day ist ausgebucht."
-              : "Die Anmeldung ist geschlossen."}
-          </p>
-          <p className="text-gray text-sm mt-1">
-            {context.isFull
-              ? "Alle 100 Plätze sind vergeben. Schreib uns, wenn du auf die Nachrückliste möchtest – Stornos kommen vor."
-              : "Der Anmeldeschluss (17.07.2026) ist vorbei. Melde dich bei uns, falls du noch teilnehmen möchtest."}
-          </p>
+          {context.notYetOpen ? (
+            <>
+              <CalendarDays className="w-10 h-10 text-green mx-auto mb-3" />
+              <p className="text-slate font-medium">
+                Die Anmeldung öffnet am 07.07.2026 um 0:00 Uhr.
+              </p>
+              <p className="text-gray text-sm mt-1">
+                First Come, First Serve – es gibt nur 100 Plätze. Schau am
+                7. Juli direkt hier vorbei und sichere dir deinen Platz.
+              </p>
+            </>
+          ) : (
+            <>
+              <Lock className="w-10 h-10 text-cool mx-auto mb-3" />
+              <p className="text-slate font-medium">
+                {context.isFull
+                  ? "Der Connect Day ist ausgebucht."
+                  : "Die Anmeldung ist geschlossen."}
+              </p>
+              <p className="text-gray text-sm mt-1">
+                {context.isFull
+                  ? "Alle 100 Plätze sind vergeben. Schreib uns, wenn du auf die Nachrückliste möchtest – Stornos kommen vor."
+                  : "Der Anmeldeschluss (17.07.2026) ist vorbei. Melde dich bei uns, falls du noch teilnehmen möchtest."}
+              </p>
+            </>
+          )}
         </div>
       ) : (
         <ConnectDayForm

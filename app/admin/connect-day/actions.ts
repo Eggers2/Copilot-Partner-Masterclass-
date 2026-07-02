@@ -1,8 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
-import { cancelConnectDayRegistration } from "@/lib/events/connectDay";
+import {
+  cancelConnectDayRegistration,
+  CONNECT_DAY_SLUG,
+} from "@/lib/events/connectDay";
 import { createAndSendConnectDayInvoice } from "@/lib/events/connectDayInvoice";
 
 interface ActionResult {
@@ -42,6 +46,46 @@ export async function adminStornoConnectDayAction(
   if (!result) {
     return { error: "Anmeldung nicht gefunden oder bereits storniert." };
   }
+
+  revalidatePath("/admin/connect-day");
+  revalidatePath("/kundenportal/connect-day");
+  revalidatePath("/kundenportal/bestellungen");
+  return { success: true };
+}
+
+/**
+ * Zahlungseingang abhaken (oder wieder zurücknehmen). Erst mit gesetztem
+ * Haken gilt der Platz als verbindlich bestätigt – so rutscht keiner durch.
+ */
+export async function markConnectDayBezahltAction(
+  registrationId: string,
+  bezahlt: boolean
+): Promise<ActionResult> {
+  await requireAuth();
+
+  await prisma.eventRegistration.update({
+    where: { id: registrationId },
+    data: { bezahltAm: bezahlt ? new Date() : null },
+  });
+
+  revalidatePath("/admin/connect-day");
+  revalidatePath("/kundenportal/connect-day");
+  return { success: true };
+}
+
+/**
+ * Manuelle Freischaltung der Anmeldung VOR dem Anmeldestart (07.07.2026) –
+ * zum Testen im Kundenportal. Ausschalten sperrt wieder bis zum Anmeldestart.
+ */
+export async function setConnectDayFreischaltungAction(
+  freigeschaltet: boolean
+): Promise<ActionResult> {
+  await requireAuth();
+
+  await prisma.event.update({
+    where: { slug: CONNECT_DAY_SLUG },
+    data: { manuellFreigeschaltet: freigeschaltet },
+  });
 
   revalidatePath("/admin/connect-day");
   revalidatePath("/kundenportal/connect-day");
