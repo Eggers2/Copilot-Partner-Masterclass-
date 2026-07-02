@@ -95,8 +95,19 @@ export async function createAndSendConnectDayInvoice(
         .map((t) => `${t.vorname} ${t.nachname}`)
         .join(", ");
 
+      // Empfänger-Adressblock aus der Bestellung (Quelle der Wahrheit – die
+      // Partner pflegen ihre Rechnungsdaten selbst im Kundenportal).
+      const landName: Record<string, string> = { AT: "Österreich", CH: "Schweiz" };
+      const address = [
+        bestellung.firma,
+        bestellung.strasse,
+        `${bestellung.plz} ${bestellung.ort}`,
+        ...(landName[bestellung.land] ? [landName[bestellung.land]] : []),
+      ].join("\n");
+
       const created = await createInvoice({
         contactId,
+        address,
         header: `Rechnung – ${event.name}`,
         headText:
           `${event.name} am 10./11. Dezember 2026 im ${event.ort ?? "nhow Hotel Frankfurt am Main"}.<br>` +
