@@ -8,6 +8,10 @@ import {
   CONNECT_DAY_SLUG,
 } from "@/lib/events/connectDay";
 import { createAndSendConnectDayInvoice } from "@/lib/events/connectDayInvoice";
+import {
+  sendConnectDayEinladung,
+  type SendEinladungResult,
+} from "@/lib/events/connectDayInvite";
 
 interface ActionResult {
   success?: boolean;
@@ -91,4 +95,16 @@ export async function setConnectDayFreischaltungAction(
   revalidatePath("/kundenportal/connect-day");
   revalidatePath("/kundenportal/bestellungen");
   return { success: true };
+}
+
+/**
+ * Versendet die Connect-Day-Einladung (Werbe-Mail). `testEmail` gesetzt →
+ * nur Test-Mail an diese Adresse; sonst Vollversand an alle
+ * Besteller/Koordinatoren von Klasse 1 & 2.
+ */
+export async function sendConnectDayEinladungAction(
+  testEmail?: string
+): Promise<SendEinladungResult> {
+  await requireAuth();
+  return sendConnectDayEinladung({ testTo: testEmail?.trim() || undefined });
 }

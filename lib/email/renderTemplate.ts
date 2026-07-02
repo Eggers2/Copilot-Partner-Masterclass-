@@ -125,6 +125,81 @@ const CONNECT_DAY_RECHNUNG_DEFAULT_HTML = `<div style="max-width: 600px; margin:
   </div>
 </div>`;
 
+const CONNECT_DAY_EINLADUNG_DEFAULT_HTML = `<div style="max-width:600px; margin:0 auto; padding:24px 16px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; color:#0F172A;">
+  <div style="background:#1A1A2E; border-radius:16px 16px 0 0; padding:36px 32px; text-align:center;">
+    <div style="display:inline-block; padding:8px 18px; border:1px solid rgba(0,200,150,.5); border-radius:999px; color:#00C896; font-size:13px; font-weight:600; margin-bottom:20px;">
+      Exklusiv für Klasse 1 &amp; 2 &nbsp;·&nbsp; nur 100 Plätze
+    </div>
+    <h1 style="margin:0 0 12px; color:#ffffff; font-size:30px; line-height:1.15; letter-spacing:-0.02em;">
+      Copilot <span style="color:#00C896;">Connect Day</span> 2026
+    </h1>
+    <p style="margin:0; color:rgba(255,255,255,.7); font-size:15px; line-height:1.6;">
+      <strong style="color:#ffffff;">10. &amp; 11. Dezember 2026</strong> · nhow Hotel Frankfurt am Main<br>
+      Donnerstag 12:00 Uhr bis Freitag 14:00 Uhr
+    </p>
+  </div>
+  <div style="background:#00C896; padding:14px 32px; text-align:center;">
+    <p style="margin:0; color:#1A1A2E; font-size:15px; font-weight:700;">
+      ⏳ Anmeldung öffnet am 7. Juli um 0:00 Uhr – First Come, First Serve
+    </p>
+  </div>
+  <div style="background:#ffffff; padding:32px; border-radius:0 0 16px 16px; border:1px solid #E2E8F0; border-top:none;">
+    <p style="font-size:15px; line-height:1.6; margin:0 0 16px;">Hallo {{vorname}},</p>
+    <p style="font-size:15px; line-height:1.6; margin:0 0 16px;">
+      es ist offiziell: Wir treffen uns <strong>live in Frankfurt</strong>. Zwei Tage persönlicher
+      Austausch statt Teams-Kachel – mit den Menschen, mit denen ihr seit Monaten gemeinsam lernt.
+      Endlich mal bei einem Kaffee, einem Abendessen und auf 185&nbsp;Metern über der Stadt.
+    </p>
+    <div style="background:#F1F5F9; border:1px solid #E2E8F0; border-radius:12px; padding:20px 24px; margin:24px 0;">
+      <p style="margin:0 0 12px; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#64748B;">
+        4 Microsoft MVPs vor Ort – Vorträge &amp; Workshops
+      </p>
+      <p style="margin:0; font-size:15px; line-height:1.9;">
+        <strong>Tanja Wiehoff</strong> <span style="color:#64748B;">– Copilot Studio / Agenten</span><br>
+        <strong>Raphael Köllner</strong> <span style="color:#64748B;">– Compliance / Datenschutz</span><br>
+        <strong>Michael Greth</strong> <span style="color:#64748B;">– Copilot / SharePoint</span><br>
+        <strong>Alex Eggers</strong> <span style="color:#64748B;">– Copilot / Adoption</span>
+      </p>
+      <p style="margin:12px 0 0; font-size:13px; color:#64748B;">
+        Mit dabei: die <strong>ADN</strong> als Distributor und Sponsor des Events.
+      </p>
+    </div>
+    <p style="font-size:15px; font-weight:700; margin:0 0 10px;">Alles drin für 199&nbsp;€ netto pro Person:</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="font-size:15px; line-height:1.8; margin:0 0 12px;">
+      <tr><td style="color:#00C896; padding-right:10px; vertical-align:top;">✔</td><td>Übernachtung im <strong>nhow Hotel Frankfurt</strong></td></tr>
+      <tr><td style="color:#00C896; padding-right:10px; vertical-align:top;">✔</td><td>Mittagssnack &amp; Kaffeepausen an beiden Tagen</td></tr>
+      <tr><td style="color:#00C896; padding-right:10px; vertical-align:top;">✔</td><td>Gemeinsames Abendessen</td></tr>
+      <tr><td style="color:#00C896; padding-right:10px; vertical-align:top;">✔</td><td><strong>2 Stunden in der höchsten Skybar Deutschlands</strong> – Bier, Wein &amp; Softdrinks inklusive</td></tr>
+    </table>
+    <p style="font-size:13px; color:#64748B; margin:0 0 20px;">
+      Lediglich die An- und Abreise nach Frankfurt organisiert jeder Teilnehmer in Eigenregie.
+    </p>
+    <div style="background:#FFFBEB; border:1px solid #FDE68A; border-radius:12px; padding:16px 20px; margin:0 0 24px;">
+      <p style="margin:0; font-size:14px; line-height:1.6; color:#92400E;">
+        <strong>Es gibt genau 100 Plätze. Nicht mehr.</strong><br>
+        Die Anmeldung öffnet am <strong>Montag, 7. Juli um 0:00 Uhr</strong> im Kundenportal –
+        dort seht ihr live, wie viele Plätze noch frei sind. Bis zu <strong>3 Personen pro Firma</strong>,
+        Anmeldeschluss 17. Juli.
+      </p>
+    </div>
+    <div style="text-align:center; margin:28px 0;">
+      <a href="https://www.copilotberater.de/connect-day" style="display:inline-block; padding:14px 32px; background:#00C896; color:#1A1A2E; text-decoration:none; border-radius:12px; font-weight:700; font-size:16px;">
+        Alle Infos zum Connect Day&nbsp;&rarr;
+      </a>
+      <p style="margin:10px 0 0; font-size:13px; color:#64748B;">
+        Anmeldung ab 7.7. im <a href="https://www.copilotberater.de/kundenportal" style="color:#030386;">Kundenportal</a> –
+        einloggen kann sich, wer die Masterclass für euer Unternehmen gebucht hat.
+      </p>
+    </div>
+    <p style="font-size:15px; line-height:1.6; margin:0;">
+      Wir freuen uns auf euch!<br><strong>Alex &amp; das Next Skills Team</strong>
+    </p>
+  </div>
+  <div style="padding:20px 8px 0; text-align:center; font-size:12px; color:#94A3B8;">
+    Next Skills · Copilot Partner Masterclass
+  </div>
+</div>`;
+
 const CONNECT_DAY_STORNO_INTERN_DEFAULT_HTML = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #0F172A;">
   <div style="padding: 16px 0; border-bottom: 1px solid #E2E8F0;">
     <h1 style="margin: 0; font-size: 20px; color: #B91C1C;">Connect Day: Storno eingegangen</h1>
@@ -195,6 +270,16 @@ export const TEMPLATE_REGISTRY: Record<string, TemplateDefinition> = {
     },
     defaultBetreff: "Anmeldung bestätigt + Rechnung – Copilot Connect Day 2026",
     defaultHtml: CONNECT_DAY_RECHNUNG_DEFAULT_HTML,
+  },
+  connect_day_einladung: {
+    key: "connect_day_einladung",
+    name: "Connect Day – Einladung (Werbe-Mail)",
+    beschreibung:
+      "Werbe-/Einladungsmail zum Connect Day, versendet aus dem Admin (/admin/connect-day) an die Besteller/Koordinatoren von Klasse 1 & 2. {{vorname}} wird je Empfänger personalisiert.",
+    variables: { vorname: "Max" },
+    defaultBetreff:
+      "🚀 Copilot Connect Day 2026 – nur 100 Plätze. Anmeldung öffnet am 7. Juli",
+    defaultHtml: CONNECT_DAY_EINLADUNG_DEFAULT_HTML,
   },
   connect_day_storno_intern: {
     key: "connect_day_storno_intern",
