@@ -390,10 +390,12 @@ export async function getInvoicePdf(
       contentBase64: Buffer.from("%PDF-1.4 mock").toString("base64"),
     };
   }
+  // Kein download=true: damit käme das rohe PDF-Binary statt der
+  // JSON-Antwort { objects: { filename, content: <base64> } }.
   const res = await sevdeskFetch<{
     objects?: { filename?: string; content?: string };
   }>(`Invoice/${invoiceId}/getPdf`, {
-    query: { preventSendBy: "true", download: "true" },
+    query: { preventSendBy: "true" },
   });
   const content = res.objects?.content;
   if (!content) {
