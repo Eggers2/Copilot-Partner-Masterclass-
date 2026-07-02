@@ -226,6 +226,12 @@ export interface InvoicePosition {
 
 export interface CreateInvoiceInput {
   contactId: string;
+  /**
+   * Kompletter Empfänger-Adressblock (Zeilenumbrüche erlaubt). sevDesk füllt
+   * die Adresse bei API-Rechnungen NICHT automatisch aus dem Kontakt –
+   * ohne dieses Feld bleibt der Adressblock auf dem PDF leer.
+   */
+  address: string;
   header: string;
   headText?: string;
   footText?: string;
@@ -295,6 +301,7 @@ export async function createInvoice(
         objectName: "Invoice",
         invoiceType: "RE",
         status: 100,
+        address: input.address,
         invoiceDate,
         header: input.header,
         headText: input.headText ?? null,
