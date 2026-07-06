@@ -10,9 +10,15 @@ import { sendConnectDayEinladungAction } from "@/app/admin/connect-day/actions";
  * Besteller/Koordinatoren von Klasse 1 & 2.
  */
 export function ConnectDayEinladung({
+  templateKey,
+  titel,
+  beschreibung,
   empfaengerAnzahl,
   defaultTestEmail,
 }: {
+  templateKey: "connect_day_einladung" | "connect_day_start";
+  titel: string;
+  beschreibung: string;
   empfaengerAnzahl: number;
   defaultTestEmail: string;
 }) {
@@ -24,7 +30,7 @@ export function ConnectDayEinladung({
   const sendTest = () => {
     setResult(null);
     startTransition(async () => {
-      const r = await sendConnectDayEinladungAction(testEmail);
+      const r = await sendConnectDayEinladungAction(templateKey, testEmail);
       setResult({
         ok: r.ok,
         text: r.ok
@@ -38,11 +44,11 @@ export function ConnectDayEinladung({
     setResult(null);
     setConfirmLive(false);
     startTransition(async () => {
-      const r = await sendConnectDayEinladungAction();
+      const r = await sendConnectDayEinladungAction(templateKey);
       setResult({
         ok: r.ok,
         text: r.ok
-          ? `Einladung an ${r.sent} von ${r.total} Koordinatoren verschickt.`
+          ? `Mail an ${r.sent} von ${r.total} Koordinatoren verschickt.`
           : `Versand fehlgeschlagen: ${r.error ?? "unbekannter Fehler"}`,
       });
     });
@@ -52,12 +58,10 @@ export function ConnectDayEinladung({
     <div className="bg-white rounded-2xl border border-dark-slate-100 shadow-sm p-5">
       <div className="flex items-center gap-2 mb-1">
         <Mail className="w-5 h-5 text-[#030386]" />
-        <h3 className="font-semibold text-dark-slate-900">
-          Einladung versenden
-        </h3>
+        <h3 className="font-semibold text-dark-slate-900">{titel}</h3>
       </div>
       <p className="text-sm text-dark-slate-500 mb-4">
-        Werbe-Mail an die <strong>{empfaengerAnzahl}</strong>{" "}
+        {beschreibung} An die <strong>{empfaengerAnzahl}</strong>{" "}
         Besteller/Koordinatoren von Klasse 1 &amp; 2. Bitte zuerst eine
         Test-Mail an dich selbst senden.
       </p>

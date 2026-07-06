@@ -10,6 +10,7 @@ import {
 import { createAndSendConnectDayInvoice } from "@/lib/events/connectDayInvoice";
 import {
   sendConnectDayEinladung,
+  type EinladungTemplateKey,
   type SendEinladungResult,
 } from "@/lib/events/connectDayInvite";
 
@@ -98,13 +99,17 @@ export async function setConnectDayFreischaltungAction(
 }
 
 /**
- * Versendet die Connect-Day-Einladung (Werbe-Mail). `testEmail` gesetzt →
- * nur Test-Mail an diese Adresse; sonst Vollversand an alle
- * Besteller/Koordinatoren von Klasse 1 & 2.
+ * Versendet eine Connect-Day-Kampagnen-Mail (Einladung oder Start-Erinnerung).
+ * `testEmail` gesetzt → nur Test-Mail an diese Adresse; sonst Vollversand an
+ * alle Besteller/Koordinatoren von Klasse 1 & 2.
  */
 export async function sendConnectDayEinladungAction(
+  templateKey: EinladungTemplateKey,
   testEmail?: string
 ): Promise<SendEinladungResult> {
   await requireAuth();
-  return sendConnectDayEinladung({ testTo: testEmail?.trim() || undefined });
+  return sendConnectDayEinladung({
+    templateKey,
+    testTo: testEmail?.trim() || undefined,
+  });
 }

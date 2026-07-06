@@ -57,6 +57,10 @@ export default async function AdminConnectDayPage() {
   // Konsistenz: der atomare Zähler muss zur Summe der bestätigten Plätze passen.
   const zaehlerKonsistent = event.seatsTaken === personenGesamt;
   const einladungEmpfaenger = await getEinladungEmpfaenger();
+  const defaultTestEmail =
+    process.env.CONNECT_DAY_NOTIFY_EMAIL ??
+    process.env.NEWSLETTER_REVIEW_EMAIL ??
+    "";
   const startErreicht =
     !event.anmeldestart || new Date() >= event.anmeldestart;
   const anmeldestartLabel = event.anmeldestart
@@ -90,12 +94,18 @@ export default async function AdminConnectDayPage() {
           startErreicht={startErreicht}
         />
         <ConnectDayEinladung
+          templateKey="connect_day_einladung"
+          titel="Einladung / Teaser versenden"
+          beschreibung="Werbe-Mail (Anmeldung öffnet am 7. Juli)."
           empfaengerAnzahl={einladungEmpfaenger.length}
-          defaultTestEmail={
-            process.env.CONNECT_DAY_NOTIFY_EMAIL ??
-            process.env.NEWSLETTER_REVIEW_EMAIL ??
-            ""
-          }
+          defaultTestEmail={defaultTestEmail}
+        />
+        <ConnectDayEinladung
+          templateKey="connect_day_start"
+          titel="Start-Mail versenden (Anmeldung offen)"
+          beschreibung="Motivations-Mail zum Tag der Freischaltung mit Direkt-Link zur Anmeldung."
+          empfaengerAnzahl={einladungEmpfaenger.length}
+          defaultTestEmail={defaultTestEmail}
         />
       </div>
 
