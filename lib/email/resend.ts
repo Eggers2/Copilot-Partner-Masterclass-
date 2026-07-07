@@ -187,6 +187,80 @@ export async function sendBulk(
   return { ok: sent > 0 && failed.length === 0, sent, failed };
 }
 
+/**
+ * Versendet viele personalisierte E-Mails MIT Datei-Anhängen – die
+ * Resend-Batch-API unterstützt keine Anhänge, deshalb je Empfänger ein
+ * einzelner Send mit sanftem Throttling (Resend-Limit: 2 Requests/Sekunde).
+ * Die Anhänge sind für alle Empfänger identisch. Protokolliert das Ergebnis
+ * aggregiert in `EmailLog` (eine Zeile pro Aufruf). Wirft nicht.
+ */
+export async function sendBulkWithAttachments(
+  messages: BulkMessage[],
+  attachments: { filename: string; content: Buffer | string }[],
+  opts?: { templateKey?: string }
+): Promise<SendBulkResult> {
+  const resend = getClient();
+  const from = process.env.RESEND_FROM_EMAIL;
+  if (!resend || !from) {
+    return {
+      ok: false,
+      sent: 0,
+      failed: messages.map((m) => ({ to: m.to, error: "Resend nicht konfiguriert" })),
+      error: "Resend ist nicht konfiguriert (RESEND_API_KEY / RESEND_FROM_EMAIL fehlt).",
+    };
+  }
+  if (messages.length === 0) return { ok: true, sent: 0, failed: [] };
+
+  let sent = 0;
+  const failed: { to: string; error: string }[] = [];
+
+  for (let i = 0; i < messages.length; i++) {
+    const m = messages[i];
+    try {
+      const { error } = await resend.emails.send({
+        from,
+        to: [m.to],
+        subject: m.subject,
+        html: m.html,
+        ...(m.replyTo ? { replyTo: m.replyTo } : {}),
+        ...(m.headers ? { headers: m.headers } : {}),
+        ...(attachments.length > 0 ? { attachments } : {}),
+      });
+      if (error) {
+        failed.push({ to: m.to, error: error.message });
+      } else {
+        sent++;
+      }
+    } catch (err) {
+      failed.push({ to: m.to, error: err instanceof Error ? err.message : String(err) });
+    }
+    if (i + 1 < messages.length) await sleep(600);
+  }
+
+  try {
+    await prisma.emailLog.create({
+      data: {
+        templateKey: opts?.templateKey ?? null,
+        empfaenger: `${messages.length} Empfänger (${sent} ok, ${failed.length} Fehler)`,
+        betreff: messages[0]?.subject ?? "",
+        provider: "resend",
+        status: failed.length === 0 ? "sent" : sent > 0 ? "sent" : "failed",
+        fehlerText:
+          failed.length > 0
+            ? failed
+                .slice(0, 10)
+                .map((f) => `${f.to}: ${f.error}`)
+                .join("\n")
+            : null,
+      },
+    });
+  } catch (err) {
+    console.error("[email] EmailLog (bulk) konnte nicht geschrieben werden:", err);
+  }
+
+  return { ok: sent > 0 && failed.length === 0, sent, failed };
+}
+
 async function logEmail(
   input: SendEmailInput,
   recipients: string[],

@@ -13,9 +13,18 @@ import {
   saveTranscriptAnalysis,
 } from "@/lib/db/leads";
 import { analyzeFirstCall, type FirstCallAnalysis } from "@/lib/firstcall/analyze";
-import { sendEmail, sendBulk } from "@/lib/email/resend";
+import { sendEmail, sendBulkWithAttachments } from "@/lib/email/resend";
 import { plainTextToHtml } from "@/lib/email/format";
 import { summarizeTermin } from "@/lib/termine/summarize";
+import {
+  buildTerminProtokollHtml,
+  formatTerminDatum,
+  terminProtokollSubject,
+} from "@/lib/termine/protokollMail";
+import {
+  createProtokollPdf,
+  protokollPdfFilename,
+} from "@/lib/termine/protokollPdf";
 import {
   parseTerminRegel,
   computeNextTermine,
@@ -1451,77 +1460,34 @@ export async function generateNextTermineAction(
 }
 
 // ─── TERMIN: TRANSKRIPT-AUSWERTUNG & PROTOKOLL-VERSAND ──────────────────────
+// Mail-HTML (Branddesign) und PDF-Erzeugung liegen in lib/termine/protokollMail
+// bzw. lib/termine/protokollPdf – hier nur noch Laden, Bauen und Versenden.
 
-/** Formatiert ein Datum als deutsches Datum+Uhrzeit in Europe/Berlin. */
-function formatTerminDatum(d: Date): string {
-  return d.toLocaleString("de-DE", {
-    timeZone: "Europe/Berlin",
-    weekday: "long",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-type TerminMailData = {
-  datum: Date;
-  thema: string | null;
-  protokoll: string | null;
-  videoUrl: string | null;
-};
-type NextTerminMailData = {
-  datum: Date;
-  thema: string | null;
-  teamsLink: string | null;
-} | null;
+type LoadedTerminProtokoll = NonNullable<
+  Awaited<ReturnType<typeof loadTerminForProtokoll>>
+>;
 
 /**
- * Baut das Protokoll-Mail-HTML: ausführliches Protokoll + Aufzeichnungs-Link +
- * Erinnerung an den nächsten Termin (Datum, Thema, Teams-Link). Identisch für
+ * Baut Betreff, gebrandetes Mail-HTML (kompakte Zusammenfassung, Video-Link,
+ * Folgetermin) und das ausführliche Protokoll als PDF-Anhang. Identisch für
  * Test- und Echtversand.
  */
-function buildTerminProtokollHtml(
-  klasseName: string,
-  termin: TerminMailData,
-  next: NextTerminMailData
-): string {
-  const parts: string[] = [];
-  parts.push(
-    `<p style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a;">` +
-      `<strong>${klasseName}</strong> · Termin vom ${formatTerminDatum(termin.datum)}` +
-      (termin.thema ? `<br>Thema: ${termin.thema}` : "") +
-      `</p>`
-  );
-  parts.push(plainTextToHtml(termin.protokoll ?? ""));
-
-  if (termin.videoUrl) {
-    parts.push(
-      `<p style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a;margin-top:16px;">` +
-        `<strong>Aufzeichnung:</strong> <a href="${termin.videoUrl}">Video ansehen</a></p>`
-    );
-  }
-
-  if (next) {
-    const nextLines = [
-      `<strong>Nächster Termin:</strong> ${formatTerminDatum(next.datum)}`,
-      next.thema ? `Thema: ${next.thema}` : "",
-      next.teamsLink ? `Teams-Meeting: <a href="${next.teamsLink}">${next.teamsLink}</a>` : "",
-    ].filter(Boolean);
-    parts.push(
-      `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a;margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb;">` +
-        nextLines.join("<br>") +
-        `</div>`
-    );
-  }
-
-  return parts.join("\n");
-}
-
-function terminProtokollSubject(klasseName: string, termin: TerminMailData): string {
-  const themaTeil = termin.thema ? `: ${termin.thema}` : "";
-  return `Protokoll${themaTeil} – ${klasseName}`;
+async function buildTerminProtokollMail({ termin, next }: LoadedTerminProtokoll) {
+  const subject = terminProtokollSubject(termin.klasse.name, termin.thema);
+  const html = buildTerminProtokollHtml(termin.klasse.name, termin, next);
+  const pdfBase64 = await createProtokollPdf({
+    klasseName: termin.klasse.name,
+    datumFormatiert: formatTerminDatum(termin.datum),
+    thema: termin.thema,
+    protokoll: termin.protokoll ?? "",
+  });
+  const attachments = [
+    {
+      filename: protokollPdfFilename(termin.klasse.name, termin.datum),
+      content: pdfBase64,
+    },
+  ];
+  return { subject, html, attachments };
 }
 
 /** Wertet ein hochgeladenes Termin-Transkript per Claude aus (Thema/Zusammenfassung/Protokoll). */
@@ -1589,7 +1555,7 @@ export async function sendTerminProtokollAction(
 
   const loaded = await loadTerminForProtokoll(terminId);
   if (!loaded) return { error: "Termin nicht gefunden." };
-  const { termin, next } = loaded;
+  const { termin } = loaded;
   if (!termin.protokoll?.trim()) {
     return { error: "Kein Protokoll vorhanden. Bitte zuerst ein Transkript auswerten." };
   }
@@ -1599,11 +1565,12 @@ export async function sendTerminProtokollAction(
     return { error: "Keine Teilnehmer mit E-Mail in dieser Klasse." };
   }
 
-  const subject = terminProtokollSubject(termin.klasse.name, termin);
-  const html = buildTerminProtokollHtml(termin.klasse.name, termin, next);
+  const { subject, html, attachments } = await buildTerminProtokollMail(loaded);
 
-  const result = await sendBulk(
+  // Einzelversand statt Batch-API: Resend unterstützt Anhänge nur je Einzel-Mail.
+  const result = await sendBulkWithAttachments(
     recipients.map((to) => ({ to, subject, html })),
+    attachments,
     { templateKey: "termin_protokoll" }
   );
 
@@ -1635,15 +1602,16 @@ export async function sendTerminProtokollTestAction(
 
   const loaded = await loadTerminForProtokoll(terminId);
   if (!loaded) return { error: "Termin nicht gefunden." };
-  const { termin, next } = loaded;
-  if (!termin.protokoll?.trim()) {
+  if (!loaded.termin.protokoll?.trim()) {
     return { error: "Kein Protokoll vorhanden. Bitte zuerst ein Transkript auswerten." };
   }
 
+  const { subject, html, attachments } = await buildTerminProtokollMail(loaded);
   const res = await sendEmail({
     to: email,
-    subject: `[TEST] ${terminProtokollSubject(termin.klasse.name, termin)}`,
-    html: buildTerminProtokollHtml(termin.klasse.name, termin, next),
+    subject: `[TEST] ${subject}`,
+    html,
+    attachments,
     templateKey: "termin_protokoll_test",
   });
 
