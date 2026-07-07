@@ -23,9 +23,10 @@ const REGISTER_ERRORS: Record<RegisterErrorCode, string> = {
     "Diese Bestellung ist nicht berechtigt – der Connect Day ist für Klasse 1 und 2.",
   invalid_teilnehmer:
     "Bitte wähle gültige Teilnehmer aus – jede Person nur einmal, und nur Masterclass-Teilnehmer deiner Bestellung.",
-  too_many_persons: "Maximal 3 Personen pro Firma.",
-  already_registered:
-    "Für deine Firma existiert bereits eine Anmeldung zum Connect Day.",
+  too_many_persons:
+    "Maximal 3 Personen pro Firma – bereits angemeldete Personen zählen mit.",
+  teilnehmer_already_registered:
+    "Mindestens eine der gewählten Personen ist bereits zum Connect Day angemeldet.",
   event_full:
     "Der Connect Day ist leider ausgebucht – alle 100 Plätze sind vergeben.",
 };
@@ -35,6 +36,8 @@ const UPDATE_ERRORS: Record<UpdateErrorCode, string> = {
   event_started: "Das Event hat bereits begonnen – Änderungen sind nicht mehr möglich.",
   invalid_teilnehmer:
     "Bitte wähle gültige Teilnehmer aus – jede Person nur einmal, und nur Masterclass-Teilnehmer deiner Bestellung.",
+  teilnehmer_already_registered:
+    "Diese Person ist bereits über eine andere Anmeldung eurer Firma zum Connect Day angemeldet.",
   person_count_mismatch:
     "Die Personenzahl kann nicht geändert werden – nur die Teilnehmer selbst. Für weniger Plätze bitte stornieren.",
 };

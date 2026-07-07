@@ -47,7 +47,13 @@ export default async function ConnectDayPage() {
     );
   }
 
-  const { event, eligibleBestellungen, registration, seatsFrei } = context;
+  const {
+    event,
+    eligibleBestellungen,
+    registrations,
+    nachmeldeKontingent,
+    seatsFrei,
+  } = context;
   const belegt = event.capacity - seatsFrei;
   const prozent = Math.min(100, Math.round((belegt / event.capacity) * 100));
   const anmeldungOffen =
@@ -55,6 +61,17 @@ export default async function ConnectDayPage() {
     !context.notYetOpen &&
     !context.deadlinePassed &&
     !context.isFull;
+  const eventStarted = new Date() > event.startAt;
+  // Bereits angemeldete Personen (über alle Anmeldungen der Firma) – sie
+  // dürfen weder nachgemeldet noch in einer anderen Anmeldung eingetauscht
+  // werden.
+  const angemeldeteIds = new Set(context.angemeldeteTeilnehmerIds);
+  // Nachmelden ist möglich, solange die Anmeldung offen ist und das
+  // Firmen-Kontingent (max. Personen pro Firma) noch nicht ausgeschöpft ist.
+  const nachmeldenMoeglich =
+    anmeldungOffen &&
+    nachmeldeKontingent > 0 &&
+    eligibleBestellungen.length > 0;
 
   return (
     <div className="space-y-6">
@@ -157,33 +174,78 @@ export default async function ConnectDayPage() {
         </div>
       </div>
 
-      {/* Zustand: Anmeldung / Verwaltung / gesperrt */}
-      {registration ? (
-        <ConnectDayManage
-          registration={{
-            id: registration.id,
-            personen: registration.personen,
-            invoiceStatus: registration.invoiceStatus,
-            bezahlt: registration.bezahltAm !== null,
-            firma: registration.bestellung.firma,
-            teilnehmer: registration.teilnehmer.map((t) => ({
-              position: t.position,
-              bestellungTeilnehmerId: t.bestellungTeilnehmerId,
-              vorname: t.vorname,
-              nachname: t.nachname,
-              hinweise: t.hinweise,
-            })),
-          }}
-          auswahl={
-            eligibleBestellungen
-              .find((b) => b.id === registration.bestellung.id)
-              ?.auswaehlbareTeilnehmer.map((t) => ({
+      {/* Bestehende Anmeldungen (inkl. Nachmeldungen – jede mit eigener Rechnung) */}
+      {registrations.map((registration) => {
+        // Für den Teilnehmer-Tausch stehen nur Personen zur Auswahl, die
+        // nicht schon über eine ANDERE Anmeldung angemeldet sind.
+        const eigeneIds = new Set(
+          registration.teilnehmer.map((t) => t.bestellungTeilnehmerId)
+        );
+        return (
+          <ConnectDayManage
+            key={registration.id}
+            registration={{
+              id: registration.id,
+              personen: registration.personen,
+              invoiceStatus: registration.invoiceStatus,
+              bezahlt: registration.bezahltAm !== null,
+              firma: registration.bestellung.firma,
+              teilnehmer: registration.teilnehmer.map((t) => ({
+                position: t.position,
+                bestellungTeilnehmerId: t.bestellungTeilnehmerId,
+                vorname: t.vorname,
+                nachname: t.nachname,
+                hinweise: t.hinweise,
+              })),
+            }}
+            auswahl={
+              eligibleBestellungen
+                .find((b) => b.id === registration.bestellung.id)
+                ?.auswaehlbareTeilnehmer.filter(
+                  (t) => eigeneIds.has(t.id) || !angemeldeteIds.has(t.id)
+                )
+                .map((t) => ({
+                  id: t.id,
+                  name: `${t.vorname} ${t.nachname}`,
+                })) ?? []
+            }
+            eventStarted={eventStarted}
+          />
+        );
+      })}
+
+      {/* Nachmelde-Formular / Erst-Anmeldung / gesperrt */}
+      {nachmeldenMoeglich ? (
+        <ConnectDayForm
+          bestellungen={eligibleBestellungen.map((b) => ({
+            id: b.id,
+            bestellNr: b.bestellNr,
+            firma: b.firma,
+            land: b.land,
+            ustId: b.ustId,
+            klasseName: b.klasse.name,
+            teilnehmerSperre: b.klasse.teilnehmerSperre,
+            auswaehlbareTeilnehmer: b.auswaehlbareTeilnehmer
+              .filter((t) => !angemeldeteIds.has(t.id))
+              .map((t) => ({
                 id: t.id,
                 name: `${t.vorname} ${t.nachname}`,
-              })) ?? []
-          }
-          eventStarted={new Date() > event.startAt}
+                email: t.email,
+              })),
+          }))}
+          maxPersonen={nachmeldeKontingent}
+          seatsFrei={seatsFrei}
+          preisNettoProPerson={Number(event.preisNettoProPerson)}
+          nachmeldung={registrations.length > 0}
         />
+      ) : registrations.length > 0 ? (
+        nachmeldeKontingent <= 0 ? (
+          <div className="bg-white rounded-2xl border border-cool shadow-sm p-5 text-sm text-gray">
+            Euer Firmen-Kontingent von {event.maxProBestellung} Personen ist
+            ausgeschöpft. Teilnehmer könnt ihr oben weiterhin bis zum
+            Eventbeginn kostenlos tauschen.
+          </div>
+        ) : null
       ) : eligibleBestellungen.length === 0 ? (
         <div className="bg-white rounded-2xl border border-cool shadow-sm p-10 text-center">
           <Lock className="w-10 h-10 text-cool mx-auto mb-3" />
@@ -195,7 +257,7 @@ export default async function ConnectDayPage() {
             Klassen vor. Bei Fragen melde dich gerne bei uns.
           </p>
         </div>
-      ) : !anmeldungOffen ? (
+      ) : (
         <div className="bg-white rounded-2xl border border-cool shadow-sm p-10 text-center">
           {context.notYetOpen ? (
             <>
@@ -224,26 +286,6 @@ export default async function ConnectDayPage() {
             </>
           )}
         </div>
-      ) : (
-        <ConnectDayForm
-          bestellungen={eligibleBestellungen.map((b) => ({
-            id: b.id,
-            bestellNr: b.bestellNr,
-            firma: b.firma,
-            land: b.land,
-            ustId: b.ustId,
-            klasseName: b.klasse.name,
-            teilnehmerSperre: b.klasse.teilnehmerSperre,
-            auswaehlbareTeilnehmer: b.auswaehlbareTeilnehmer.map((t) => ({
-              id: t.id,
-              name: `${t.vorname} ${t.nachname}`,
-              email: t.email,
-            })),
-          }))}
-          maxPersonen={event.maxProBestellung}
-          seatsFrei={seatsFrei}
-          preisNettoProPerson={Number(event.preisNettoProPerson)}
-        />
       )}
     </div>
   );

@@ -1,0 +1,12 @@
+-- Nachmeldungen zum Connect Day: eine Firma darf jetzt MEHRERE bestätigte
+-- Anmeldungen haben (z.B. erst 1 Person, später 2 weitere nachmelden – jede
+-- Anmeldung bekommt ihre eigene Rechnung), solange das Personen-Kontingent
+-- (events.max_pro_bestellung, Summe über alle Anmeldungen) und die Kapazität
+-- reichen.
+--
+-- Der partielle Unique-Index "höchstens eine bestätigte Anmeldung pro
+-- Bestellung" entfällt daher. Kontingent und Personen-Doppelanmeldung werden
+-- stattdessen transaktional in lib/events/connectDay.ts geprüft – parallele
+-- Anmeldungen serialisieren sich dort am Row-Lock des Platz-Zählers
+-- events.seats_taken, die Prüfung ist also weiterhin race-sicher.
+DROP INDEX IF EXISTS "event_registrations_confirmed_unique";

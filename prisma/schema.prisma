@@ -374,10 +374,11 @@ model EventRegistration {
   aktualisiertAm DateTime                @updatedAt @map("aktualisiert_am")
   teilnehmer     EventTeilnehmer[]
 
-  // Doppelanmeldung wird über einen partiellen Unique-Index
-  // (event_id, bestellung_id) WHERE status = 'CONFIRMED' verhindert –
-  // per Hand in der Migration angelegt, da Prisma keine Partial-Indexes kennt.
-  // Stornierte Anmeldungen bleiben so als Audit-Zeilen stehen.
+  // Eine Bestellung kann MEHRERE bestätigte Anmeldungen haben (Nachmeldung
+  // weiterer Personen, jede mit eigener Rechnung). Das Firmen-Kontingent
+  // (Event.maxProBestellung) und die Personen-Doppelanmeldung werden
+  // transaktional in lib/events/connectDay.ts geprüft. Stornierte
+  // Anmeldungen bleiben als Audit-Zeilen stehen.
   @@index([eventId])
   @@index([bestellungId])
   @@map("event_registrations")

@@ -21,7 +21,7 @@ export type RegisterErrorCode =
   | "not_eligible"
   | "invalid_teilnehmer"
   | "too_many_persons"
-  | "already_registered"
+  | "teilnehmer_already_registered"
   | "event_full";
 
 export class RegisterError extends Error {
@@ -53,8 +53,9 @@ function isAuswaehlbar(t: {
 
 /**
  * Lädt das Connect-Day-Event samt allem, was die Kundenportal-Seite braucht:
- * berechtigte Bestellungen (inkl. wählbarer Masterclass-Teilnehmer), eine
- * evtl. bestehende Anmeldung der Session-E-Mail und den Belegungsstand.
+ * berechtigte Bestellungen (inkl. wählbarer Masterclass-Teilnehmer), alle
+ * bestehenden Anmeldungen der Session-E-Mail (Nachmeldungen sind eigene
+ * Anmeldungen mit eigener Rechnung) und den Belegungsstand.
  */
 export async function getConnectDayContext(sessionEmail: string) {
   const event = await prisma.event.findUnique({
@@ -91,7 +92,7 @@ export async function getConnectDayContext(sessionEmail: string) {
       auswaehlbareTeilnehmer: b.teilnehmer.filter(isAuswaehlbar),
     }));
 
-  const registration = await prisma.eventRegistration.findFirst({
+  const registrations = await prisma.eventRegistration.findMany({
     where: {
       eventId: event.id,
       status: "CONFIRMED",
@@ -103,7 +104,25 @@ export async function getConnectDayContext(sessionEmail: string) {
         select: { id: true, firma: true, bestellNr: true },
       },
     },
+    orderBy: { erstelltAm: "asc" },
   });
+
+  // Firmen-Kontingent (maxProBestellung Personen pro Session-E-Mail) über
+  // ALLE bestätigten Anmeldungen hinweg – daraus ergibt sich, wie viele
+  // Personen noch nachgemeldet werden können.
+  const personenAngemeldet = registrations.reduce(
+    (sum, r) => sum + r.personen,
+    0
+  );
+  const nachmeldeKontingent = Math.max(
+    0,
+    event.maxProBestellung - personenAngemeldet
+  );
+  // Bereits angemeldete Personen (über alle Anmeldungen) – für die Filterung
+  // der Auswahllisten, damit niemand doppelt angemeldet werden kann.
+  const angemeldeteTeilnehmerIds = registrations.flatMap((r) =>
+    r.teilnehmer.map((t) => t.bestellungTeilnehmerId)
+  );
 
   const seatsFrei = Math.max(0, event.capacity - event.seatsTaken);
   const now = new Date();
@@ -111,7 +130,10 @@ export async function getConnectDayContext(sessionEmail: string) {
   return {
     event,
     eligibleBestellungen,
-    registration,
+    registrations,
+    personenAngemeldet,
+    nachmeldeKontingent,
+    angemeldeteTeilnehmerIds,
     seatsFrei,
     isFull: seatsFrei <= 0,
     // Anmeldestart noch nicht erreicht? Der Admin-Schalter
@@ -144,6 +166,12 @@ export interface RegisterInput {
  * Validiert Berechtigung + Auswahl und legt die Anmeldung race-sicher an.
  * Wirft RegisterError mit maschinenlesbarem Code; die Server Action mappt
  * die Codes auf deutsche Fehlermeldungen.
+ *
+ * NACHMELDUNGEN: Eine Firma darf mehrere bestätigte Anmeldungen haben (jede
+ * bekommt ihre eigene Rechnung), solange das Firmen-Kontingent
+ * (event.maxProBestellung Personen über alle Anmeldungen der Session-E-Mail)
+ * und die Event-Kapazität reichen. Dieselbe Person kann nur einmal
+ * angemeldet werden.
  *
  * Gibt die ID der neuen EventRegistration zurück.
  */
@@ -197,20 +225,6 @@ export async function registerForConnectDay(
     throw new RegisterError("invalid_teilnehmer");
   }
 
-  // Eine Anmeldung pro Kunde: auch über eine ANDERE Bestellung derselben
-  // Session-E-Mail darf noch keine bestätigte Anmeldung existieren (sonst
-  // könnten 2 Bestellungen × 3 Personen gebucht werden). Gleiche Bestellung
-  // wird zusätzlich hart über den partiellen Unique-Index abgesichert.
-  const existing = await prisma.eventRegistration.findFirst({
-    where: {
-      eventId: event.id,
-      status: "CONFIRMED",
-      bestellung: { email: input.sessionEmail },
-    },
-    select: { id: true },
-  });
-  if (existing) throw new RegisterError("already_registered");
-
   // Preis-Snapshot: Personenzahl × Netto-Preis, MwSt nach Land/USt-ID der
   // Bestellung (Präsenz-Event in DE → Hinweis in lib/events/connectDayInvoice.ts).
   const personen = ids.length;
@@ -235,6 +249,38 @@ export async function registerForConnectDay(
         data: { seatsTaken: { increment: personen } },
       });
       if (claimed.count === 0) throw new RegisterError("event_full");
+
+      // Kontingent + Personen-Dedup NACH der Platz-Reservierung prüfen:
+      // parallele Anmeldungen derselben Firma serialisieren sich am Row-Lock
+      // der events-Zeile, die folgenden Reads sehen daher die committeten
+      // Anmeldungen des Gewinners. Wirft die Prüfung, rollt die Transaktion
+      // auch das Platz-Inkrement zurück.
+      const bestehende = await tx.eventRegistration.findMany({
+        where: {
+          eventId: event.id,
+          status: "CONFIRMED",
+          bestellung: { email: input.sessionEmail },
+        },
+        select: {
+          personen: true,
+          teilnehmer: { select: { bestellungTeilnehmerId: true } },
+        },
+      });
+      const bereitsAngemeldet = bestehende.reduce(
+        (sum, r) => sum + r.personen,
+        0
+      );
+      if (bereitsAngemeldet + personen > event.maxProBestellung) {
+        throw new RegisterError("too_many_persons");
+      }
+      const angemeldeteIds = new Set(
+        bestehende.flatMap((r) =>
+          r.teilnehmer.map((t) => t.bestellungTeilnehmerId)
+        )
+      );
+      if (ids.some((id) => angemeldeteIds.has(id))) {
+        throw new RegisterError("teilnehmer_already_registered");
+      }
 
       const registration = await tx.eventRegistration.create({
         data: {
@@ -263,14 +309,14 @@ export async function registerForConnectDay(
       return registration.id;
     });
   } catch (err) {
-    // Paralleler Doppel-Submit derselben Bestellung → partieller Unique-Index
-    // (P2002). Die Transaktion ist zurückgerollt, das Inkrement rückgängig.
+    // Unique-Verletzung (P2002, z.B. event_teilnehmer) → als Doppelanmeldung
+    // melden. Die Transaktion ist zurückgerollt, das Inkrement rückgängig.
     if (
       typeof err === "object" &&
       err !== null &&
       (err as { code?: string }).code === "P2002"
     ) {
-      throw new RegisterError("already_registered");
+      throw new RegisterError("teilnehmer_already_registered");
     }
     throw err;
   }
@@ -288,6 +334,7 @@ export type UpdateErrorCode =
   | "registration_not_found"
   | "event_started"
   | "invalid_teilnehmer"
+  | "teilnehmer_already_registered"
   | "person_count_mismatch";
 
 export class UpdateError extends Error {
@@ -313,6 +360,8 @@ export async function updateConnectDayTeilnehmer(
     },
     select: {
       id: true,
+      eventId: true,
+      bestellungId: true,
       personen: true,
       event: { select: { startAt: true } },
       bestellung: {
@@ -340,6 +389,29 @@ export async function updateConnectDayTeilnehmer(
   const gewaehlt = ids.map((id) => byId.get(id));
   if (gewaehlt.some((t) => !t || !isAuswaehlbar(t))) {
     throw new UpdateError("invalid_teilnehmer");
+  }
+
+  // Seit Nachmeldungen möglich sind, kann die Firma mehrere Anmeldungen
+  // haben – niemand darf in eine Person getauscht werden, die bereits über
+  // eine ANDERE Anmeldung derselben Bestellung angemeldet ist.
+  const andereAnmeldungen = await prisma.eventRegistration.findMany({
+    where: {
+      eventId: registration.eventId,
+      bestellungId: registration.bestellungId,
+      status: "CONFIRMED",
+      id: { not: registration.id },
+    },
+    select: {
+      teilnehmer: { select: { bestellungTeilnehmerId: true } },
+    },
+  });
+  const anderweitigAngemeldet = new Set(
+    andereAnmeldungen.flatMap((r) =>
+      r.teilnehmer.map((t) => t.bestellungTeilnehmerId)
+    )
+  );
+  if (ids.some((id) => anderweitigAngemeldet.has(id))) {
+    throw new UpdateError("teilnehmer_already_registered");
   }
 
   // Auswahl komplett neu schreiben (delete + create) – einfacher und robuster
