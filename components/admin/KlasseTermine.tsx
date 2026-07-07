@@ -180,7 +180,9 @@ function TerminForm({
       {mode === "edit" && (
         <>
           <div>
-            <label className={labelClass}>Zusammenfassung (kompakt)</label>
+            <label className={labelClass}>
+              Zusammenfassung (kompakt – steht im E-Mail-Text)
+            </label>
             <textarea
               name="zusammenfassung"
               rows={4}
@@ -190,7 +192,9 @@ function TerminForm({
             />
           </div>
           <div>
-            <label className={labelClass}>Protokoll (Versand an Teilnehmer)</label>
+            <label className={labelClass}>
+              Protokoll (ausführlich – geht als PDF-Anhang mit)
+            </label>
             <textarea
               name="protokoll"
               rows={8}
@@ -377,9 +381,16 @@ function TerminDetailPanel({ termin }: { termin: TerminView }) {
         <h4 className="text-sm font-semibold text-dark-slate-700">
           Protokoll an Teilnehmer
         </h4>
-        {!hasProtokoll && (
+        {!hasProtokoll ? (
           <p className="text-xs text-dark-slate-400">
             Noch kein Protokoll – zuerst ein Transkript hochladen und auswerten.
+          </p>
+        ) : (
+          <p className="text-xs text-dark-slate-400">
+            Die E-Mail (Branddesign) enthält die kompakte Zusammenfassung, den
+            Video-Link und den Folgetermin mit Teams-Link; das ausführliche
+            Protokoll geht als PDF-Anhang mit. Beide Texte sind vor dem Versand
+            über „Bearbeiten“ (Stift) anpassbar.
           </p>
         )}
         <div className="flex flex-wrap items-center gap-2">
