@@ -67,12 +67,18 @@ export default async function KundeBestellungenPage() {
                 <CalendarDays className="w-4 h-4 text-green" />
                 10. &amp; 11. Dezember 2026 · nhow Hotel Frankfurt
               </p>
-              {connectDay.registration ? (
+              {connectDay.personenAngemeldet > 0 ? (
                 <p className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-green">
                   <CheckCircle2 className="w-4 h-4" />
-                  Ihr seid mit {connectDay.registration.personen}{" "}
-                  {connectDay.registration.personen === 1 ? "Person" : "Personen"}{" "}
+                  Ihr seid mit {connectDay.personenAngemeldet}{" "}
+                  {connectDay.personenAngemeldet === 1 ? "Person" : "Personen"}{" "}
                   angemeldet
+                  {connectDay.nachmeldeKontingent > 0 &&
+                  !connectDay.notYetOpen &&
+                  !connectDay.deadlinePassed &&
+                  !connectDay.isFull
+                    ? " · weitere Personen nachmelden möglich"
+                    : ""}
                 </p>
               ) : connectDay.notYetOpen ? (
                 <p className="mt-3 text-sm font-medium text-white">

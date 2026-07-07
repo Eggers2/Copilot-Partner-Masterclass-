@@ -34,11 +34,15 @@ export function ConnectDayForm({
   maxPersonen,
   seatsFrei,
   preisNettoProPerson,
+  nachmeldung = false,
 }: {
   bestellungen: BestellungOption[];
+  /** Wie viele Personen noch angemeldet werden dürfen (Rest-Kontingent der Firma). */
   maxPersonen: number;
   seatsFrei: number;
   preisNettoProPerson: number;
+  /** true = es existiert schon eine Anmeldung, hier werden Personen NACHGEMELDET (eigene Rechnung). */
+  nachmeldung?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -123,11 +127,26 @@ export function ConnectDayForm({
   return (
     <div className="bg-white rounded-2xl border border-cool shadow-sm p-6">
       <h2 className="text-lg font-bold text-slate font-heading mb-1">
-        Jetzt verbindlich anmelden
+        {nachmeldung
+          ? "Weitere Personen nachmelden"
+          : "Jetzt verbindlich anmelden"}
       </h2>
       <p className="text-sm text-gray mb-6">
-        Wähle bis zu {maxPersonen} Personen aus den Masterclass-Teilnehmern
-        deiner Bestellung.
+        {nachmeldung ? (
+          <>
+            Euer Firmen-Kontingent ist noch nicht ausgeschöpft: du kannst{" "}
+            {maxPersonen === 1
+              ? "noch 1 weitere Person"
+              : `noch bis zu ${maxPersonen} weitere Personen`}{" "}
+            anmelden, solange Plätze frei sind. Für die Nachmeldung erhaltet
+            ihr eine separate Rechnung.
+          </>
+        ) : (
+          <>
+            Wähle bis zu {maxPersonen} Personen aus den
+            Masterclass-Teilnehmern deiner Bestellung.
+          </>
+        )}
       </p>
 
       {bestellungen.length > 1 && (
@@ -151,8 +170,9 @@ export function ConnectDayForm({
 
       {keineTeilnehmer ? (
         <div className="bg-ice border border-green/30 rounded-xl p-4 text-sm text-slate">
-          Für diese Bestellung sind noch keine Masterclass-Teilnehmer mit Name
-          und E-Mail gepflegt.{" "}
+          {nachmeldung
+            ? "Für diese Bestellung sind keine weiteren Masterclass-Teilnehmer verfügbar – alle gepflegten Personen sind bereits angemeldet. "
+            : "Für diese Bestellung sind noch keine Masterclass-Teilnehmer mit Name und E-Mail gepflegt. "}
           {bestellung.teilnehmerSperre ? (
             <>
               Die Teilnehmerliste deiner Klasse ist aktuell gesperrt – bitte
