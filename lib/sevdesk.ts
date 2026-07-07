@@ -341,8 +341,9 @@ export async function createInvoice(
 }
 
 /**
- * Rendert das Rechnungs-PDF in sevDesk (nötig, bevor ein Entwurf per E-Mail
- * versendet werden kann).
+ * Rendert das Rechnungs-PDF in sevDesk neu (forceReload). Nach dem
+ * Festschreiben nötig, damit getPdf nicht das gecachte Entwurfs-PDF ohne
+ * Rechnungsnummer ausliefert.
  */
 export async function renderInvoice(invoiceId: string): Promise<void> {
   if (getSevdeskMode() === "mock") {
@@ -376,9 +377,10 @@ export async function getInvoice(
 }
 
 /**
- * Holt das Rechnungs-PDF aus sevDesk, OHNE die Rechnung dabei als versendet
- * zu markieren (preventSendBy) – das passiert erst nach erfolgreichem
- * Mailversand über markInvoiceSent().
+ * Holt das Rechnungs-PDF aus sevDesk, OHNE den Versandstatus der Rechnung zu
+ * verändern (preventSendBy). WICHTIG: Die Rechnung muss vorher über
+ * markInvoiceSent() festgeschrieben und neu gerendert worden sein – das PDF
+ * eines Entwurfs (Status 100) enthält noch keine Rechnungsnummer.
  */
 export async function getInvoicePdf(
   invoiceId: string
@@ -409,8 +411,10 @@ export async function getInvoicePdf(
 
 /**
  * Markiert die Rechnung in sevDesk als versendet (Versandart PDF) und hebt
- * den Status damit von Entwurf auf "Offen" an – analog zu sendViaEmail, nur
- * dass die E-Mail selbst über unsere eigene Infrastruktur (Resend) rausgeht.
+ * den Status damit von Entwurf auf "Offen" an – dabei vergibt sevDesk die
+ * endgültige Rechnungsnummer aus dem Nummernkreis. Muss deshalb VOR dem
+ * PDF-Abruf laufen; die E-Mail selbst geht über unsere eigene Infrastruktur
+ * (Resend) raus.
  */
 export async function markInvoiceSent(invoiceId: string): Promise<void> {
   if (getSevdeskMode() === "mock") {

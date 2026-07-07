@@ -8,6 +8,7 @@ import {
   markInvoiceSent,
   renderInvoice,
   sendInvoiceByEmail,
+  SevdeskError,
 } from "@/lib/sevdesk";
 import { sendConnectDayInvoiceEmail } from "@/lib/email/sendConnectDay";
 
@@ -153,34 +154,45 @@ export async function createAndSendConnectDayInvoice(
       });
     }
 
-    // 3. PDF rendern (best-effort: sendViaEmail rendert notfalls selbst)
-    step = "Rechnung rendern";
-    try {
-      await renderInvoice(invoiceId);
-    } catch (renderErr) {
-      console.error(
-        `[ConnectDay] PDF-Render für Rechnung ${invoiceId} fehlgeschlagen (Versand wird trotzdem versucht):`,
-        renderErr
+    // 3. Rechnung festschreiben (Entwurf → "Offen"): erst dabei vergibt
+    //    sevDesk die endgültige Rechnungsnummer aus dem Nummernkreis. Das MUSS
+    //    vor dem PDF-Abruf passieren – sonst geht ein Entwurfs-PDF mit leerem
+    //    Rechnungsnummern-Feld an den Partner raus, während die Rechnung in
+    //    sevDesk später eine Nummer trägt.
+    //    Idempotent: ist die Rechnung schon "Offen" (z.B. Admin-Retry nach
+    //    fehlgeschlagenem Mailversand), wird nur die Nummer nachgeladen.
+    step = "Rechnung festschreiben";
+    const current = await getInvoice(invoiceId);
+    let rechnungNr = current.invoiceNumber;
+    if (current.status === "100") {
+      await markInvoiceSent(invoiceId);
+      rechnungNr = (await getInvoice(invoiceId)).invoiceNumber;
+    }
+    if (!rechnungNr) {
+      throw new SevdeskError(
+        "sevDesk hat nach dem Festschreiben keine Rechnungsnummer vergeben – Versand abgebrochen, damit kein PDF ohne Rechnungsnummer rausgeht."
       );
     }
+    if (registration.sevdeskInvoiceNr !== rechnungNr) {
+      await prisma.eventRegistration.update({
+        where: { id: registrationId },
+        data: { sevdeskInvoiceNr: rechnungNr },
+      });
+    }
 
-    // 4. Rechnung per E-Mail versenden.
+    // 4. PDF rendern – Pflicht, kein Best-effort: ohne Neu-Render könnte
+    //    sevDesk das gecachte Entwurfs-PDF (ohne Rechnungsnummer) ausliefern.
+    step = "Rechnung rendern";
+    await renderInvoice(invoiceId);
+
+    // 5. Rechnung per E-Mail versenden.
     //    Bevorzugt über Resend im Branddesign (Absender Next Skills, Template
-    //    connect_day_rechnung, PDF aus sevDesk im Anhang); die Rechnung wird
-    //    danach in sevDesk als versendet markiert (Entwurf → "Offen").
+    //    connect_day_rechnung, PDF aus sevDesk im Anhang).
     //    Fallback ohne Resend: Versand direkt aus sevDesk (alte Optik).
     step = "Rechnung versenden";
     const teilnehmerListe = registration.teilnehmer
       .map((t) => `${t.vorname} ${t.nachname}`)
       .join(", ");
-    let rechnungNr = registration.sevdeskInvoiceNr;
-    if (!rechnungNr) {
-      try {
-        rechnungNr = (await getInvoice(invoiceId)).invoiceNumber;
-      } catch {
-        rechnungNr = null;
-      }
-    }
 
     const pdf = await getInvoicePdf(invoiceId);
     const viaResend = await sendConnectDayInvoiceEmail({
@@ -189,46 +201,23 @@ export async function createAndSendConnectDayInvoice(
       firma: bestellung.firma,
       personen: registration.personen,
       teilnehmerListe,
-      rechnungNr: rechnungNr ?? "zur Anmeldung",
+      rechnungNr,
       preisBrutto: Number(registration.preisBrutto),
       zahlungszielTage: ZAHLUNGSZIEL_TAGE,
       pdf,
     });
 
-    if (viaResend) {
-      // Best-effort: schlägt nur die Versand-Markierung in sevDesk fehl,
-      // KEIN Retry-Fehler auslösen – sonst bekäme der Kunde die Mail doppelt.
-      try {
-        await markInvoiceSent(invoiceId);
-      } catch (markErr) {
-        console.error(
-          `[ConnectDay] Rechnung ${invoiceId} konnte in sevDesk nicht als versendet markiert werden (bitte manuell festschreiben):`,
-          markErr
-        );
-      }
-    } else {
+    if (!viaResend) {
       await sendInvoiceByEmail({
         invoiceId,
         toEmail: bestellung.email,
         subject: `Deine Rechnung – ${event.name}`,
         text:
           `Hallo ${bestellung.vorname},\n\n` +
-          `anbei die Rechnung für eure Anmeldung zum ${event.name} ` +
+          `anbei die Rechnung ${rechnungNr} für eure Anmeldung zum ${event.name} ` +
           `(${registration.personen} ${registration.personen === 1 ? "Person" : "Personen"}).\n\n` +
           `Viele Grüße\nNext Skills`,
       });
-    }
-
-    // 5. Endgültige Rechnungsnummer übernehmen (Entwürfe haben teils noch
-    //    keine Nummer; sie wird beim Versand aus dem Nummernkreis vergeben).
-    let finalInvoiceNr: string | null = null;
-    try {
-      finalInvoiceNr = (await getInvoice(invoiceId)).invoiceNumber;
-    } catch (nrErr) {
-      console.error(
-        `[ConnectDay] Rechnungsnummer für ${invoiceId} konnte nicht nachgeladen werden:`,
-        nrErr
-      );
     }
 
     await prisma.eventRegistration.update({
@@ -237,7 +226,7 @@ export async function createAndSendConnectDayInvoice(
         invoiceStatus: "SENT",
         invoiceSentAt: new Date(),
         invoiceError: null,
-        ...(finalInvoiceNr ? { sevdeskInvoiceNr: finalInvoiceNr } : {}),
+        sevdeskInvoiceNr: rechnungNr,
       },
     });
   } catch (err) {
