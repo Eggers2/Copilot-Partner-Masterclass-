@@ -1,8 +1,9 @@
-import { AlertTriangle, TrendingDown, TrendingUp } from "lucide-react";
+import { AlertTriangle, Building2, TrendingDown, TrendingUp } from "lucide-react";
 import type {
   KlasseAnwesenheitAuswertung,
   RankingEintrag,
 } from "@/lib/db/anwesenheit";
+import { AnwesenheitIgnorierliste } from "./AnwesenheitIgnorierliste";
 
 // Server-gerenderte KPI-Sektion der Klassen-Detailseite: Anwesenheit pro
 // Termin, Abweichungs-Hinweis (Anwesende ohne Registrierung) und die
@@ -89,19 +90,25 @@ function RankingTable({
 }
 
 export function KlasseAnwesenheitKpi({
+  klasseSlug,
   auswertung,
 }: {
+  klasseSlug: string;
   auswertung: KlasseAnwesenheitAuswertung;
 }) {
-  const { berichte, proTermin, top, bottom, unbekannte } = auswertung;
+  const { berichte, proTermin, top, bottom, unbekannte, inaktiveFirmen, ignorierliste } =
+    auswertung;
 
   if (berichte === 0) {
     return (
-      <p className="text-sm text-dark-slate-400">
-        Noch kein Anwesenheitsbericht hochgeladen. Lade bei einem Termin (oben
-        unter „Termine &amp; Themen“) den Teams-Anwesenheitsbericht hoch, um die
-        Auswertung zu sehen.
-      </p>
+      <div className="space-y-4">
+        <p className="text-sm text-dark-slate-400">
+          Noch kein Anwesenheitsbericht hochgeladen. Lade bei einem Termin (oben
+          unter „Termine &amp; Themen“) den Teams-Anwesenheitsbericht hoch, um die
+          Auswertung zu sehen.
+        </p>
+        <AnwesenheitIgnorierliste klasseSlug={klasseSlug} emails={ignorierliste} />
+      </div>
     );
   }
 
@@ -132,8 +139,66 @@ export function KlasseAnwesenheitKpi({
           </ul>
           <p className="mt-2 text-xs text-red-600">
             Möglicherweise wurde der Meeting-Link intern oder extern
-            weitergegeben. Details stehen beim jeweiligen Termin.
+            weitergegeben. Details stehen beim jeweiligen Termin. Bekannte
+            Personen (gleiche Person, andere Adresse) werden über den Namen
+            automatisch zugeordnet; Moderatoren/Sponsoren gehören auf die
+            Ignorierliste unten.
           </p>
+        </div>
+      )}
+
+      {/* Inaktive Firmen/Partner: Teilnahmequote unter 50 % */}
+      {inaktiveFirmen.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-dark-slate-700 mb-2 flex items-center gap-1.5">
+            <Building2 className="w-4 h-4 text-amber-600" />
+            Firmen mit unter 50 % Teilnahme
+          </h3>
+          <p className="text-xs text-dark-slate-500 mb-2">
+            Teilnahmequote über alle Mitarbeiter der Firma (wahrgenommene ÷
+            mögliche Termin-Teilnahmen) – zum schnellen Erkennen inaktiver
+            Partner.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-dark-slate-400">
+                  <th className="py-1 pr-3 font-medium">Firma</th>
+                  <th className="py-1 pr-3 font-medium">Teilnehmer</th>
+                  <th className="py-1 pr-3 font-medium whitespace-nowrap">
+                    Teilnahmen
+                  </th>
+                  <th className="py-1 font-medium">Quote</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-dark-slate-50">
+                {inaktiveFirmen.map((f) => (
+                  <tr key={f.firma}>
+                    <td className="py-1.5 pr-3 font-medium text-dark-slate-800">
+                      {f.firma}
+                    </td>
+                    <td className="py-1.5 pr-3 text-dark-slate-600">
+                      {f.teilnehmer}
+                    </td>
+                    <td className="py-1.5 pr-3 text-dark-slate-600 whitespace-nowrap">
+                      {f.anwesend}/{f.moeglich}
+                    </td>
+                    <td className="py-1.5">
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          f.quote < 25
+                            ? "bg-red-100 text-red-700"
+                            : "bg-amber-100 text-amber-700"
+                        }`}
+                      >
+                        {f.quote}%
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -151,7 +216,8 @@ export function KlasseAnwesenheitKpi({
                 <th className="py-1 pr-3 font-medium">Thema</th>
                 <th className="py-1 pr-3 font-medium">Anwesende</th>
                 <th className="py-1 pr-3 font-medium">registriert</th>
-                <th className="py-1 font-medium">nicht registriert</th>
+                <th className="py-1 pr-3 font-medium">nicht registriert</th>
+                <th className="py-1 font-medium">ignoriert</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-dark-slate-50">
@@ -167,7 +233,7 @@ export function KlasseAnwesenheitKpi({
                     {t.gesamt}
                   </td>
                   <td className="py-1.5 pr-3 text-green-700">{t.registriert}</td>
-                  <td className="py-1.5">
+                  <td className="py-1.5 pr-3">
                     {t.unbekannt.length > 0 ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
                         <AlertTriangle className="w-3 h-3" />
@@ -177,6 +243,7 @@ export function KlasseAnwesenheitKpi({
                       <span className="text-dark-slate-400">0</span>
                     )}
                   </td>
+                  <td className="py-1.5 text-dark-slate-500">{t.ignoriert}</td>
                 </tr>
               ))}
             </tbody>
@@ -189,6 +256,8 @@ export function KlasseAnwesenheitKpi({
         <RankingTable eintraege={top} berichte={berichte} variante="top" />
         <RankingTable eintraege={bottom} berichte={berichte} variante="bottom" />
       </div>
+
+      <AnwesenheitIgnorierliste klasseSlug={klasseSlug} emails={ignorierliste} />
     </div>
   );
 }
