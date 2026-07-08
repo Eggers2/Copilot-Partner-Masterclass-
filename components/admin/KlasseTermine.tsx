@@ -16,6 +16,8 @@ import {
   ChevronDown,
   ChevronUp,
   CalendarPlus,
+  Users,
+  AlertTriangle,
 } from "lucide-react";
 import type { TerminStatus } from "@prisma/client";
 import {
@@ -27,7 +29,26 @@ import {
   sendTerminProtokollAction,
   sendTerminProtokollTestAction,
   generateNextTermineAction,
+  uploadTerminAnwesenheitAction,
+  deleteTerminAnwesenheitAction,
 } from "@/app/admin/actions";
+import { decodeAnwesenheitsdatei, formatDauer } from "@/lib/termine/anwesenheit";
+
+export interface AnwesenheitZeileView {
+  name: string;
+  email: string;
+  rolle: string | null;
+  dauerSekunden: number;
+  registriert: boolean;
+}
+
+export interface TerminAnwesenheitInfo {
+  dateiname: string;
+  importiertAm: string; // ISO
+  gesamt: number;
+  registriert: number;
+  zeilen: AnwesenheitZeileView[];
+}
 
 export interface TerminView {
   id: string;
@@ -41,6 +62,7 @@ export interface TerminView {
   protokoll: string | null;
   transkriptDateiname: string | null;
   protokollGesendetAm: string | null; // ISO
+  anwesenheit: TerminAnwesenheitInfo | null;
 }
 
 const DEFAULT_TEST_EMAIL = "ae@nextvideo.de";
@@ -231,6 +253,212 @@ function TerminForm({
   );
 }
 
+/**
+ * Anwesenheitsbericht (MS Teams) je Termin: Upload des CSV-Exports, Kennzahlen
+ * und deutlicher Hinweis auf Anwesende, die nicht in der Teilnehmerübersicht
+ * der Klasse stehen (weitergegebener Meeting-Link).
+ */
+function TerminAnwesenheitSection({ termin }: { termin: TerminView }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const [showAll, setShowAll] = useState(false);
+
+  const a = termin.anwesenheit;
+  const unbekannte = a ? a.zeilen.filter((z) => !z.registriert) : [];
+
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setMsg(null);
+    try {
+      // Teams exportiert UTF-16 – daher nicht file.text() (UTF-8), sondern
+      // Byte-genau lesen und die Kodierung selbst erkennen.
+      const buffer = await file.arrayBuffer();
+      const text = decodeAnwesenheitsdatei(buffer);
+      const res = await uploadTerminAnwesenheitAction(termin.id, text, file.name);
+      if (res.error) {
+        setMsg({ kind: "err", text: res.error });
+      } else {
+        setMsg({
+          kind: "ok",
+          text: `${res.gesamt} Anwesende importiert${
+            res.unbekannt
+              ? ` · ${res.unbekannt} nicht in der Teilnehmerübersicht!`
+              : ""
+          }`,
+        });
+      }
+    } catch {
+      setMsg({ kind: "err", text: "Datei konnte nicht gelesen werden." });
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  function handleDelete() {
+    if (!confirm("Anwesenheitsbericht dieses Termins wirklich entfernen?")) return;
+    setMsg(null);
+    startTransition(async () => {
+      const res = await deleteTerminAnwesenheitAction(termin.id);
+      if (res.error) setMsg({ kind: "err", text: res.error });
+    });
+  }
+
+  const visible = a ? (showAll ? a.zeilen : a.zeilen.slice(0, 10)) : [];
+
+  return (
+    <div className="border-t border-dark-slate-200 pt-3 space-y-2">
+      <h4 className="text-sm font-semibold text-dark-slate-700 flex items-center gap-1.5">
+        <Users className="w-4 h-4" />
+        Anwesenheit (Teams-Bericht)
+      </h4>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-[#030386] bg-white border border-[#030386] hover:bg-[#E3ECF8]/50 rounded-lg transition-colors cursor-pointer">
+          <Upload className="w-4 h-4" />
+          {uploading
+            ? "Wird importiert…"
+            : a
+              ? "Bericht ersetzen"
+              : "Anwesenheitsbericht hochladen"}
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".csv,text/csv,text/plain"
+            className="hidden"
+            onChange={handleFileSelect}
+            disabled={uploading}
+          />
+        </label>
+        {a && (
+          <>
+            <span className="text-xs text-dark-slate-500">
+              {a.dateiname} · importiert am {formatDatum(a.importiertAm)}
+            </span>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={isPending}
+              className="p-1.5 text-dark-slate-400 hover:text-red-600 rounded disabled:opacity-50"
+              title="Anwesenheitsbericht entfernen"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </>
+        )}
+      </div>
+      {!a && (
+        <p className="text-xs text-dark-slate-400">
+          CSV-Export aus Teams (Anwesenheit → Herunterladen). Gleicht die
+          Anwesenden mit der Teilnehmerübersicht der Klasse ab.
+        </p>
+      )}
+      {msg && (
+        <p className={`text-sm ${msg.kind === "ok" ? "text-green-600" : "text-red-600"}`}>
+          {msg.text}
+        </p>
+      )}
+
+      {a && (
+        <>
+          <div className="flex flex-wrap gap-2 text-xs">
+            <span className="inline-flex items-center px-2 py-1 rounded-full font-semibold bg-blue-50 text-[#030386]">
+              {a.gesamt} anwesend
+            </span>
+            <span className="inline-flex items-center px-2 py-1 rounded-full font-semibold bg-green-100 text-green-700">
+              {a.registriert} registriert
+            </span>
+            <span
+              className={`inline-flex items-center px-2 py-1 rounded-full font-semibold ${
+                unbekannte.length > 0
+                  ? "bg-red-100 text-red-700"
+                  : "bg-dark-slate-100 text-dark-slate-600"
+              }`}
+            >
+              {unbekannte.length} nicht registriert
+            </span>
+          </div>
+
+          {unbekannte.length > 0 && (
+            <div className="rounded-lg border border-red-300 bg-red-50 p-3">
+              <p className="text-sm font-semibold text-red-700 flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                {unbekannte.length}{" "}
+                {unbekannte.length === 1 ? "Anwesender steht" : "Anwesende stehen"}{" "}
+                nicht in der Teilnehmerübersicht:
+              </p>
+              <ul className="mt-1.5 space-y-0.5 text-sm text-red-700">
+                {unbekannte.map((z, i) => (
+                  <li key={i}>
+                    {z.name}
+                    {" – "}
+                    <span className="font-mono text-xs">
+                      {z.email || "keine E-Mail im Bericht"}
+                    </span>
+                    {z.rolle && ` (${z.rolle})`}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-dark-slate-400">
+                  <th className="py-1 pr-3 font-medium">Name</th>
+                  <th className="py-1 pr-3 font-medium">E-Mail</th>
+                  <th className="py-1 pr-3 font-medium">Dauer</th>
+                  <th className="py-1 font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-dark-slate-50">
+                {visible.map((z, i) => (
+                  <tr key={i}>
+                    <td className="py-1.5 pr-3 text-dark-slate-800">{z.name}</td>
+                    <td className="py-1.5 pr-3 font-mono text-xs text-dark-slate-500">
+                      {z.email || "—"}
+                    </td>
+                    <td className="py-1.5 pr-3 text-dark-slate-600 whitespace-nowrap">
+                      {formatDauer(z.dauerSekunden)}
+                    </td>
+                    <td className="py-1.5">
+                      {z.registriert ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                          registriert
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                          nicht registriert
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {a.zeilen.length > 10 && (
+              <button
+                type="button"
+                onClick={() => setShowAll((v) => !v)}
+                className="mt-1 text-xs text-[#030386] hover:underline"
+              >
+                {showAll
+                  ? "Weniger anzeigen"
+                  : `Alle ${a.zeilen.length} Anwesenden anzeigen`}
+              </button>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 /** Transkript-Upload, KI-Auswertung, Links und Protokoll-Versand je Termin. */
 function TerminDetailPanel({ termin }: { termin: TerminView }) {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -376,6 +604,9 @@ function TerminDetailPanel({ termin }: { termin: TerminView }) {
         </div>
       )}
 
+      {/* Anwesenheitsbericht */}
+      <TerminAnwesenheitSection termin={termin} />
+
       {/* Protokoll-Versand */}
       <div className="border-t border-dark-slate-200 pt-3 space-y-2">
         <h4 className="text-sm font-semibold text-dark-slate-700">
@@ -477,6 +708,26 @@ function TerminRow({
             {termin.protokollGesendetAm && (
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-[#030386]">
                 Protokoll gesendet
+              </span>
+            )}
+            {termin.anwesenheit && (
+              <span
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                  termin.anwesenheit.registriert < termin.anwesenheit.gesamt
+                    ? "bg-red-100 text-red-700"
+                    : "bg-blue-50 text-[#030386]"
+                }`}
+                title={
+                  termin.anwesenheit.registriert < termin.anwesenheit.gesamt
+                    ? `${termin.anwesenheit.gesamt - termin.anwesenheit.registriert} Anwesende nicht in der Teilnehmerübersicht`
+                    : "Alle Anwesenden sind registrierte Teilnehmer"
+                }
+              >
+                <Users className="w-3 h-3" />
+                {termin.anwesenheit.gesamt} anwesend
+                {termin.anwesenheit.registriert < termin.anwesenheit.gesamt && (
+                  <AlertTriangle className="w-3 h-3" />
+                )}
               </span>
             )}
           </div>

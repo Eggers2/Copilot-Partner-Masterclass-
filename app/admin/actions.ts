@@ -16,6 +16,11 @@ import { analyzeFirstCall, type FirstCallAnalysis } from "@/lib/firstcall/analyz
 import { sendEmail, sendBulkWithAttachments } from "@/lib/email/resend";
 import { plainTextToHtml } from "@/lib/email/format";
 import { summarizeTermin } from "@/lib/termine/summarize";
+import { parseAnwesenheitsbericht } from "@/lib/termine/anwesenheit";
+import {
+  replaceTerminAnwesenheit,
+  clearTerminAnwesenheit,
+} from "@/lib/db/anwesenheit";
 import {
   buildTerminProtokollHtml,
   formatTerminDatum,
@@ -1529,6 +1534,65 @@ export async function analyzeTerminTranscriptAction(
       err instanceof Error ? err.message : "Unbekannter Fehler bei der Auswertung.";
     return { error: msg };
   }
+}
+
+// ─── TERMIN: ANWESENHEITSBERICHT (MS TEAMS) ─────────────────────────────────
+// Der Teams-Anwesenheitsbericht wird pro Termin hochgeladen (Parser in
+// lib/termine/anwesenheit.ts, Persistenz in lib/db/anwesenheit.ts). Der
+// Abgleich mit den gemeldeten Teilnehmern passiert zur Lesezeit auf der
+// Klassen-Detailseite.
+
+/** Speichert den hochgeladenen Teams-Anwesenheitsbericht eines Termins. */
+export async function uploadTerminAnwesenheitAction(
+  terminId: string,
+  berichtText: string,
+  filename: string
+): Promise<{ success?: boolean; error?: string; gesamt?: number; unbekannt?: number }> {
+  await requireAuth();
+  if (!terminId) return { error: "Termin-ID fehlt." };
+  if (!berichtText?.trim()) return { error: "Die Datei ist leer." };
+
+  const termin = await prisma.klasseTermin.findUnique({
+    where: { id: terminId },
+    select: { klasseId: true, klasse: { select: { slug: true } } },
+  });
+  if (!termin) return { error: "Termin nicht gefunden." };
+
+  const parsed = parseAnwesenheitsbericht(berichtText);
+  if (parsed.error) return { error: parsed.error };
+  if (parsed.teilnehmer.length === 0) {
+    return { error: "Der Bericht enthält keine Teilnehmer-Zeilen." };
+  }
+
+  await replaceTerminAnwesenheit(terminId, filename, parsed.teilnehmer);
+
+  // Direktes Feedback für die Upload-Meldung: wie viele Anwesende sind NICHT
+  // in der Teilnehmerübersicht der Klasse (Teilnehmer + Besteller) bekannt?
+  const bekannt = new Set(await getKlasseTeilnehmerEmails(termin.klasseId));
+  const unbekannt = parsed.teilnehmer.filter(
+    (t) => !t.email || !bekannt.has(t.email)
+  ).length;
+
+  revalidatePath(`/admin/klassen/${termin.klasse.slug}`);
+  return { success: true, gesamt: parsed.teilnehmer.length, unbekannt };
+}
+
+/** Entfernt den Anwesenheitsbericht eines Termins wieder. */
+export async function deleteTerminAnwesenheitAction(
+  terminId: string
+): Promise<{ success?: boolean; error?: string }> {
+  await requireAuth();
+  if (!terminId) return { error: "Termin-ID fehlt." };
+
+  const termin = await prisma.klasseTermin.findUnique({
+    where: { id: terminId },
+    select: { klasse: { select: { slug: true } } },
+  });
+  if (!termin) return { error: "Termin nicht gefunden." };
+
+  await clearTerminAnwesenheit(terminId);
+  revalidatePath(`/admin/klassen/${termin.klasse.slug}`);
+  return { success: true };
 }
 
 /** Lädt Termin + Klasse + nächsten Termin für den Protokoll-Versand. */

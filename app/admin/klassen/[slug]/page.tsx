@@ -9,8 +9,10 @@ import { KLASSE_STATUS_CONFIG } from "@/lib/constants/lead-config";
 import { isGraphConfigured } from "@/lib/teams/graph";
 import { TeamsTestInvite } from "@/components/admin/TeamsTestInvite";
 import { KlasseTermine } from "@/components/admin/KlasseTermine";
+import { KlasseAnwesenheitKpi } from "@/components/admin/KlasseAnwesenheitKpi";
 import { TeilnehmerExportButton } from "@/components/admin/TeilnehmerExportButton";
 import { parseTerminRegel } from "@/lib/termine/regel";
+import { getKlasseAnwesenheitAuswertung } from "@/lib/db/anwesenheit";
 
 export default async function KlasseDetailPage({
   params,
@@ -62,6 +64,11 @@ export default async function KlasseDetailPage({
   });
 
   if (!klasse) notFound();
+
+  const anwesenheit = await getKlasseAnwesenheitAuswertung(klasse.id);
+  const anwesenheitByTermin = new Map(
+    anwesenheit.proTermin.map((t) => [t.terminId, t])
+  );
 
   const terminRegel = parseTerminRegel(klasse.terminRegel);
   const conf = KLASSE_STATUS_CONFIG[klasse.status];
@@ -147,22 +154,46 @@ export default async function KlasseDetailPage({
           <KlasseTermine
             klasseId={klasse.id}
             hasRegel={terminRegel.length > 0}
-            termine={klasse.termine.map((t) => ({
-              id: t.id,
-              datum: t.datum.toISOString(),
-              thema: t.thema,
-              notizen: t.notizen,
-              status: t.status,
-              videoUrl: t.videoUrl,
-              teamsLink: t.teamsLink,
-              zusammenfassung: t.zusammenfassung,
-              protokoll: t.protokoll,
-              transkriptDateiname: t.transkriptDateiname,
-              protokollGesendetAm: t.protokollGesendetAm
-                ? t.protokollGesendetAm.toISOString()
-                : null,
-            }))}
+            termine={klasse.termine.map((t) => {
+              const a = anwesenheitByTermin.get(t.id);
+              return {
+                id: t.id,
+                datum: t.datum.toISOString(),
+                thema: t.thema,
+                notizen: t.notizen,
+                status: t.status,
+                videoUrl: t.videoUrl,
+                teamsLink: t.teamsLink,
+                zusammenfassung: t.zusammenfassung,
+                protokoll: t.protokoll,
+                transkriptDateiname: t.transkriptDateiname,
+                protokollGesendetAm: t.protokollGesendetAm
+                  ? t.protokollGesendetAm.toISOString()
+                  : null,
+                anwesenheit: a
+                  ? {
+                      dateiname: a.dateiname,
+                      importiertAm: a.importiertAm.toISOString(),
+                      gesamt: a.gesamt,
+                      registriert: a.registriert,
+                      zeilen: a.zeilen,
+                    }
+                  : null,
+              };
+            })}
           />
+        </section>
+
+        <section className="bg-white rounded-2xl border border-dark-slate-100 p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-dark-slate-900 mb-1">
+            Anwesenheit &amp; KPI
+          </h2>
+          <p className="text-sm text-dark-slate-500 mb-4">
+            Auswertung der hochgeladenen Teams-Anwesenheitsberichte: Anwesende
+            pro Termin, Abgleich mit der Teilnehmerübersicht aus dem Onlineshop
+            und Rangliste der aktivsten bzw. inaktivsten Teilnehmer.
+          </p>
+          <KlasseAnwesenheitKpi auswertung={anwesenheit} />
         </section>
 
         <section className="bg-white rounded-2xl border border-dark-slate-100 p-6 shadow-sm">
