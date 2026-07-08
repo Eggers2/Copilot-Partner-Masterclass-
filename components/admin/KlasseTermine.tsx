@@ -39,7 +39,7 @@ export interface AnwesenheitZeileView {
   email: string;
   rolle: string | null;
   dauerSekunden: number;
-  registriert: boolean;
+  status: "registriert" | "unbekannt" | "ignoriert";
 }
 
 export interface TerminAnwesenheitInfo {
@@ -47,6 +47,8 @@ export interface TerminAnwesenheitInfo {
   importiertAm: string; // ISO
   gesamt: number;
   registriert: number;
+  ignoriert: number;
+  unbekannt: number;
   zeilen: AnwesenheitZeileView[];
 }
 
@@ -266,7 +268,7 @@ function TerminAnwesenheitSection({ termin }: { termin: TerminView }) {
   const [showAll, setShowAll] = useState(false);
 
   const a = termin.anwesenheit;
-  const unbekannte = a ? a.zeilen.filter((z) => !z.registriert) : [];
+  const unbekannte = a ? a.zeilen.filter((z) => z.status === "unbekannt") : [];
 
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -381,6 +383,11 @@ function TerminAnwesenheitSection({ termin }: { termin: TerminView }) {
             >
               {unbekannte.length} nicht registriert
             </span>
+            {a.ignoriert > 0 && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full font-semibold bg-dark-slate-100 text-dark-slate-600">
+                {a.ignoriert} ignoriert (Moderation)
+              </span>
+            )}
           </div>
 
           {unbekannte.length > 0 && (
@@ -427,9 +434,13 @@ function TerminAnwesenheitSection({ termin }: { termin: TerminView }) {
                       {formatDauer(z.dauerSekunden)}
                     </td>
                     <td className="py-1.5">
-                      {z.registriert ? (
+                      {z.status === "registriert" ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
                           registriert
+                        </span>
+                      ) : z.status === "ignoriert" ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-dark-slate-100 text-dark-slate-600">
+                          ignoriert
                         </span>
                       ) : (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
@@ -713,19 +724,19 @@ function TerminRow({
             {termin.anwesenheit && (
               <span
                 className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                  termin.anwesenheit.registriert < termin.anwesenheit.gesamt
+                  termin.anwesenheit.unbekannt > 0
                     ? "bg-red-100 text-red-700"
                     : "bg-blue-50 text-[#030386]"
                 }`}
                 title={
-                  termin.anwesenheit.registriert < termin.anwesenheit.gesamt
-                    ? `${termin.anwesenheit.gesamt - termin.anwesenheit.registriert} Anwesende nicht in der Teilnehmerübersicht`
-                    : "Alle Anwesenden sind registrierte Teilnehmer"
+                  termin.anwesenheit.unbekannt > 0
+                    ? `${termin.anwesenheit.unbekannt} Anwesende nicht in der Teilnehmerübersicht`
+                    : "Alle Anwesenden sind zugeordnet"
                 }
               >
                 <Users className="w-3 h-3" />
                 {termin.anwesenheit.gesamt} anwesend
-                {termin.anwesenheit.registriert < termin.anwesenheit.gesamt && (
+                {termin.anwesenheit.unbekannt > 0 && (
                   <AlertTriangle className="w-3 h-3" />
                 )}
               </span>

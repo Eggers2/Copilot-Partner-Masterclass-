@@ -20,6 +20,8 @@ import { parseAnwesenheitsbericht } from "@/lib/termine/anwesenheit";
 import {
   replaceTerminAnwesenheit,
   clearTerminAnwesenheit,
+  createKlasseAbgleich,
+  setAnwesenheitIgnorierliste,
 } from "@/lib/db/anwesenheit";
 import {
   buildTerminProtokollHtml,
@@ -1566,15 +1568,40 @@ export async function uploadTerminAnwesenheitAction(
 
   await replaceTerminAnwesenheit(terminId, filename, parsed.teilnehmer);
 
-  // Direktes Feedback für die Upload-Meldung: wie viele Anwesende sind NICHT
-  // in der Teilnehmerübersicht der Klasse (Teilnehmer + Besteller) bekannt?
-  const bekannt = new Set(await getKlasseTeilnehmerEmails(termin.klasseId));
+  // Direktes Feedback für die Upload-Meldung: wie viele Anwesende konnten
+  // keinem Teilnehmer zugeordnet werden? Nutzt denselben intelligenten
+  // Abgleich (E-Mail, Name, Heuristik, Ignorierliste) wie die Auswertung.
+  const { abgleich } = await createKlasseAbgleich(termin.klasseId);
   const unbekannt = parsed.teilnehmer.filter(
-    (t) => !t.email || !bekannt.has(t.email)
+    (t) => abgleich.match(t.name, t.email).status === "unbekannt"
   ).length;
 
   revalidatePath(`/admin/klassen/${termin.klasse.slug}`);
   return { success: true, gesamt: parsed.teilnehmer.length, unbekannt };
+}
+
+/**
+ * Speichert die globale Ignorierliste für den Anwesenheits-Abgleich
+ * (Moderatoren/Sponsoren, eine Adresse pro Zeile bzw. komma-getrennt).
+ */
+export async function updateAnwesenheitIgnorierlisteAction(
+  klasseSlug: string,
+  raw: string
+): Promise<{ success?: boolean; error?: string; count?: number }> {
+  await requireAuth();
+
+  const emails = raw
+    .split(/[\n;,]+/)
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  const invalid = emails.filter((e) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+  if (invalid.length > 0) {
+    return { error: `Ungültige Adresse(n): ${invalid.join(", ")}` };
+  }
+
+  await setAnwesenheitIgnorierliste(emails);
+  revalidatePath(`/admin/klassen/${klasseSlug}`);
+  return { success: true, count: emails.length };
 }
 
 /** Entfernt den Anwesenheitsbericht eines Termins wieder. */

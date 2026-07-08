@@ -176,6 +176,8 @@ export default async function KlasseDetailPage({
                       importiertAm: a.importiertAm.toISOString(),
                       gesamt: a.gesamt,
                       registriert: a.registriert,
+                      ignoriert: a.ignoriert,
+                      unbekannt: a.unbekannt.length,
                       zeilen: a.zeilen,
                     }
                   : null,
@@ -193,7 +195,7 @@ export default async function KlasseDetailPage({
             pro Termin, Abgleich mit der Teilnehmerübersicht aus dem Onlineshop
             und Rangliste der aktivsten bzw. inaktivsten Teilnehmer.
           </p>
-          <KlasseAnwesenheitKpi auswertung={anwesenheit} />
+          <KlasseAnwesenheitKpi klasseSlug={klasse.slug} auswertung={anwesenheit} />
         </section>
 
         <section className="bg-white rounded-2xl border border-dark-slate-100 p-6 shadow-sm">
