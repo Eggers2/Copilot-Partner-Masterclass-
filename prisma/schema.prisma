@@ -152,11 +152,37 @@ model KlasseTermin {
   zusammenfassung     String?
   protokoll           String?
   protokollGesendetAm DateTime? @map("protokoll_gesendet_am")
+  // Anwesenheitsbericht (MS-Teams-Export) nach dem Termin: Metadaten hier,
+  // die einzelnen Teilnehmer-Zeilen in TerminAnwesenheit.
+  anwesenheitDateiname    String?   @map("anwesenheit_dateiname")
+  anwesenheitImportiertAm DateTime? @map("anwesenheit_importiert_am")
+  anwesenheiten           TerminAnwesenheit[]
   createdAt DateTime     @default(now()) @map("created_at")
   updatedAt DateTime     @updatedAt @map("updated_at")
 
   @@index([klasseId])
   @@map("klasse_termine")
+}
+
+// Eine Zeile des Teams-Anwesenheitsberichts (Abschnitt "2. Teilnehmer") je
+// Termin. E-Mail ist normalisiert (lowercase); der Abgleich mit den im Shop
+// gemeldeten Teilnehmern (BestellungTeilnehmer) passiert zur Lesezeit über
+// die E-Mail-Adresse (siehe lib/db/anwesenheit.ts) – so wirken Nachmeldungen
+// im Kundenportal rückwirkend auf die Auswertung.
+model TerminAnwesenheit {
+  id               String       @id @default(cuid())
+  terminId         String       @map("termin_id")
+  termin           KlasseTermin @relation(fields: [terminId], references: [id], onDelete: Cascade)
+  name             String
+  email            String       @default("")
+  rolle            String?
+  dauerSekunden    Int          @default(0) @map("dauer_sekunden")
+  ersterBeitritt   DateTime?    @map("erster_beitritt")
+  letztesVerlassen DateTime?    @map("letztes_verlassen")
+  erstelltAm       DateTime     @default(now()) @map("erstellt_am")
+
+  @@index([terminId])
+  @@map("termin_anwesenheiten")
 }
 
 model Lead {
