@@ -4,6 +4,7 @@ import type {
   RankingEintrag,
 } from "@/lib/db/anwesenheit";
 import { AnwesenheitIgnorierliste } from "./AnwesenheitIgnorierliste";
+import { FirmenErinnerungButton } from "./FirmenErinnerung";
 
 // Server-gerenderte KPI-Sektion der Klassen-Detailseite: Anwesenheit pro
 // Termin, Abweichungs-Hinweis (Anwesende ohne Registrierung) und die
@@ -90,9 +91,13 @@ function RankingTable({
 }
 
 export function KlasseAnwesenheitKpi({
+  klasseId,
+  klasseName,
   klasseSlug,
   auswertung,
 }: {
+  klasseId: string;
+  klasseName: string;
   klasseSlug: string;
   auswertung: KlasseAnwesenheitAuswertung;
 }) {
@@ -168,7 +173,8 @@ export function KlasseAnwesenheitKpi({
                   <th className="py-1 pr-3 font-medium whitespace-nowrap">
                     Teilnahmen
                   </th>
-                  <th className="py-1 font-medium">Quote</th>
+                  <th className="py-1 pr-3 font-medium">Quote</th>
+                  <th className="py-1 font-medium"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-dark-slate-50">
@@ -183,7 +189,7 @@ export function KlasseAnwesenheitKpi({
                     <td className="py-1.5 pr-3 text-dark-slate-600 whitespace-nowrap">
                       {f.anwesend}/{f.moeglich}
                     </td>
-                    <td className="py-1.5">
+                    <td className="py-1.5 pr-3">
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
                           f.quote < 25
@@ -193,6 +199,14 @@ export function KlasseAnwesenheitKpi({
                       >
                         {f.quote}%
                       </span>
+                    </td>
+                    <td className="py-1.5 whitespace-nowrap">
+                      <FirmenErinnerungButton
+                        klasseId={klasseId}
+                        klasseName={klasseName}
+                        berichte={berichte}
+                        firma={f}
+                      />
                     </td>
                   </tr>
                 ))}
