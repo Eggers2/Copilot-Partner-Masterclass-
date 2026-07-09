@@ -1581,6 +1581,48 @@ export async function uploadTerminAnwesenheitAction(
 }
 
 /**
+ * Versendet die (im Dialog anpassbare) Teilnahme-Erinnerung an einen
+ * Besteller-Kontakt einer Firma mit schwacher Teilnahmequote. Der Empfänger
+ * wird serverseitig gegen die Bestellungen der Klasse geprüft, damit die
+ * Action nicht als freier Mailversand missbraucht werden kann.
+ */
+export async function sendFirmenErinnerungAction(
+  klasseId: string,
+  empfaengerEmail: string,
+  betreff: string,
+  text: string
+): Promise<{ success?: boolean; error?: string }> {
+  await requireAuth();
+  if (!klasseId) return { error: "Klasse fehlt." };
+
+  const email = empfaengerEmail.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { error: "Ungültige Empfänger-Adresse." };
+  }
+  if (!betreff.trim()) return { error: "Der Betreff ist leer." };
+  if (!text.trim()) return { error: "Der E-Mail-Text ist leer." };
+
+  const besteller = await prisma.bestellung.findFirst({
+    where: { klasseId, email: { equals: email, mode: "insensitive" } },
+    select: { id: true },
+  });
+  if (!besteller) {
+    return { error: "Der Empfänger ist kein Besteller dieser Klasse." };
+  }
+
+  const res = await sendEmail({
+    to: email,
+    subject: betreff.trim(),
+    html: plainTextToHtml(text),
+    templateKey: "klasse_teilnahme_erinnerung",
+  });
+  if (!res.ok) {
+    return { error: res.error ?? "E-Mail konnte nicht gesendet werden." };
+  }
+  return { success: true };
+}
+
+/**
  * Speichert die globale Ignorierliste für den Anwesenheits-Abgleich
  * (Moderatoren/Sponsoren, eine Adresse pro Zeile bzw. komma-getrennt).
  */

@@ -132,6 +132,18 @@ export interface UnbekannterTeilnehmer {
   termine: number;
 }
 
+export interface FirmenMitarbeiter {
+  name: string;
+  email: string;
+  /** Anzahl Termine (mit Bericht), an denen die Person anwesend war. */
+  anwesend: number;
+}
+
+export interface BestellerKontakt {
+  name: string;
+  email: string;
+}
+
 export interface FirmenStatistik {
   firma: string;
   /** Anzahl registrierter Teilnehmer der Firma. */
@@ -142,6 +154,10 @@ export interface FirmenStatistik {
   moeglich: number;
   /** Teilnahmequote in Prozent (0–100). */
   quote: number;
+  /** Alle registrierten Mitarbeiter mit ihrer Präsenz (für die Erinnerungs-Mail). */
+  mitarbeiter: FirmenMitarbeiter[];
+  /** Besteller-Kontakte der Firma (Empfänger der Erinnerungs-Mail). */
+  besteller: BestellerKontakt[];
 }
 
 export interface KlasseAnwesenheitAuswertung {
@@ -168,6 +184,8 @@ export async function createKlasseAbgleich(klasseId: string): Promise<{
   abgleich: TeilnehmerAbgleich;
   /** Registrierte Teilnehmer, dedupliziert nach E-Mail (Ranglisten-Basis). */
   registrierte: Map<string, { name: string; firma: string }>;
+  /** Besteller-Kontakte je Firma (dedupliziert nach E-Mail). */
+  bestellerByFirma: Map<string, BestellerKontakt[]>;
   ignorierliste: string[];
 }> {
   const [teilnehmer, bestellungen, ignorierliste] = await Promise.all([
@@ -182,7 +200,7 @@ export async function createKlasseAbgleich(klasseId: string): Promise<{
     }),
     prisma.bestellung.findMany({
       where: { klasseId },
-      select: { email: true },
+      select: { firma: true, vorname: true, nachname: true, email: true },
     }),
     getAnwesenheitIgnorierliste(),
   ]);
@@ -209,9 +227,22 @@ export async function createKlasseAbgleich(klasseId: string): Promise<{
 
   // Besteller-Kontakte zählen beim Abgleich als bekannt (sie dürfen zuhören),
   // tauchen aber nur in der Rangliste auf, wenn sie selbst gemeldet sind.
-  const bestellerEmails = bestellungen
-    .map((b) => normalizeAnwesenheitEmail(b.email ?? ""))
-    .filter(Boolean);
+  const bestellerEmails: string[] = [];
+  const bestellerByFirma = new Map<string, BestellerKontakt[]>();
+  for (const b of bestellungen) {
+    const email = normalizeAnwesenheitEmail(b.email ?? "");
+    if (!email) continue;
+    bestellerEmails.push(email);
+    const firma = b.firma.trim() || "(ohne Firma)";
+    const kontakte = bestellerByFirma.get(firma) ?? [];
+    if (!kontakte.some((k) => k.email === email)) {
+      kontakte.push({
+        name: `${b.vorname} ${b.nachname}`.trim() || email,
+        email,
+      });
+    }
+    bestellerByFirma.set(firma, kontakte);
+  }
 
   const abgleich = createTeilnehmerAbgleich({
     registrierte: abgleichTeilnehmer,
@@ -219,7 +250,7 @@ export async function createKlasseAbgleich(klasseId: string): Promise<{
     ignorierteEmails: ignorierliste,
   });
 
-  return { abgleich, registrierte, ignorierliste };
+  return { abgleich, registrierte, bestellerByFirma, ignorierliste };
 }
 
 /**
@@ -233,7 +264,8 @@ export async function createKlasseAbgleich(klasseId: string): Promise<{
 export async function getKlasseAnwesenheitAuswertung(
   klasseId: string
 ): Promise<KlasseAnwesenheitAuswertung> {
-  const [termine, { abgleich, registrierte, ignorierliste }] = await Promise.all([
+  const [termine, { abgleich, registrierte, bestellerByFirma, ignorierliste }] =
+    await Promise.all([
     prisma.klasseTermin.findMany({
       where: { klasseId, anwesenheitImportiertAm: { not: null } },
       orderBy: { datum: "asc" },
@@ -328,27 +360,33 @@ export async function getKlasseAnwesenheitAuswertung(
     .slice(0, RANKING_SIZE);
 
   // Teilnahmequote pro Firma/Partner über alle Mitarbeiter: Firmen unter 50 %
-  // machen inaktive Partner sichtbar.
-  const firmen = new Map<string, { teilnehmer: number; anwesend: number }>();
+  // machen inaktive Partner sichtbar. Mitarbeiter-Details und Besteller-
+  // Kontakte werden für die Erinnerungs-Mail mitgeliefert.
+  const firmen = new Map<string, FirmenMitarbeiter[]>();
   for (const [email, info] of registrierte) {
     const key = info.firma.trim() || "(ohne Firma)";
-    const eintrag = firmen.get(key) ?? { teilnehmer: 0, anwesend: 0 };
-    eintrag.teilnehmer += 1;
-    eintrag.anwesend += praesenz.get(email) ?? 0;
-    firmen.set(key, eintrag);
+    const liste = firmen.get(key) ?? [];
+    liste.push({ name: info.name, email, anwesend: praesenz.get(email) ?? 0 });
+    firmen.set(key, liste);
   }
   const inaktiveFirmen: FirmenStatistik[] =
     termine.length === 0
       ? []
       : [...firmen.entries()]
-          .map(([firma, f]) => {
-            const moeglich = f.teilnehmer * termine.length;
+          .map(([firma, mitarbeiter]) => {
+            const anwesend = mitarbeiter.reduce((sum, m) => sum + m.anwesend, 0);
+            const moeglich = mitarbeiter.length * termine.length;
             return {
               firma,
-              teilnehmer: f.teilnehmer,
-              anwesend: f.anwesend,
+              teilnehmer: mitarbeiter.length,
+              anwesend,
               moeglich,
-              quote: moeglich > 0 ? Math.round((f.anwesend / moeglich) * 100) : 0,
+              quote: moeglich > 0 ? Math.round((anwesend / moeglich) * 100) : 0,
+              mitarbeiter: [...mitarbeiter].sort(
+                (a, b) =>
+                  b.anwesend - a.anwesend || a.name.localeCompare(b.name, "de")
+              ),
+              besteller: bestellerByFirma.get(firma) ?? [],
             };
           })
           .filter((f) => f.quote < 50)

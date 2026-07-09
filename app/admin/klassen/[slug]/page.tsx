@@ -195,7 +195,12 @@ export default async function KlasseDetailPage({
             pro Termin, Abgleich mit der Teilnehmerübersicht aus dem Onlineshop
             und Rangliste der aktivsten bzw. inaktivsten Teilnehmer.
           </p>
-          <KlasseAnwesenheitKpi klasseSlug={klasse.slug} auswertung={anwesenheit} />
+          <KlasseAnwesenheitKpi
+            klasseId={klasse.id}
+            klasseName={klasse.name}
+            klasseSlug={klasse.slug}
+            auswertung={anwesenheit}
+          />
         </section>
 
         <section className="bg-white rounded-2xl border border-dark-slate-100 p-6 shadow-sm">
