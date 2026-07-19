@@ -813,7 +813,7 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
               <span className="section-label">Ihr Co-Trainer</span>
               <h2 className="section-title">Michael Greth – KI verstehen. Microsoft 365 wirksam nutzen.</h2>
               <p className="text-[#6B6B8A] text-base leading-relaxed mb-6">
-                Michael Greth ist Berater, Speaker und Podcaster mit über 40 Jahren Erfahrung in der IT. Seit 26 Jahren ist er Microsoft MVP – ein Titel, der sein tiefes Engagement in der Community und das konsequente Mitgestalten eines offenen Austauschs rund um moderne IT widerspiegelt.
+                Michael Greth ist Berater, Speaker und Podcaster mit über 40 Jahren Erfahrung in der IT. Seit 27 Jahren ist er Microsoft MVP – ein Titel, der sein tiefes Engagement in der Community und das konsequente Mitgestalten eines offenen Austauschs rund um moderne IT widerspiegelt.
               </p>
               <p className="text-[#6B6B8A] text-base leading-relaxed mb-6">
                 In der Masterclass unterstützt er das Team mit News und Updates zu den technischen Veränderungen des Copiloten, mit technisch geprägten Sessions in den Community-Terminen und mit Unterstützung im Community-Portal, um eure Fragen zu beantworten.
@@ -821,7 +821,7 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
 
               {/* Tags */}
               <div className="flex flex-wrap gap-2 mb-8">
-                {["Microsoft MVP (26 Jahre)", "M365 Copilot", "SharePoint", "Microsoft 365", "Microsoft Stream", "Community & Podcast"].map((tag) => (
+                {["Microsoft MVP (27 Jahre)", "M365 Copilot", "SharePoint", "Microsoft 365", "Microsoft Stream", "Community & Podcast"].map((tag) => (
                   <span key={tag} className="px-3 py-1 bg-[#00C896]/10 text-[#00C896] rounded-full text-xs font-medium">
                     {tag}
                   </span>
@@ -861,7 +861,7 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
               </div>
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { num: "26×", label: "Microsoft MVP ausgezeichnet" },
+                  { num: "27×", label: "Microsoft MVP ausgezeichnet" },
                   { num: "40+", label: "Jahre IT-Erfahrung" },
                   { num: "M365", label: "Copilot & SharePoint" },
                   { num: "Podcast", label: "Speaker & Community-Host" },
