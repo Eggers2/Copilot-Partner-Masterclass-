@@ -142,7 +142,7 @@ export default async function WebinareLandingPage() {
             <div className="text-left">
               <p className="text-white text-sm font-semibold">Alexander Eggers</p>
               <p className="text-[#B0B0C8] text-xs">
-                6x Microsoft MVP &middot; 25+ Jahre M365
+                7x Microsoft MVP &middot; 25+ Jahre M365
               </p>
             </div>
           </div>
@@ -299,7 +299,7 @@ export default async function WebinareLandingPage() {
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-8">
               <Image
                 src="https://www.copilotberater.de/trainer-alexander-eggers.png"
-                alt="Alexander Eggers – 6x Microsoft MVP"
+                alt="Alexander Eggers – 7x Microsoft MVP"
                 width={200}
                 height={200}
                 className="w-[180px] h-[180px] md:w-[200px] md:h-[200px] rounded-2xl object-cover flex-shrink-0"
@@ -316,7 +316,7 @@ export default async function WebinareLandingPage() {
                 </p>
                 <div className="grid sm:grid-cols-2 gap-3">
                   {[
-                    "6x Microsoft MVP (M365 + M365 Copilot)",
+                    "7x Microsoft MVP (M365 + M365 Copilot)",
                     "25+ Jahre im Microsoft-\u00D6kosystem",
                     "Speaker und Trainer f\u00FCr Microsoft, Vodafone, Payback und viele mehr",
                     "10.000+ YouTube-Abonnenten, 400+ Videos",

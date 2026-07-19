@@ -441,7 +441,7 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
                       &bdquo;Gestern war es so weit: 31 Systemh&auml;user aus dem DACH-Raum sind in die erste Copilot Partner Masterclass gestartet. Knapp 120 Teilnehmer live im Kick-off, 150 registrierte Mitarbeiter in den kommenden Monaten &ndash; das ist erst der Anfang.&ldquo;
                     </p>
                     <footer className="text-white/40 text-xs mt-2">
-                      — Alexander Eggers, Trainer &amp; 6× Microsoft MVP
+                      — Alexander Eggers, Trainer &amp; 7× Microsoft MVP
                     </footer>
                   </blockquote>
 
@@ -623,7 +623,7 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
                   &bdquo;Microsoft zeigt Ihnen, wie Copilot funktioniert. Wir zeigen Ihnen, wie Sie damit Geld verdienen.&ldquo;
                 </p>
                 <p className="text-[#6B6B8A] text-sm font-medium">
-                  – Alexander Eggers, 6&times; Microsoft MVP
+                  – Alexander Eggers, 7&times; Microsoft MVP
                 </p>
               </div>
             </div>
@@ -756,7 +756,7 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
               </div>
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { num: "6\u00D7", label: "Microsoft MVP ausgezeichnet" },
+                  { num: "7\u00D7", label: "Microsoft MVP in Folge" },
                   { num: "25+", label: "Jahre IT-Erfahrung" },
                   { num: "10k+", label: "YouTube-Abonnenten" },
                   { num: "15k+", label: "LinkedIn Follower" },
