@@ -8,8 +8,12 @@ import {
   RegisterError,
   updateConnectDayTeilnehmer,
   UpdateError,
+  joinConnectDayWaitlist,
+  leaveConnectDayWaitlist,
+  WaitlistError,
   type RegisterErrorCode,
   type UpdateErrorCode,
+  type WaitlistErrorCode,
 } from "@/lib/events/connectDay";
 import { createAndSendConnectDayInvoice } from "@/lib/events/connectDayInvoice";
 import { sendConnectDayStornoIntern } from "@/lib/email/sendConnectDay";
@@ -29,6 +33,17 @@ const REGISTER_ERRORS: Record<RegisterErrorCode, string> = {
     "Mindestens eine der gewählten Personen ist bereits zum Connect Day angemeldet.",
   event_full:
     "Der Connect Day ist leider ausgebucht – alle 100 Plätze sind vergeben.",
+};
+
+const WAITLIST_ERRORS: Record<WaitlistErrorCode, string> = {
+  event_not_found: "Das Event wurde nicht gefunden.",
+  not_eligible:
+    "Diese Bestellung ist nicht berechtigt – der Connect Day ist für Klasse 1 und 2.",
+  invalid_input:
+    "Bitte gib einen Namen und eine gültige E-Mail-Adresse an.",
+  too_many_persons: "Maximal 3 Personen pro Firma.",
+  already_on_waitlist:
+    "Für diese Bestellung steht bereits ein Eintrag auf der Warteliste.",
 };
 
 const UPDATE_ERRORS: Record<UpdateErrorCode, string> = {
@@ -101,6 +116,55 @@ export async function updateConnectDayTeilnehmerAction(input: {
     }
     console.error("[ConnectDay] Teilnehmer-Änderung fehlgeschlagen:", err);
     return { error: "Änderung fehlgeschlagen. Bitte versuche es erneut." };
+  }
+
+  revalidatePath("/kundenportal/connect-day");
+  revalidatePath("/admin/connect-day");
+  return { success: true };
+}
+
+export async function joinWaitlistAction(input: {
+  bestellungId: number;
+  kontaktName: string;
+  kontaktEmail: string;
+  personen: number;
+  notiz?: string;
+}): Promise<ActionResult> {
+  const session = await requireCustomerSession();
+
+  try {
+    await joinConnectDayWaitlist({
+      sessionEmail: session.email,
+      bestellungId: input.bestellungId,
+      kontaktName: input.kontaktName,
+      kontaktEmail: input.kontaktEmail,
+      personen: input.personen,
+      notiz: input.notiz,
+    });
+  } catch (err) {
+    if (err instanceof WaitlistError) {
+      return { error: WAITLIST_ERRORS[err.code] };
+    }
+    console.error("[ConnectDay] Wartelisten-Eintrag fehlgeschlagen:", err);
+    return { error: "Eintrag fehlgeschlagen. Bitte versuche es erneut." };
+  }
+
+  revalidatePath("/kundenportal/connect-day");
+  revalidatePath("/admin/connect-day");
+  return { success: true };
+}
+
+export async function leaveWaitlistAction(input: {
+  waitlistId: string;
+}): Promise<ActionResult> {
+  const session = await requireCustomerSession();
+
+  const ok = await leaveConnectDayWaitlist({
+    waitlistId: input.waitlistId,
+    sessionEmail: session.email,
+  });
+  if (!ok) {
+    return { error: "Eintrag nicht gefunden oder bereits ausgetragen." };
   }
 
   revalidatePath("/kundenportal/connect-day");

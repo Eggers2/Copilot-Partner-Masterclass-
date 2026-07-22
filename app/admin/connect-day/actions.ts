@@ -6,6 +6,11 @@ import { requireAuth } from "@/lib/auth";
 import {
   cancelConnectDayRegistration,
   CONNECT_DAY_SLUG,
+  promoteConnectDayWaitlist,
+  unpromoteConnectDayWaitlist,
+  removeConnectDayWaitlist,
+  setConnectDayOeffnung,
+  OeffnungError,
 } from "@/lib/events/connectDay";
 import { createAndSendConnectDayInvoice } from "@/lib/events/connectDayInvoice";
 import {
@@ -95,6 +100,86 @@ export async function setConnectDayFreischaltungAction(
   revalidatePath("/admin/connect-day");
   revalidatePath("/kundenportal/connect-day");
   revalidatePath("/kundenportal/bestellungen");
+  return { success: true };
+}
+
+/**
+ * Öffnet die Anmeldung wieder (Status OPEN) bzw. schließt sie (CLOSED). Beim
+ * Öffnen wird zugleich ein neuer Anmeldeschluss gesetzt, falls die alte Frist
+ * abgelaufen ist (`anmeldeschluss` als ISO-/datetime-local-String).
+ */
+export async function setConnectDayOeffnungAction(input: {
+  open: boolean;
+  anmeldeschluss?: string;
+}): Promise<ActionResult> {
+  await requireAuth();
+
+  let anmeldeschluss: Date | undefined;
+  if (input.open && input.anmeldeschluss?.trim()) {
+    anmeldeschluss = new Date(input.anmeldeschluss);
+  }
+
+  try {
+    await setConnectDayOeffnung({ open: input.open, anmeldeschluss });
+  } catch (err) {
+    if (err instanceof OeffnungError) {
+      return {
+        error:
+          err.code === "invalid_deadline"
+            ? "Bitte einen gültigen Anmeldeschluss in der Zukunft wählen."
+            : "Das Connect-Day-Event wurde nicht gefunden.",
+      };
+    }
+    throw err;
+  }
+
+  revalidatePath("/admin/connect-day");
+  revalidatePath("/kundenportal/connect-day");
+  revalidatePath("/kundenportal/bestellungen");
+  return { success: true };
+}
+
+/**
+ * Warteliste: Eintrag als nachgerückt markieren, Nachrücken zurücknehmen oder
+ * Eintrag entfernen. Alles rein manuell – kein Auto-Versand, keine automatische
+ * Anmeldung.
+ */
+export async function promoteConnectDayWaitlistAction(
+  waitlistId: string
+): Promise<ActionResult> {
+  await requireAuth();
+  const ok = await promoteConnectDayWaitlist(waitlistId);
+  if (!ok) {
+    return { error: "Eintrag nicht gefunden oder nicht mehr auf der Warteliste." };
+  }
+  revalidatePath("/admin/connect-day");
+  revalidatePath("/kundenportal/connect-day");
+  return { success: true };
+}
+
+export async function unpromoteConnectDayWaitlistAction(
+  waitlistId: string
+): Promise<ActionResult> {
+  await requireAuth();
+  const ok = await unpromoteConnectDayWaitlist(waitlistId);
+  if (!ok) {
+    return { error: "Eintrag nicht gefunden oder nicht als nachgerückt markiert." };
+  }
+  revalidatePath("/admin/connect-day");
+  revalidatePath("/kundenportal/connect-day");
+  return { success: true };
+}
+
+export async function removeConnectDayWaitlistAction(
+  waitlistId: string
+): Promise<ActionResult> {
+  await requireAuth();
+  const ok = await removeConnectDayWaitlist(waitlistId);
+  if (!ok) {
+    return { error: "Eintrag nicht gefunden." };
+  }
+  revalidatePath("/admin/connect-day");
+  revalidatePath("/kundenportal/connect-day");
   return { success: true };
 }
 

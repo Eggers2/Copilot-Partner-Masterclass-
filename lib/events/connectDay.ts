@@ -107,6 +107,20 @@ export async function getConnectDayContext(sessionEmail: string) {
     orderBy: { erstelltAm: "asc" },
   });
 
+  // Eigene Wartelisten-Einträge (WAITING = noch aktiv, PROMOTED = nachgerückt).
+  // Ausgetragene (CANCELLED) Einträge werden nicht mehr angezeigt.
+  const waitlist = await prisma.eventWaitlist.findMany({
+    where: {
+      eventId: event.id,
+      status: { in: ["WAITING", "PROMOTED"] },
+      bestellung: { email: sessionEmail },
+    },
+    include: {
+      bestellung: { select: { id: true, firma: true, bestellNr: true } },
+    },
+    orderBy: { erstelltAm: "asc" },
+  });
+
   // Firmen-Kontingent (maxProBestellung Personen pro Session-E-Mail) über
   // ALLE bestätigten Anmeldungen hinweg – daraus ergibt sich, wie viele
   // Personen noch nachgemeldet werden können.
@@ -131,6 +145,7 @@ export async function getConnectDayContext(sessionEmail: string) {
     event,
     eligibleBestellungen,
     registrations,
+    waitlist,
     personenAngemeldet,
     nachmeldeKontingent,
     angemeldeteTeilnehmerIds,
@@ -509,4 +524,227 @@ export async function cancelConnectDayRegistration(params: {
     sevdeskInvoiceNr: registration.sevdeskInvoiceNr,
     teilnehmer: registration.teilnehmer,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Warteliste
+//
+// Bewusst OHNE automatische Anmeldung/Rechnung und OHNE Auto-Versand: die
+// Warteliste sammelt nur Interessenten, sobald das Event ausgebucht ist. Bei
+// einem Storno rückt der Betreiber im Admin manuell nach (promote) und
+// kontaktiert den Partner selbst – so bleibt die Kontrolle über die knappen
+// Plätze beim Betreiber (vgl. die verbindliche 399-€-Buchung).
+// ---------------------------------------------------------------------------
+
+export type WaitlistErrorCode =
+  | "event_not_found"
+  | "not_eligible"
+  | "invalid_input"
+  | "too_many_persons"
+  | "already_on_waitlist";
+
+export class WaitlistError extends Error {
+  constructor(public code: WaitlistErrorCode) {
+    super(code);
+    this.name = "WaitlistError";
+  }
+}
+
+export interface JoinWaitlistInput {
+  sessionEmail: string;
+  bestellungId: number;
+  kontaktName: string;
+  kontaktEmail: string;
+  personen: number;
+  notiz?: string;
+}
+
+/**
+ * Trägt eine Bestellung auf die Connect-Day-Warteliste ein. Prüft Berechtigung
+ * (Klasse 1/2, Ownership über die Session-E-Mail) und begrenzt die gewünschte
+ * Personenzahl auf das Firmen-Kontingent. Pro Bestellung ist höchstens EIN
+ * aktiver (WAITING) Eintrag erlaubt – dagegen sichert zusätzlich der partielle
+ * Unique-Index in der Migration (P2002 → already_on_waitlist).
+ *
+ * Gibt die ID des neuen Wartelisten-Eintrags zurück.
+ */
+export async function joinConnectDayWaitlist(
+  input: JoinWaitlistInput
+): Promise<string> {
+  const event = await prisma.event.findUnique({
+    where: { slug: CONNECT_DAY_SLUG },
+  });
+  if (!event) throw new WaitlistError("event_not_found");
+
+  const kontaktName = input.kontaktName.trim();
+  const kontaktEmail = input.kontaktEmail.trim().toLowerCase();
+  if (
+    kontaktName.length === 0 ||
+    !kontaktEmail.includes("@") ||
+    !Number.isInteger(input.personen)
+  ) {
+    throw new WaitlistError("invalid_input");
+  }
+  if (input.personen < 1 || input.personen > event.maxProBestellung) {
+    throw new WaitlistError("too_many_persons");
+  }
+
+  const bestellung = await prisma.bestellung.findUnique({
+    where: { id: input.bestellungId },
+    select: { id: true, email: true, klasse: { select: { slug: true } } },
+  });
+  if (
+    !bestellung ||
+    bestellung.email !== input.sessionEmail ||
+    !event.erlaubteKlassenSlugs.includes(bestellung.klasse.slug)
+  ) {
+    throw new WaitlistError("not_eligible");
+  }
+
+  const bestehend = await prisma.eventWaitlist.findFirst({
+    where: {
+      eventId: event.id,
+      bestellungId: bestellung.id,
+      status: "WAITING",
+    },
+    select: { id: true },
+  });
+  if (bestehend) throw new WaitlistError("already_on_waitlist");
+
+  try {
+    const entry = await prisma.eventWaitlist.create({
+      data: {
+        eventId: event.id,
+        bestellungId: bestellung.id,
+        angemeldetVon: input.sessionEmail,
+        kontaktName,
+        kontaktEmail,
+        personen: input.personen,
+        notiz: input.notiz?.trim() || null,
+      },
+      select: { id: true },
+    });
+    return entry.id;
+  } catch (err) {
+    if (
+      typeof err === "object" &&
+      err !== null &&
+      (err as { code?: string }).code === "P2002"
+    ) {
+      throw new WaitlistError("already_on_waitlist");
+    }
+    throw err;
+  }
+}
+
+/**
+ * Selbst-Austragen aus der Warteliste (Kundenportal). Nur der eigene aktive
+ * Eintrag (WAITING) darf ausgetragen werden; bereits nachgerückte (PROMOTED)
+ * Einträge bleiben stehen. Gibt true zurück, wenn etwas geändert wurde.
+ */
+export async function leaveConnectDayWaitlist(params: {
+  waitlistId: string;
+  sessionEmail: string;
+}): Promise<boolean> {
+  const updated = await prisma.eventWaitlist.updateMany({
+    where: {
+      id: params.waitlistId,
+      status: "WAITING",
+      bestellung: { email: params.sessionEmail },
+    },
+    data: { status: "CANCELLED" },
+  });
+  return updated.count > 0;
+}
+
+/**
+ * Admin: markiert einen Wartelisten-Eintrag als nachgerückt (PROMOTED). Das
+ * ist bewusst nur eine Status-Markierung – es wird KEIN Platz reserviert, keine
+ * Rechnung erzeugt und keine Mail verschickt. Der Betreiber kontaktiert den
+ * Partner manuell; sobald (z.B. nach einem Storno) ein Platz frei ist, kann
+ * dieser sich regulär im Portal anmelden. Idempotent über den WAITING-Guard.
+ */
+export async function promoteConnectDayWaitlist(
+  waitlistId: string
+): Promise<boolean> {
+  const updated = await prisma.eventWaitlist.updateMany({
+    where: { id: waitlistId, status: "WAITING" },
+    data: { status: "PROMOTED", promotedAm: new Date() },
+  });
+  return updated.count > 0;
+}
+
+/**
+ * Admin: nimmt ein Nachrücken wieder zurück (PROMOTED → WAITING), falls es doch
+ * nicht klappt und der Eintrag wieder in die Warteschlange soll.
+ */
+export async function unpromoteConnectDayWaitlist(
+  waitlistId: string
+): Promise<boolean> {
+  const updated = await prisma.eventWaitlist.updateMany({
+    where: { id: waitlistId, status: "PROMOTED" },
+    data: { status: "WAITING", promotedAm: null },
+  });
+  return updated.count > 0;
+}
+
+/**
+ * Admin: entfernt einen Wartelisten-Eintrag (setzt ihn auf CANCELLED, bleibt
+ * als Historie stehen). Für Einträge, die sich anderweitig erledigt haben.
+ */
+export async function removeConnectDayWaitlist(
+  waitlistId: string
+): Promise<boolean> {
+  const updated = await prisma.eventWaitlist.updateMany({
+    where: { id: waitlistId, status: { in: ["WAITING", "PROMOTED"] } },
+    data: { status: "CANCELLED" },
+  });
+  return updated.count > 0;
+}
+
+// ---------------------------------------------------------------------------
+// Wiedereröffnung / Schließen (Admin)
+// ---------------------------------------------------------------------------
+
+export type OeffnungErrorCode = "event_not_found" | "invalid_deadline";
+
+export class OeffnungError extends Error {
+  constructor(public code: OeffnungErrorCode) {
+    super(code);
+    this.name = "OeffnungError";
+  }
+}
+
+/**
+ * Öffnet oder schließt die Connect-Day-Anmeldung (Event.status). Beim Öffnen
+ * kann zugleich ein neuer Anmeldeschluss gesetzt werden – nötig, wenn die alte
+ * Frist bereits abgelaufen ist, denn `registerForConnectDay` prüft neben dem
+ * Status auch `anmeldeschluss`. Der neue Anmeldeschluss muss in der Zukunft
+ * liegen.
+ */
+export async function setConnectDayOeffnung(params: {
+  open: boolean;
+  anmeldeschluss?: Date;
+}): Promise<void> {
+  const event = await prisma.event.findUnique({
+    where: { slug: CONNECT_DAY_SLUG },
+    select: { id: true },
+  });
+  if (!event) throw new OeffnungError("event_not_found");
+
+  const data: Prisma.EventUpdateInput = {
+    status: params.open ? "OPEN" : "CLOSED",
+  };
+
+  if (params.anmeldeschluss !== undefined) {
+    if (
+      Number.isNaN(params.anmeldeschluss.getTime()) ||
+      params.anmeldeschluss.getTime() <= Date.now()
+    ) {
+      throw new OeffnungError("invalid_deadline");
+    }
+    data.anmeldeschluss = params.anmeldeschluss;
+  }
+
+  await prisma.event.update({ where: { id: event.id }, data });
 }
