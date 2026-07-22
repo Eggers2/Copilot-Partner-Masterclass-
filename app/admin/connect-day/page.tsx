@@ -13,7 +13,24 @@ import { CONNECT_DAY_SLUG } from "@/lib/events/connectDay";
 import { getEinladungEmpfaenger } from "@/lib/events/connectDayInvite";
 import { ConnectDayTable } from "@/components/admin/ConnectDayTable";
 import { ConnectDayFreischaltung } from "@/components/admin/ConnectDayFreischaltung";
+import { ConnectDayOeffnung } from "@/components/admin/ConnectDayOeffnung";
+import { ConnectDayWaitlistTable } from "@/components/admin/ConnectDayWaitlistTable";
 import { ConnectDayEinladung } from "@/components/admin/ConnectDayEinladung";
+
+/** Date → "YYYY-MM-DDTHH:mm" in Berlin-Zeit (Vorbefüllung fürs datetime-local). */
+function toBerlinLocalInput(date: Date): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Berlin",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +60,13 @@ export default async function AdminConnectDayPage() {
     orderBy: { erstelltAm: "desc" },
   });
 
+  const waitlist = await prisma.eventWaitlist.findMany({
+    where: { eventId: event.id, status: { in: ["WAITING", "PROMOTED"] } },
+    include: { bestellung: { select: { firma: true, bestellNr: true } } },
+    // Wartende zuerst, darin die ältesten oben (Reihenfolge des Eintragens).
+    orderBy: [{ status: "asc" }, { erstelltAm: "asc" }],
+  });
+
   const confirmed = registrations.filter((r) => r.status === "CONFIRMED");
   const personenGesamt = confirmed.reduce((sum, r) => sum + r.personen, 0);
   const umsatzNetto = confirmed.reduce(
@@ -61,6 +85,13 @@ export default async function AdminConnectDayPage() {
     process.env.CONNECT_DAY_NOTIFY_EMAIL ??
     process.env.NEWSLETTER_REVIEW_EMAIL ??
     "";
+  const deadlinePassed = new Date() > event.anmeldeschluss;
+  const anmeldeschlussLabel =
+    new Intl.DateTimeFormat("de-DE", {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: "Europe/Berlin",
+    }).format(event.anmeldeschluss) + " Uhr";
   const startErreicht =
     !event.anmeldestart || new Date() >= event.anmeldestart;
   const anmeldestartLabel = event.anmeldestart
@@ -88,6 +119,12 @@ export default async function AdminConnectDayPage() {
       </div>
 
       <div className="mb-6 space-y-4">
+        <ConnectDayOeffnung
+          status={event.status}
+          anmeldeschlussLabel={anmeldeschlussLabel}
+          deadlinePassed={deadlinePassed}
+          defaultDeadlineLocal={toBerlinLocalInput(event.anmeldeschluss)}
+        />
         <ConnectDayFreischaltung
           manuellFreigeschaltet={event.manuellFreigeschaltet}
           anmeldestartLabel={anmeldestartLabel}
@@ -220,6 +257,21 @@ export default async function AdminConnectDayPage() {
             email: t.email,
             hinweise: t.hinweise,
           })),
+        }))}
+      />
+
+      <ConnectDayWaitlistTable
+        entries={waitlist.map((w) => ({
+          id: w.id,
+          firma: w.bestellung.firma,
+          bestellNr: w.bestellung.bestellNr,
+          kontaktName: w.kontaktName,
+          kontaktEmail: w.kontaktEmail,
+          personen: w.personen,
+          notiz: w.notiz,
+          status: w.status,
+          promotedAm: w.promotedAm?.toISOString() ?? null,
+          erstelltAm: w.erstelltAm.toISOString(),
         }))}
       />
     </div>

@@ -94,6 +94,12 @@ enum EventRegistrationStatus {
   CANCELLED
 }
 
+enum EventWaitlistStatus {
+  WAITING
+  PROMOTED
+  CANCELLED
+}
+
 enum EventInvoiceStatus {
   PENDING
   CREATED
@@ -313,6 +319,7 @@ model Bestellung {
   aktualisiertAm       DateTime @updatedAt @map("aktualisiert_am")
   teilnehmer           BestellungTeilnehmer[]
   eventRegistrations   EventRegistration[]
+  eventWaitlist        EventWaitlist[]
 
   @@map("bestellungen")
 }
@@ -364,6 +371,7 @@ model Event {
   erstelltAm           DateTime    @default(now()) @map("erstellt_am")
   aktualisiertAm       DateTime    @updatedAt @map("aktualisiert_am")
   registrations        EventRegistration[]
+  waitlist             EventWaitlist[]
 
   @@map("events")
 }
@@ -431,6 +439,36 @@ model EventTeilnehmer {
   @@unique([registrationId, position])
   @@unique([registrationId, bestellungTeilnehmerId])
   @@map("event_teilnehmer")
+}
+
+// Warteliste zum Connect Day. Wird befüllt, sobald das Event ausgebucht ist
+// (kundenportal/connect-day). Partner tragen sich mit Kontakt + gewünschter
+// Personenzahl ein; das Nachrücken passiert BEWUSST manuell im Admin (kein
+// Auto-Versand, keine automatische Anmeldung) – der Betreiber behält die
+// Kontrolle, welcher Eintrag bei einem Storno einen frei gewordenen Platz
+// bekommt. `status` protokolliert den Verlauf (WAITING → PROMOTED bzw.
+// CANCELLED, wenn der Partner sich selbst wieder austrägt).
+model EventWaitlist {
+  id             String              @id @default(cuid())
+  eventId        String              @map("event_id")
+  event          Event               @relation(fields: [eventId], references: [id])
+  bestellungId   Int                 @map("bestellung_id")
+  bestellung     Bestellung          @relation(fields: [bestellungId], references: [id])
+  // Wer den Eintrag angelegt hat (Session-E-Mail) – für die Ownership-Prüfung
+  // beim Selbst-Austragen im Kundenportal.
+  angemeldetVon  String              @map("angemeldet_von")
+  kontaktName    String              @map("kontakt_name")
+  kontaktEmail   String              @map("kontakt_email")
+  personen       Int                 @default(1)
+  notiz          String?
+  status         EventWaitlistStatus @default(WAITING)
+  promotedAm     DateTime?           @map("promoted_am")
+  erstelltAm     DateTime            @default(now()) @map("erstellt_am")
+  aktualisiertAm DateTime            @updatedAt @map("aktualisiert_am")
+
+  @@index([eventId, status])
+  @@index([bestellungId])
+  @@map("event_waitlist")
 }
 
 model Newsletter {

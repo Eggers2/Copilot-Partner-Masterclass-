@@ -13,6 +13,8 @@ import { requireCustomerSession } from "@/lib/auth/customer";
 import { getConnectDayContext } from "@/lib/events/connectDay";
 import { ConnectDayForm } from "@/components/kundenportal/ConnectDayForm";
 import { ConnectDayManage } from "@/components/kundenportal/ConnectDayManage";
+import { ConnectDayWaitlistForm } from "@/components/kundenportal/ConnectDayWaitlistForm";
+import { ConnectDayWaitlistManage } from "@/components/kundenportal/ConnectDayWaitlistManage";
 
 // Live-Zähler: die Seite darf nicht statisch gecacht werden.
 export const dynamic = "force-dynamic";
@@ -51,6 +53,7 @@ export default async function ConnectDayPage() {
     event,
     eligibleBestellungen,
     registrations,
+    waitlist,
     nachmeldeKontingent,
     seatsFrei,
   } = context;
@@ -72,6 +75,18 @@ export default async function ConnectDayPage() {
     anmeldungOffen &&
     nachmeldeKontingent > 0 &&
     eligibleBestellungen.length > 0;
+  // Warteliste: sobald das Event ausgebucht ist und der Partner berechtigt ist,
+  // kann er sich (unverbindlich) eintragen. Nachrücken passiert manuell durch
+  // den Betreiber (z.B. nach einem Storno). Bestellungen mit bereits aktivem
+  // (WAITING) Eintrag werden ausgeblendet, damit niemand doppelt einträgt.
+  const bestellungenAufWarteliste = new Set(
+    waitlist.filter((w) => w.status === "WAITING").map((w) => w.bestellung.id)
+  );
+  const waitlistBestellungen = eligibleBestellungen.filter(
+    (b) => !bestellungenAufWarteliste.has(b.id)
+  );
+  const waitlistMoeglich =
+    context.isFull && !eventStarted && waitlistBestellungen.length > 0;
 
   return (
     <div className="space-y-6">
@@ -214,6 +229,32 @@ export default async function ConnectDayPage() {
         );
       })}
 
+      {/* Eigene Wartelisten-Einträge (falls vorhanden) */}
+      {waitlist.length > 0 && (
+        <ConnectDayWaitlistManage
+          entries={waitlist.map((w) => ({
+            id: w.id,
+            firma: w.bestellung.firma,
+            personen: w.personen,
+            status: w.status,
+          }))}
+        />
+      )}
+
+      {/* Wartelisten-Formular bei ausgebuchtem Event */}
+      {waitlistMoeglich && (
+        <ConnectDayWaitlistForm
+          bestellungen={waitlistBestellungen.map((b) => ({
+            id: b.id,
+            bestellNr: b.bestellNr,
+            firma: b.firma,
+            klasseName: b.klasse.name,
+          }))}
+          maxPersonen={event.maxProBestellung}
+          defaultEmail={session.email}
+        />
+      )}
+
       {/* Nachmelde-Formular / Erst-Anmeldung / gesperrt */}
       {nachmeldenMoeglich ? (
         <ConnectDayForm
@@ -257,34 +298,40 @@ export default async function ConnectDayPage() {
             Klassen vor. Bei Fragen melde dich gerne bei uns.
           </p>
         </div>
+      ) : context.notYetOpen ? (
+        <div className="bg-white rounded-2xl border border-cool shadow-sm p-10 text-center">
+          <CalendarDays className="w-10 h-10 text-green mx-auto mb-3" />
+          <p className="text-slate font-medium">
+            Die Anmeldung öffnet am 07.07.2026 um 0:00 Uhr.
+          </p>
+          <p className="text-gray text-sm mt-1">
+            First Come, First Serve – es gibt nur 100 Plätze. Schau am
+            7. Juli direkt hier vorbei und sichere dir deinen Platz.
+          </p>
+        </div>
+      ) : context.isFull ? (
+        // Ausgebucht: die Warteliste (oben) übernimmt – kein extra Hinweis nötig.
+        // Nur falls das Event schon läuft, kann sich niemand mehr eintragen.
+        !waitlistMoeglich ? (
+          <div className="bg-white rounded-2xl border border-cool shadow-sm p-10 text-center">
+            <Lock className="w-10 h-10 text-cool mx-auto mb-3" />
+            <p className="text-slate font-medium">
+              Der Connect Day ist ausgebucht.
+            </p>
+            <p className="text-gray text-sm mt-1">
+              Alle {event.capacity} Plätze sind vergeben.
+            </p>
+          </div>
+        ) : null
       ) : (
         <div className="bg-white rounded-2xl border border-cool shadow-sm p-10 text-center">
-          {context.notYetOpen ? (
-            <>
-              <CalendarDays className="w-10 h-10 text-green mx-auto mb-3" />
-              <p className="text-slate font-medium">
-                Die Anmeldung öffnet am 07.07.2026 um 0:00 Uhr.
-              </p>
-              <p className="text-gray text-sm mt-1">
-                First Come, First Serve – es gibt nur 100 Plätze. Schau am
-                7. Juli direkt hier vorbei und sichere dir deinen Platz.
-              </p>
-            </>
-          ) : (
-            <>
-              <Lock className="w-10 h-10 text-cool mx-auto mb-3" />
-              <p className="text-slate font-medium">
-                {context.isFull
-                  ? "Der Connect Day ist ausgebucht."
-                  : "Die Anmeldung ist geschlossen."}
-              </p>
-              <p className="text-gray text-sm mt-1">
-                {context.isFull
-                  ? "Alle 100 Plätze sind vergeben. Schreib uns, wenn du auf die Nachrückliste möchtest – Stornos kommen vor."
-                  : "Der Anmeldeschluss (17.07.2026) ist vorbei. Melde dich bei uns, falls du noch teilnehmen möchtest."}
-              </p>
-            </>
-          )}
+          <Lock className="w-10 h-10 text-cool mx-auto mb-3" />
+          <p className="text-slate font-medium">
+            Die Anmeldung ist aktuell geschlossen.
+          </p>
+          <p className="text-gray text-sm mt-1">
+            Melde dich bei uns, falls du noch teilnehmen möchtest.
+          </p>
         </div>
       )}
     </div>
