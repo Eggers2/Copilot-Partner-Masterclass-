@@ -1,0 +1,59 @@
+name: Umfrage Cron
+
+# Stößt den geschützten Endpoint /api/cron/umfrage an (Stand-Abfrage). Die
+# Logik und die Zeitprüfung liegen serverseitig: der Endpoint prüft die echte
+# Europe/Berlin-Zeit (Ziel 08:00) und arbeitet über Claims idempotent. Dieser
+# Workflow muss daher nur "oft genug im richtigen Fenster" feuern.
+#
+# Voraussetzungen (einmalig):
+#   • Repo-Secret  CRON_SECRET   (Settings → Secrets and variables → Actions)
+#   • Web-Service (Railway) hat denselben CRON_SECRET
+#   • optional Repo-Variable APP_BASE_URL (sonst Default unten)
+
+on:
+  schedule:
+    # Zeiten in UTC. Fenster deckt 08:00 Europe/Berlin über Sommer-/Winterzeit
+    # ab; mehrere Läufe je Fenster fangen GitHub-Verzögerungen ab, nur der Lauf
+    # in der Berlin-Zielstunde wirkt, der Rest ist No-op.
+    - cron: "*/15 6-7 * * *" # 08:00 Berlin = 06 UTC (CEST) / 07 UTC (CET), täglich
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Manuell erzwingen (1 überspringt die Zeitprüfung)"
+        required: false
+        type: choice
+        default: ""
+        options:
+          - ""
+          - "1"
+
+concurrency:
+  group: umfrage-cron
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Endpoint anstoßen
+        env:
+          BASE_URL: ${{ vars.APP_BASE_URL || 'https://www.copilotberater.de' }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          FORCE: ${{ github.event.inputs.force }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::Repo-Secret CRON_SECRET ist nicht gesetzt (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+          URL="${BASE_URL%/}/api/cron/umfrage"
+          if [ -n "$FORCE" ]; then URL="$URL?force=$FORCE"; fi
+          echo "POST $URL"
+          code=$(curl -sS -m 60 -o /tmp/resp -w "%{http_code}" \
+            -X POST "$URL" -H "x-cron-secret: $CRON_SECRET")
+          echo "HTTP $code"
+          cat /tmp/resp || true
+          echo
+          if [ "$code" != "200" ]; then
+            echo "::error::Endpoint antwortete mit HTTP $code"
+            exit 1
+          fi

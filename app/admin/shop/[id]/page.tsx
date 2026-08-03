@@ -88,6 +88,8 @@ export default async function BestellungDetailPage({
           status: bestellung.status,
           adnChannel: bestellung.adnChannel,
           klasseId: bestellung.klasseId,
+          intern: bestellung.intern,
+          groessenklasse: bestellung.groessenklasse,
           teilnehmer: bestellung.teilnehmer.map((t) => ({
             position: t.position,
             vorname: t.vorname,

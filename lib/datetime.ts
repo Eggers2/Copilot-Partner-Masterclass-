@@ -23,3 +23,25 @@ export function parseBerlinDate(dateTimeLocal: string): Date {
   if (berlinHour(cet) === hour) return cet;
   return cest; // fallback to summer time
 }
+
+/** Kalenderdatum in Europe/Berlin als "YYYY-MM-DD" (en-CA liefert ISO-Format). */
+export function berlinDateString(d: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Berlin",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
+/**
+ * Differenz in Berlin-Kalendertagen (b minus a). Zählt Datumsgrenzen, nicht
+ * 24h-Blöcke: 23:59 → 00:01 am Folgetag ergibt 1.
+ */
+export function diffBerlinTage(a: Date, b: Date): number {
+  const toUtcMidnight = (d: Date) => {
+    const [y, m, day] = berlinDateString(d).split("-").map(Number);
+    return Date.UTC(y, m - 1, day);
+  };
+  return Math.round((toUtcMidnight(b) - toUtcMidnight(a)) / 86_400_000);
+}

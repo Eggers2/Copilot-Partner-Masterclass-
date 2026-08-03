@@ -65,9 +65,11 @@ import type {
   WebinarStatus,
   RegistrationStatus,
   AdnChannel,
+  Groessenklasse,
   KlasseStatus,
   TerminStatus,
 } from "@prisma/client";
+import { syncUmfrageRunden } from "@/lib/umfrage/runden";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { isAdnChannelKey } from "@/lib/packages";
@@ -820,6 +822,10 @@ interface UpdateBestellungInput {
   teilnehmer: TeilnehmerInput[];
   adnChannel?: AdnChannel;
   klasseId?: string;
+  /** Interne Bestellung: vom Umfrage-Versand und allen Auswertungen ausgeschlossen */
+  intern?: boolean;
+  /** Größenklasse der Firma (Mitarbeiter), leer erlaubt */
+  groessenklasse?: Groessenklasse | null;
 }
 
 export async function updateBestellungAction(
@@ -905,6 +911,10 @@ export async function updateBestellungAction(
         anmerkungen: input.anmerkungen?.trim() || null,
         status: input.status,
         adnChannel,
+        ...(input.intern !== undefined ? { intern: input.intern } : {}),
+        ...(input.groessenklasse !== undefined
+          ? { groessenklasse: input.groessenklasse }
+          : {}),
         ...(input.klasseId ? { klasseId: input.klasseId } : {}),
         // Adressänderung → Geokoordinaten verwerfen, gleich darunter neu setzen.
         ...(addressChanged ? { latitude: null, longitude: null } : {}),
@@ -1174,6 +1184,8 @@ export async function createKlasseAction(
         teamsGroupId,
         terminRegel: readTerminRegel(formData) as unknown as Prisma.InputJsonValue,
         description: ((formData.get("description") as string) || "").trim() || null,
+        curriculumStand:
+          ((formData.get("curriculumStand") as string) || "").trim() || null,
       },
     });
   } catch (err: unknown) {
@@ -1225,6 +1237,8 @@ export async function updateKlasseAction(
       teamsGroupId,
       terminRegel: readTerminRegel(formData) as unknown as Prisma.InputJsonValue,
       description: ((formData.get("description") as string) || "").trim() || null,
+      curriculumStand:
+        ((formData.get("curriculumStand") as string) || "").trim() || null,
     },
   });
 
@@ -1343,12 +1357,14 @@ export async function createTerminAction(
   if (!slug) return { error: "Klasse nicht gefunden." };
 
   const statusRaw = formData.get("status");
+  const ferienRaw = formData.get("ferien");
   await createTermin({
     klasseId,
     datum: parseBerlinDate(datumRaw),
     thema: ((formData.get("thema") as string) || "").trim() || null,
     notizen: ((formData.get("notizen") as string) || "").trim() || null,
     status: isTerminStatus(statusRaw) ? statusRaw : "GEPLANT",
+    ferien: ferienRaw === "on" || ferienRaw === "true",
     videoUrl: ((formData.get("videoUrl") as string) || "").trim() || null,
     teamsLink: ((formData.get("teamsLink") as string) || "").trim() || null,
   });
@@ -1374,11 +1390,13 @@ export async function updateTerminAction(
   if (!slug) return { error: "Klasse nicht gefunden." };
 
   const statusRaw = formData.get("status");
+  const ferienRaw = formData.get("ferien");
   await updateTermin(id, {
     datum: parseBerlinDate(datumRaw),
     thema: ((formData.get("thema") as string) || "").trim() || null,
     notizen: ((formData.get("notizen") as string) || "").trim() || null,
     ...(isTerminStatus(statusRaw) ? { status: statusRaw } : {}),
+    ferien: ferienRaw === "on" || ferienRaw === "true",
     videoUrl: ((formData.get("videoUrl") as string) || "").trim() || null,
     teamsLink: ((formData.get("teamsLink") as string) || "").trim() || null,
     zusammenfassung: ((formData.get("zusammenfassung") as string) || "").trim() || null,
@@ -1751,5 +1769,89 @@ export async function sendTerminProtokollTestAction(
   if (!res.ok) {
     return { error: res.error ?? "Test-E-Mail konnte nicht gesendet werden." };
   }
+  return { success: true };
+}
+
+// ─── STAND-ABFRAGE (Umfrage-Runden) ─────────────────
+
+/**
+ * Rotierenden Inhalt einer Runde anpassen. Nur bis zum Versand möglich, damit
+ * alle Antworten einer Runde dieselbe Frage beantwortet haben.
+ */
+export async function updateRundeInhaltAction(
+  rundeId: string,
+  inhalt: string
+): Promise<{ success?: boolean; error?: string }> {
+  await requireAuth();
+
+  const text = inhalt.trim();
+  if (!text) return { error: "Der Inhalt darf nicht leer sein." };
+
+  const runde = await prisma.umfrageRunde.findUnique({
+    where: { id: rundeId },
+    include: { klasse: { select: { slug: true } } },
+  });
+  if (!runde) return { error: "Runde nicht gefunden." };
+  if (runde.versandAm) {
+    return { error: "Die Runde wurde schon versendet, der Inhalt ist eingefroren." };
+  }
+
+  await prisma.umfrageRunde.update({
+    where: { id: rundeId },
+    data: { rotierenderInhalt: text },
+  });
+  revalidatePath(`/admin/klassen/${runde.klasse.slug}`);
+  return { success: true };
+}
+
+/**
+ * "Runden jetzt prüfen": stößt den Runden-Scan sofort an (ohne auf den Cron zu
+ * warten). Überspringt nur die Monats-Fenster-Prüfung; Monats-Idempotenz und
+ * der Termin-Schutz gelten weiterhin. Versendet nichts, das macht der Cron.
+ */
+export async function syncUmfrageRundenAction(): Promise<{
+  success?: boolean;
+  error?: string;
+  meldungen?: string[];
+}> {
+  await requireAuth();
+
+  const ergebnis = await syncUmfrageRunden(new Date(), true);
+  const meldungen = ergebnis.ergebnisse.map((e) =>
+    e.aktion === "angelegt"
+      ? `${e.klasse}: Runde ${e.nummer} angelegt.`
+      : `${e.klasse}: übersprungen (${e.grund})`
+  );
+
+  revalidatePath("/admin/klassen");
+  return { success: true, meldungen };
+}
+
+/**
+ * Offene Runde ohne Versand und ohne Antworten löschen (z.B. Testrunde).
+ * Alles andere bleibt bewusst stehen, Runden werden nie automatisch gelöscht.
+ */
+export async function deleteUmfrageRundeAction(
+  rundeId: string
+): Promise<{ success?: boolean; error?: string }> {
+  await requireAuth();
+
+  const runde = await prisma.umfrageRunde.findUnique({
+    where: { id: rundeId },
+    include: {
+      klasse: { select: { slug: true } },
+      _count: { select: { antworten: true } },
+    },
+  });
+  if (!runde) return { error: "Runde nicht gefunden." };
+  if (runde.status !== "OFFEN" || runde.versandAm || runde._count.antworten > 0) {
+    return {
+      error:
+        "Nur offene Runden ohne Versand und ohne Antworten können gelöscht werden.",
+    };
+  }
+
+  await prisma.umfrageRunde.delete({ where: { id: rundeId } });
+  revalidatePath(`/admin/klassen/${runde.klasse.slug}`);
   return { success: true };
 }

@@ -285,6 +285,108 @@ const CONNECT_DAY_STORNO_INTERN_DEFAULT_HTML = `<div style="font-family: -apple-
   </div>
 </div>`;
 
+const UMFRAGE_EINLADUNG_DEFAULT_HTML = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F1F5F9;">
+<tr><td align="center" style="padding:24px 12px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; color:#0F172A;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px;">
+  <tr><td style="background:#1A1A2E; border-radius:16px 16px 0 0; padding:32px; text-align:center;">
+    <div style="display:inline-block; padding:6px 16px; border:1px solid rgba(0,200,150,.5); border-radius:999px; color:#00C896; font-size:12px; font-weight:600; margin-bottom:16px;">
+      Monatliche Stand-Abfrage · {{klasse}}
+    </div>
+    <h1 style="margin:0; color:#ffffff; font-size:24px; line-height:1.25;">Wo stehst du auf der <span style="color:#00C896;">90-Tage-Transformation-Roadmap</span>?</h1>
+  </td></tr>
+  <tr><td style="background:#ffffff; padding:32px; border-radius:0 0 16px 16px; border:1px solid #E2E8F0; border-top:none;">
+    <p style="font-size:15px; line-height:1.6; margin:0 0 16px;">Hallo {{vorname}},</p>
+    <p style="font-size:15px; line-height:1.6; margin:0 0 16px;">
+      einmal im Monat fragen wir kurz nach, wo du gerade stehst. Es sind vier Fragen,
+      du brauchst dafür keine zwei Minuten, und du siehst direkt danach, wo du im
+      Vergleich zu deiner Klasse stehst.
+    </p>
+    <p style="font-size:15px; line-height:1.6; margin:0 0 20px;">
+      Kein Login, kein Passwort. Der Link ist dein persönlicher Zugang, du kannst
+      deine Antwort bis zum Ende der Runde jederzeit korrigieren.
+    </p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:8px 0 24px;">
+      <a href="{{link}}" style="display:inline-block; padding:14px 32px; background:#00C896; color:#1A1A2E; text-decoration:none; border-radius:12px; font-weight:700; font-size:16px;">
+        Zur Stand-Abfrage&nbsp;&rarr;
+      </a>
+    </td></tr></table>
+    <p style="font-size:15px; line-height:1.6; margin:0;">
+      Danke dir!<br><strong>Alex &amp; das Next Skills Team</strong>
+    </p>
+  </td></tr>
+  <tr><td style="padding:20px 8px 0; text-align:center; font-size:12px; color:#94A3B8;">
+    Next Skills · Copilot Partner Masterclass
+  </td></tr>
+</table>
+</td></tr>
+</table>`;
+
+const UMFRAGE_ERINNERUNG_DEFAULT_HTML = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F1F5F9;">
+<tr><td align="center" style="padding:24px 12px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; color:#0F172A;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px;">
+  <tr><td style="background:#1A1A2E; border-radius:16px 16px 0 0; padding:32px; text-align:center;">
+    <div style="display:inline-block; padding:6px 16px; border:1px solid rgba(0,200,150,.5); border-radius:999px; color:#00C896; font-size:12px; font-weight:600; margin-bottom:16px;">
+      Kurze Erinnerung · {{klasse}}
+    </div>
+    <h1 style="margin:0; color:#ffffff; font-size:24px; line-height:1.25;">Deine Stand-Abfrage ist noch offen</h1>
+  </td></tr>
+  <tr><td style="background:#ffffff; padding:32px; border-radius:0 0 16px 16px; border:1px solid #E2E8F0; border-top:none;">
+    <p style="font-size:15px; line-height:1.6; margin:0 0 16px;">Hallo {{vorname}},</p>
+    <p style="font-size:15px; line-height:1.6; margin:0 0 20px;">
+      du hast in dieser Runde noch nicht geantwortet. Vier Fragen, keine zwei Minuten,
+      und du siehst direkt, wo du im Vergleich zu deiner Klasse auf der
+      90-Tage-Transformation-Roadmap stehst. Das ist die einzige Erinnerung, danach
+      melden wir uns zu dieser Runde nicht mehr.
+    </p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:8px 0 24px;">
+      <a href="{{link}}" style="display:inline-block; padding:14px 32px; background:#00C896; color:#1A1A2E; text-decoration:none; border-radius:12px; font-weight:700; font-size:16px;">
+        Jetzt antworten&nbsp;&rarr;
+      </a>
+    </td></tr></table>
+    <p style="font-size:15px; line-height:1.6; margin:0;">
+      Danke dir!<br><strong>Alex &amp; das Next Skills Team</strong>
+    </p>
+  </td></tr>
+  <tr><td style="padding:20px 8px 0; text-align:center; font-size:12px; color:#94A3B8;">
+    Next Skills · Copilot Partner Masterclass
+  </td></tr>
+</table>
+</td></tr>
+</table>`;
+
+const UMFRAGE_RUECKSCHRITT_INTERN_DEFAULT_HTML = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #0F172A;">
+  <div style="padding: 16px 0; border-bottom: 1px solid #E2E8F0;">
+    <h1 style="margin: 0; font-size: 20px; color: #B91C1C;">Stand-Abfrage: Rückschritt gemeldet</h1>
+  </div>
+  <div style="padding: 24px 0; line-height: 1.6; font-size: 15px;">
+    <p><strong>{{name}}</strong> ({{firma}}, {{klasse}}) hat in Runde {{runde}} eine niedrigere Stufe gemeldet als in der Vorrunde.</p>
+    <ul style="padding-left: 20px; margin: 12px 0;">
+      <li>Vorrunde: Stufe <strong>{{alt}}</strong></li>
+      <li>Jetzt: Stufe <strong>{{neu}}</strong></li>
+    </ul>
+    <p>Ein Rückschritt bedeutet in der Regel ein verlorenes Angebot und ist die wertvollste Einzelmeldung im System. Kurzer Anruf lohnt sich.</p>
+    <p><a href="{{adminLink}}" style="color: #030386;">Zur Auswertung im Admin</a></p>
+  </div>
+  <div style="padding-top: 16px; border-top: 1px solid #E2E8F0; font-size: 12px; color: #94A3B8;">
+    Automatische Benachrichtigung aus der Stand-Abfrage
+  </div>
+</div>`;
+
+const UMFRAGE_LIEFERRISIKO_INTERN_DEFAULT_HTML = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #0F172A;">
+  <div style="padding: 16px 0; border-bottom: 1px solid #E2E8F0;">
+    <h1 style="margin: 0; font-size: 20px; color: #B91C1C;">Stand-Abfrage: Lieferrisiko in {{klasse}}</h1>
+  </div>
+  <div style="padding: 24px 0; line-height: 1.6; font-size: 15px;">
+    <p>In Runde {{runde}} liegt bei diesen Firmen die Spannweite zwischen höchster und niedrigster Stufe über 4:</p>
+    <p style="padding: 12px 16px; background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px;"><strong>{{firmenListe}}</strong></p>
+    <p>Eine Spannweite über vier Stufen bedeutet in der Regel, dass etwas verkauft wurde, das noch niemand liefern kann.</p>
+    <p><a href="{{adminLink}}" style="color: #030386;">Zur Auswertung im Admin</a></p>
+  </div>
+  <div style="padding-top: 16px; border-top: 1px solid #E2E8F0; font-size: 12px; color: #94A3B8;">
+    Automatische Benachrichtigung aus der Stand-Abfrage
+  </div>
+</div>`;
+
 /**
  * Registry aller konfigurierbaren Templates. Treibt die Editor-Hilfe, die
  * Beispieldaten für Vorschau/Test-Mail und das initiale Seeding.
@@ -356,6 +458,63 @@ export const TEMPLATE_REGISTRY: Record<string, TemplateDefinition> = {
     variables: { vorname: "Max" },
     defaultBetreff: "✅ Jetzt anmelden – der Copilot Connect Day ist geöffnet",
     defaultHtml: CONNECT_DAY_START_DEFAULT_HTML,
+  },
+  umfrage_einladung: {
+    key: "umfrage_einladung",
+    name: "Stand-Abfrage – Einladung",
+    beschreibung:
+      "Monatliche Einladung zur Stand-Abfrage an alle belegten, nicht internen Plätze einer Klasse. {{link}} ist der persönliche Zugang des Platzes. Auch bei inaktivem Template wird mit dem Standard-HTML versendet, damit die Abfrage nie stillsteht.",
+    variables: {
+      vorname: "Max",
+      klasse: "Klasse 1",
+      link: "https://www.copilotberater.de/umfrage/beispiel-token",
+    },
+    defaultBetreff: "Wo stehst du auf der 90-Tage-Transformation-Roadmap?",
+    defaultHtml: UMFRAGE_EINLADUNG_DEFAULT_HTML,
+  },
+  umfrage_erinnerung: {
+    key: "umfrage_erinnerung",
+    name: "Stand-Abfrage – Erinnerung",
+    beschreibung:
+      "Genau eine Erinnerung 4 Tage nach dem Versand, nur an Plätze ohne Antwort und nur in normalen Runden (keine Ferien, kein Jahreswechsel). Auch bei inaktivem Template wird mit dem Standard-HTML versendet.",
+    variables: {
+      vorname: "Max",
+      klasse: "Klasse 1",
+      link: "https://www.copilotberater.de/umfrage/beispiel-token",
+    },
+    defaultBetreff: "Kurze Erinnerung: deine Stand-Abfrage ist noch offen",
+    defaultHtml: UMFRAGE_ERINNERUNG_DEFAULT_HTML,
+  },
+  umfrage_rueckschritt_intern: {
+    key: "umfrage_rueckschritt_intern",
+    name: "Stand-Abfrage – Rückschritt (interne Benachrichtigung)",
+    beschreibung:
+      "Geht an den Betreiber (UMFRAGE_NOTIFY_EMAIL, sonst NEWSLETTER_REVIEW_EMAIL), wenn jemand eine niedrigere Stufe meldet als in der Vorrunde (= verlorenes Angebot). Auch bei inaktivem Template wird mit dem Standard-HTML versendet.",
+    variables: {
+      name: "Max Mustermann",
+      firma: "Muster GmbH",
+      klasse: "Klasse 1",
+      runde: "3",
+      alt: "6",
+      neu: "4",
+      adminLink: "https://www.copilotberater.de/admin/umfragen/klasse-1",
+    },
+    defaultBetreff: "Rückschritt in {{klasse}}: {{name}} (Stufe {{alt}} zu {{neu}})",
+    defaultHtml: UMFRAGE_RUECKSCHRITT_INTERN_DEFAULT_HTML,
+  },
+  umfrage_lieferrisiko_intern: {
+    key: "umfrage_lieferrisiko_intern",
+    name: "Stand-Abfrage – Lieferrisiko (interne Benachrichtigung)",
+    beschreibung:
+      "Sammel-Mail an den Betreiber (UMFRAGE_NOTIFY_EMAIL, sonst NEWSLETTER_REVIEW_EMAIL), wenn Firmen in einer Runde eine Stufen-Spannweite über 4 haben. Wird einmal pro Runde am Erinnerungs-Zeitpunkt geprüft. Auch bei inaktivem Template wird mit dem Standard-HTML versendet.",
+    variables: {
+      klasse: "Klasse 1",
+      runde: "3",
+      firmenListe: "Muster GmbH (1 bis 7), Beispiel AG (0 bis 6)",
+      adminLink: "https://www.copilotberater.de/admin/umfragen/klasse-1",
+    },
+    defaultBetreff: "Lieferrisiko in {{klasse}} Runde {{runde}}: Spannweite über 4",
+    defaultHtml: UMFRAGE_LIEFERRISIKO_INTERN_DEFAULT_HTML,
   },
   connect_day_storno_intern: {
     key: "connect_day_storno_intern",

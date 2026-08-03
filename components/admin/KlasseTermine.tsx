@@ -58,6 +58,7 @@ export interface TerminView {
   thema: string | null;
   notizen: string | null;
   status: TerminStatus;
+  ferien: boolean;
   videoUrl: string | null;
   teamsLink: string | null;
   zusammenfassung: string | null;
@@ -164,6 +165,16 @@ function TerminForm({
           className={inputClass}
         />
       </div>
+
+      <label className="flex items-center gap-2 text-sm text-dark-slate-600">
+        <input
+          name="ferien"
+          type="checkbox"
+          defaultChecked={initial?.ferien ?? false}
+          className="rounded border-dark-slate-300"
+        />
+        Ferienfenster (keine Umfrage-Erinnerung, mildert die Anwesenheits-Deutung)
+      </label>
 
       <div className="grid sm:grid-cols-2 gap-3">
         <div>
@@ -716,6 +727,11 @@ function TerminRow({
             >
               {done ? "Durchgeführt" : "Geplant"}
             </span>
+            {termin.ferien && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+                Ferienfenster
+              </span>
+            )}
             {termin.protokollGesendetAm && (
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-[#030386]">
                 Protokoll gesendet
