@@ -236,9 +236,11 @@ export default async function KlasseDetailPage({
             Anwesenheit &amp; KPI
           </h2>
           <p className="text-sm text-dark-slate-500 mb-4">
-            Auswertung der hochgeladenen Teams-Anwesenheitsberichte: Anwesende
-            pro Termin, Abgleich mit der Teilnehmerübersicht aus dem Onlineshop
-            und Rangliste der aktivsten bzw. inaktivsten Teilnehmer.
+            Auswertung der hochgeladenen Teams-Anwesenheitsberichte und des
+            Videokurs-Fortschritts (ablefy-Export): Anwesende pro Termin,
+            Abgleich mit der Teilnehmerübersicht aus dem Onlineshop, Rangliste
+            der aktivsten bzw. inaktivsten Teilnehmer und wenig engagierte
+            Firmen (Anwesenheit oder Videokurs unter 50 %).
           </p>
           <KlasseAnwesenheitKpi
             klasseId={klasse.id}

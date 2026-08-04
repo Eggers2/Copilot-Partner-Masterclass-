@@ -244,6 +244,24 @@ model TerminAnwesenheit {
   @@map("termin_anwesenheiten")
 }
 
+// Videokurs-Fortschritt aus dem ablefy-Export ("export course_sessions"):
+// ein globaler Datenstand für alle Klassen (ein Videokurs), eine Zeile je
+// E-Mail – bei mehreren Buchungen derselben Adresse zählt der höchste
+// Fortschritt. Ein erneuter Upload ersetzt den Stand komplett; die
+// Import-Metadaten liegen als AppSetting (lib/db/kursFortschritt.ts). Der
+// Abgleich mit den im Shop gemeldeten Teilnehmern passiert zur Lesezeit
+// über E-Mail/Name (siehe lib/db/anwesenheit.ts).
+model KursFortschritt {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String
+  // Anteil gesehener Videos des Kurses in Prozent (0–100).
+  fortschritt Int      @default(0)
+  erstelltAm  DateTime @default(now()) @map("erstellt_am")
+
+  @@map("kurs_fortschritte")
+}
+
 model Lead {
   id                   String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email                String                @unique

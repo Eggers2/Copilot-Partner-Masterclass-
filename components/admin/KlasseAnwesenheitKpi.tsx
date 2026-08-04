@@ -5,10 +5,12 @@ import type {
 } from "@/lib/db/anwesenheit";
 import { AnwesenheitIgnorierliste } from "./AnwesenheitIgnorierliste";
 import { FirmenErinnerungButton } from "./FirmenErinnerung";
+import { KursFortschrittUpload } from "./KursFortschrittUpload";
 
 // Server-gerenderte KPI-Sektion der Klassen-Detailseite: Anwesenheit pro
-// Termin, Abweichungs-Hinweis (Anwesende ohne Registrierung) und die
-// Top-20-/Bottom-20-Rangliste der registrierten Teilnehmer.
+// Termin, Abweichungs-Hinweis (Anwesende ohne Registrierung), Videokurs-
+// Fortschritt (ablefy-Export) und die Top-20-/Bottom-20-Rangliste der
+// registrierten Teilnehmer.
 
 function formatTermin(datum: Date): string {
   return datum.toLocaleDateString("de-DE", {
@@ -17,6 +19,39 @@ function formatTermin(datum: Date): string {
     month: "2-digit",
     year: "numeric",
   });
+}
+
+/** Farbige Prozent-Pille (≥75 grün, ≥40 gelb, sonst rot). */
+function ProzentBadge({ wert, title }: { wert: number; title?: string }) {
+  return (
+    <span
+      title={title}
+      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+        wert >= 75
+          ? "bg-green-100 text-green-700"
+          : wert >= 40
+            ? "bg-amber-100 text-amber-700"
+            : "bg-red-100 text-red-700"
+      }`}
+    >
+      {wert}%
+    </span>
+  );
+}
+
+/** Videokurs-Zelle: Fortschritt oder "–" (nicht im Kurs-Export). */
+function VideoZelle({ video }: { video: number | null }) {
+  if (video === null) {
+    return (
+      <span
+        className="text-xs text-dark-slate-400"
+        title="Nicht im Videokurs-Export (noch nicht eingeloggt oder kein Zugang)"
+      >
+        –
+      </span>
+    );
+  }
+  return <ProzentBadge wert={video} />;
 }
 
 function RankingTable({
@@ -50,7 +85,8 @@ function RankingTable({
                 <th className="py-1 pr-2 font-medium">#</th>
                 <th className="py-1 pr-3 font-medium">Teilnehmer</th>
                 <th className="py-1 pr-3 font-medium">Firma</th>
-                <th className="py-1 font-medium whitespace-nowrap">Anwesenheit</th>
+                <th className="py-1 pr-3 font-medium whitespace-nowrap">Anwesenheit</th>
+                <th className="py-1 font-medium whitespace-nowrap">Videokurs</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-dark-slate-50">
@@ -66,7 +102,7 @@ function RankingTable({
                       </span>
                     </td>
                     <td className="py-1.5 pr-3 text-dark-slate-600">{e.firma}</td>
-                    <td className="py-1.5 whitespace-nowrap">
+                    <td className="py-1.5 pr-3 whitespace-nowrap">
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
                           quote >= 75
@@ -78,6 +114,9 @@ function RankingTable({
                       >
                         {e.anwesend}/{berichte} · {quote}%
                       </span>
+                    </td>
+                    <td className="py-1.5 whitespace-nowrap">
+                      <VideoZelle video={e.video} />
                     </td>
                   </tr>
                 );
@@ -101,8 +140,35 @@ export function KlasseAnwesenheitKpi({
   klasseSlug: string;
   auswertung: KlasseAnwesenheitAuswertung;
 }) {
-  const { berichte, proTermin, top, bottom, unbekannte, inaktiveFirmen, ignorierliste } =
-    auswertung;
+  const {
+    berichte,
+    proTermin,
+    top,
+    bottom,
+    unbekannte,
+    inaktiveFirmen,
+    ignorierliste,
+    teilnehmerGesamt,
+    kursImport,
+    kursZugeordnet,
+  } = auswertung;
+
+  const kursUpload = (
+    <KursFortschrittUpload
+      klasseId={klasseId}
+      info={
+        kursImport
+          ? {
+              dateiname: kursImport.dateiname,
+              importiertAmText: formatTermin(kursImport.importiertAm),
+              eintraege: kursImport.eintraege,
+            }
+          : null
+      }
+      zugeordnet={kursZugeordnet}
+      teilnehmerGesamt={teilnehmerGesamt}
+    />
+  );
 
   if (berichte === 0) {
     return (
@@ -112,6 +178,7 @@ export function KlasseAnwesenheitKpi({
           unter „Termine &amp; Themen“) den Teams-Anwesenheitsbericht hoch, um die
           Auswertung zu sehen.
         </p>
+        {kursUpload}
         <AnwesenheitIgnorierliste klasseSlug={klasseSlug} emails={ignorierliste} />
       </div>
     );
@@ -119,6 +186,8 @@ export function KlasseAnwesenheitKpi({
 
   return (
     <div className="space-y-6">
+      {/* Upload des Videokurs-Exports (gilt für alle Klassen) */}
+      {kursUpload}
       {/* Deutlicher Hinweis auf Anwesende außerhalb der Teilnehmerübersicht */}
       {unbekannte.length > 0 && (
         <div className="rounded-lg border border-red-300 bg-red-50 p-4">
@@ -152,17 +221,19 @@ export function KlasseAnwesenheitKpi({
         </div>
       )}
 
-      {/* Inaktive Firmen/Partner: Teilnahmequote unter 50 % */}
+      {/* Wenig engagierte Firmen/Partner: Anwesenheit oder Videokurs unter 50 % */}
       {inaktiveFirmen.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-dark-slate-700 mb-2 flex items-center gap-1.5">
             <Building2 className="w-4 h-4 text-amber-600" />
-            Firmen mit unter 50 % Teilnahme
+            Wenig engagierte Firmen (unter 50 % Teilnahme oder Videokurs)
           </h3>
           <p className="text-xs text-dark-slate-500 mb-2">
             Teilnahmequote über alle Mitarbeiter der Firma (wahrgenommene ÷
-            mögliche Termin-Teilnahmen) – zum schnellen Erkennen inaktiver
-            Partner.
+            mögliche Termin-Teilnahmen) und durchschnittlicher
+            Videokurs-Fortschritt. Engagement = Mittel aus beiden Werten;
+            sortiert von wenig nach viel – die Partner ganz oben brauchen am
+            ehesten einen Anstoß.
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -174,6 +245,10 @@ export function KlasseAnwesenheitKpi({
                     Teilnahmen
                   </th>
                   <th className="py-1 pr-3 font-medium">Quote</th>
+                  <th className="py-1 pr-3 font-medium whitespace-nowrap">
+                    Videokurs Ø
+                  </th>
+                  <th className="py-1 pr-3 font-medium">Engagement</th>
                   <th className="py-1 font-medium"></th>
                 </tr>
               </thead>
@@ -190,14 +265,36 @@ export function KlasseAnwesenheitKpi({
                       {f.anwesend}/{f.moeglich}
                     </td>
                     <td className="py-1.5 pr-3">
+                      <ProzentBadge wert={f.quote} />
+                    </td>
+                    <td className="py-1.5 pr-3 whitespace-nowrap">
+                      {f.videoQuote === null ? (
+                        <span
+                          className="text-xs text-dark-slate-400"
+                          title="Kein Mitarbeiter im Videokurs-Export"
+                        >
+                          –
+                        </span>
+                      ) : (
+                        <ProzentBadge
+                          wert={f.videoQuote}
+                          title={
+                            f.ohneVideoDaten > 0
+                              ? `${f.ohneVideoDaten} von ${f.teilnehmer} Mitarbeitern ohne Kurs-Daten (nicht eingerechnet)`
+                              : undefined
+                          }
+                        />
+                      )}
+                    </td>
+                    <td className="py-1.5 pr-3">
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                          f.quote < 25
+                          f.engagement < 25
                             ? "bg-red-100 text-red-700"
                             : "bg-amber-100 text-amber-700"
                         }`}
                       >
-                        {f.quote}%
+                        {f.engagement}%
                       </span>
                     </td>
                     <td className="py-1.5 whitespace-nowrap">

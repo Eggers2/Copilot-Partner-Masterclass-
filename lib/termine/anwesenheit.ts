@@ -140,8 +140,11 @@ export function parseBerichtZeit(raw: string): Date | null {
   return cest;
 }
 
-/** Quote-bewusstes Zerlegen einer Zeile am gegebenen Trennzeichen. */
-function splitLine(line: string, delimiter: string): string[] {
+/**
+ * Quote-bewusstes Zerlegen einer CSV-Zeile am gegebenen Trennzeichen.
+ * Auch vom Videokurs-Parser (lib/kurs/fortschritt.ts) genutzt.
+ */
+export function splitCsvZeile(line: string, delimiter: string): string[] {
   const result: string[] = [];
   let current = "";
   let inQuotes = false;
@@ -223,7 +226,7 @@ export function parseAnwesenheitsbericht(text: string): AnwesenheitsberichtResul
     const line = lines[i];
     if (!line.trim()) continue;
     for (const d of ["\t", ";", ","]) {
-      const m = mapHeader(splitLine(line, d));
+      const m = mapHeader(splitCsvZeile(line, d));
       if (m) {
         headerIndex = i;
         mapping = m;
@@ -252,7 +255,7 @@ export function parseAnwesenheitsbericht(text: string): AnwesenheitsberichtResul
     // Leerzeile oder nächster nummerierter Abschnitt beendet die Tabelle.
     if (!line.trim() || /^\s*\d+\.\s/.test(line)) break;
 
-    const cells = splitLine(line, delimiter);
+    const cells = splitCsvZeile(line, delimiter);
     const name = (cells[mapping.name] ?? "").trim();
     const email = normalizeAnwesenheitEmail(cells[mapping.email] ?? "");
     if (!name && !email) continue;

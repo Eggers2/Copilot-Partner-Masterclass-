@@ -5,13 +5,19 @@ import { Mail, RotateCcw, Send, X } from "lucide-react";
 import { sendFirmenErinnerungAction } from "@/app/admin/actions";
 import type { FirmenStatistik } from "@/lib/db/anwesenheit";
 
-// Erinnerungs-Mail an Firmen mit schwacher Teilnahmequote: Button in der
-// KPI-Tabelle öffnet einen Dialog mit vorgeschriebener, frei anpassbarer
-// E-Mail (inkl. Teilnahme-Daten je Mitarbeiter). Versand an einen wählbaren
+// Erinnerungs-Mail an wenig engagierte Firmen (schwache Teilnahmequote oder
+// geringer Videokurs-Fortschritt): Button in der KPI-Tabelle öffnet einen
+// Dialog mit vorgeschriebener, frei anpassbarer E-Mail (inkl. Teilnahme- und
+// Videokurs-Daten je Mitarbeiter). Versand an einen wählbaren
 // Besteller-Kontakt der Firma.
 
 function buildBetreff(klasseName: string): string {
   return `${klasseName}: Eure Teilnahme – wie kann ich helfen?`;
+}
+
+function videoText(video: number | null): string {
+  if (video === null) return "noch nicht im Videokurs eingeloggt";
+  return `${video} % der Videos gesehen`;
 }
 
 function buildVorlage(
@@ -25,15 +31,27 @@ function buildVorlage(
   const teilnahmeZeilen = firma.mitarbeiter
     .map(
       (m) =>
-        `- ${m.name}: ${m.anwesend} von ${berichte} ${berichte === 1 ? "Termin" : "Terminen"}`
+        `- ${m.name}: ${m.anwesend} von ${berichte} ${berichte === 1 ? "Termin" : "Terminen"} · Videokurs: ${videoText(m.video)}`
     )
     .join("\n");
 
+  const teilnahmeInfo = `${firma.anwesend} von ${firma.moeglich} möglichen Teilnahmen (${firma.quote} %)`;
+  // Einstieg je nach Schwachstelle: geringe Termin-Teilnahme (ggf. plus
+  // Videokurs) oder – bei ordentlicher Teilnahme – nur der Videokurs.
+  const einstieg =
+    firma.quote < 50
+      ? `mir ist aufgefallen, dass die Teilnahme von ${firma.firma} an den bisherigen Terminen der ${klasseName} leider gering war: ${teilnahmeInfo}.${
+          firma.videoQuote === null
+            ? " Auch im begleitenden Videokurs ist bisher niemand von euch aktiv geworden."
+            : ` Auch im begleitenden Videokurs ist noch Luft nach oben: im Schnitt sind erst ${firma.videoQuote} % der Videos gesehen.`
+        }`
+      : `mir ist aufgefallen, dass ${firma.firma} den begleitenden Videokurs der ${klasseName} bisher kaum nutzt: im Schnitt sind erst ${firma.videoQuote ?? 0} % der Videos gesehen. Bei den Live-Terminen seid ihr mit ${teilnahmeInfo} dabei – umso mehr lohnt es sich, auch die Videoinhalte mitzunehmen.`;
+
   return `${anrede}
 
-mir ist aufgefallen, dass die Teilnahme von ${firma.firma} an den bisherigen Terminen der ${klasseName} leider gering war: ${firma.anwesend} von ${firma.moeglich} möglichen Teilnahmen (${firma.quote} %).
+${einstieg}
 
-So sieht die Teilnahme eurer angemeldeten Mitarbeiter im Einzelnen aus:
+So sieht es bei euren angemeldeten Mitarbeitern im Einzelnen aus:
 ${teilnahmeZeilen}
 
 Die Masterclass lebt vom regelmäßigen Dranbleiben – und ihr verpasst gerade Inhalte, die ihr bereits gebucht habt.
@@ -136,7 +154,11 @@ export function FirmenErinnerungButton({
                 </h3>
                 <p className="text-sm text-dark-slate-500">
                   Quote bisher: {firma.anwesend}/{firma.moeglich} Teilnahmen (
-                  {firma.quote} %) über {firma.teilnehmer} Mitarbeiter.
+                  {firma.quote} %) über {firma.teilnehmer} Mitarbeiter · Videokurs
+                  Ø:{" "}
+                  {firma.videoQuote === null
+                    ? "keine Daten"
+                    : `${firma.videoQuote} %`}
                 </p>
               </div>
               <button
