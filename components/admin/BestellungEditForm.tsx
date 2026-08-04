@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle, AlertCircle, Users, Plus, Minus } from "lucide-react";
-import type { AdnChannel } from "@prisma/client";
+import type { AdnChannel, Groessenklasse } from "@prisma/client";
 import { updateBestellungAction } from "@/app/admin/actions";
 import { PACKAGES } from "@/lib/packages";
 import { ADN_CHANNEL_CONFIG } from "@/lib/constants/lead-config";
@@ -43,7 +43,16 @@ interface BestellungData {
   teilnehmer: Teilnehmer[];
   adnChannel: AdnChannel;
   klasseId: string;
+  intern: boolean;
+  groessenklasse: Groessenklasse | null;
 }
+
+const GROESSENKLASSE_OPTIONS: { value: Groessenklasse; label: string }[] = [
+  { value: "UNTER_10", label: "Unter 10 Mitarbeiter" },
+  { value: "VON_10_BIS_50", label: "10 bis 50 Mitarbeiter" },
+  { value: "VON_51_BIS_150", label: "51 bis 150 Mitarbeiter" },
+  { value: "UEBER_150", label: "Über 150 Mitarbeiter" },
+];
 
 const LAENDER: Record<string, string> = {
   DE: "Deutschland",
@@ -104,6 +113,10 @@ export function BestellungEditForm({
   const [status, setStatus] = useState(bestellung.status);
   const [adnChannel, setAdnChannel] = useState<AdnChannel>(bestellung.adnChannel);
   const [klasseId, setKlasseId] = useState<string>(bestellung.klasseId);
+  const [intern, setIntern] = useState<boolean>(bestellung.intern);
+  const [groessenklasse, setGroessenklasse] = useState<Groessenklasse | "">(
+    bestellung.groessenklasse ?? ""
+  );
 
   const paketInfo = PACKAGES[paket as keyof typeof PACKAGES] ?? PACKAGES.starter;
 
@@ -213,6 +226,8 @@ export function BestellungEditForm({
         teilnehmer: visibleTeilnehmer,
         adnChannel,
         klasseId,
+        intern,
+        groessenklasse: groessenklasse || null,
       });
 
       if (result.error) {
@@ -305,7 +320,41 @@ export function BestellungEditForm({
               ))}
             </select>
           </div>
+          <div>
+            <label className={labelClass}>Größenklasse (Mitarbeiter)</label>
+            <select
+              value={groessenklasse}
+              onChange={(e) => setGroessenklasse(e.target.value as Groessenklasse | "")}
+              disabled={isPending}
+              className={inputClass}
+            >
+              <option value="">Nicht erfasst</option>
+              {GROESSENKLASSE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
+        <label className="mt-4 flex items-start gap-3 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={intern}
+            onChange={(e) => setIntern(e.target.checked)}
+            disabled={isPending}
+            className="mt-0.5 w-4 h-4 accent-[#030386] cursor-pointer"
+          />
+          <span>
+            <span className="block text-sm font-medium text-dark-slate-700">
+              Interne Bestellung (nicht in Auswertungen)
+            </span>
+            <span className="block text-xs text-dark-slate-500 mt-0.5">
+              Interne Plätze (z.B. ke solutions, Secom IT, NextVideo) bekommen keine
+              Stand-Abfrage und erscheinen in keiner Auswertung.
+            </span>
+          </span>
+        </label>
         <p className="text-xs text-dark-slate-400 mt-3">
           Preis und MwSt werden beim Speichern automatisch anhand von Paket,
           Zahlungsmodell, Land, USt-IdNr. und ADN-Kanal neu berechnet.

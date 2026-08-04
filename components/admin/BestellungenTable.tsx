@@ -42,6 +42,7 @@ interface Bestellung {
   erstelltAm: string;
   adnChannel: AdnChannel;
   klasseName: string | null;
+  intern: boolean;
   belegt: number;
   teilnehmer: {
     position: number;
@@ -515,6 +516,11 @@ export function BestellungenTable({
                       >
                         <p className="text-sm font-medium text-dark-slate-900 group-hover:text-[#030386] group-hover:underline">
                           {b.firma}
+                          {b.intern && (
+                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-dark-slate-100 text-dark-slate-600 align-middle">
+                              Intern
+                            </span>
+                          )}
                         </p>
                         <p className="text-xs text-dark-slate-500">
                           {b.vorname} {b.nachname} &middot; {b.email}

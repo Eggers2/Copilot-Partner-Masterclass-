@@ -41,6 +41,7 @@ interface KlasseValues {
   teilnehmerSperre: boolean;
   teamsGroupId: string | null;
   description: string | null;
+  curriculumStand: string | null;
   terminRegel: TerminRegelMuster[];
 }
 
@@ -219,6 +220,19 @@ export function KlasseForm({
             defaultValue={initial?.capacity ?? ""}
             className={inputClass}
           />
+        </div>
+        <div>
+          <label className={labelClass}>Curriculum-Stand bei Kickoff</label>
+          <input
+            name="curriculumStand"
+            defaultValue={initial?.curriculumStand ?? ""}
+            placeholder="z.B. M1-M4"
+            className={inputClass}
+          />
+          <p className="text-xs text-dark-slate-500 mt-1">
+            Welche Module beim Start der Klasse verfügbar waren. Störgröße für den
+            Kohortenvergleich der Stand-Abfrage.
+          </p>
         </div>
       </div>
 

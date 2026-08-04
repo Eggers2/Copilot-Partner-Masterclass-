@@ -22,6 +22,8 @@ export interface SendEmailInput {
   to: string | string[];
   subject: string;
   html: string;
+  /** optionaler Absender-Override, sonst RESEND_FROM_EMAIL */
+  from?: string;
   /** optionaler Reply-To, sonst nur der Absender aus RESEND_FROM_EMAIL */
   replyTo?: string;
   /** zusätzliche Header, z.B. List-Unsubscribe */
@@ -45,7 +47,7 @@ export interface SendEmailResult {
  */
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
   const resend = getClient();
-  const from = process.env.RESEND_FROM_EMAIL;
+  const from = input.from || process.env.RESEND_FROM_EMAIL;
 
   if (!resend || !from) {
     return { ok: false, error: "Resend ist nicht konfiguriert (RESEND_API_KEY / RESEND_FROM_EMAIL fehlt)." };
@@ -108,10 +110,10 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
  */
 export async function sendBulk(
   messages: BulkMessage[],
-  opts?: { templateKey?: string }
+  opts?: { templateKey?: string; from?: string }
 ): Promise<SendBulkResult> {
   const resend = getClient();
-  const from = process.env.RESEND_FROM_EMAIL;
+  const from = opts?.from || process.env.RESEND_FROM_EMAIL;
   if (!resend || !from) {
     return {
       ok: false,
@@ -197,10 +199,10 @@ export async function sendBulk(
 export async function sendBulkWithAttachments(
   messages: BulkMessage[],
   attachments: { filename: string; content: Buffer | string }[],
-  opts?: { templateKey?: string }
+  opts?: { templateKey?: string; from?: string }
 ): Promise<SendBulkResult> {
   const resend = getClient();
-  const from = process.env.RESEND_FROM_EMAIL;
+  const from = opts?.from || process.env.RESEND_FROM_EMAIL;
   if (!resend || !from) {
     return {
       ok: false,

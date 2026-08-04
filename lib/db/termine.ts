@@ -14,6 +14,7 @@ export async function createTermin(data: {
   thema?: string | null;
   notizen?: string | null;
   status?: TerminStatus;
+  ferien?: boolean;
   videoUrl?: string | null;
   teamsLink?: string | null;
 }) {
@@ -27,6 +28,7 @@ export async function updateTermin(
     thema?: string | null;
     notizen?: string | null;
     status?: TerminStatus;
+    ferien?: boolean;
     videoUrl?: string | null;
     teamsLink?: string | null;
     zusammenfassung?: string | null;

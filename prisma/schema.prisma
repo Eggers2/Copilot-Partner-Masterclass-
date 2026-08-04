@@ -89,6 +89,52 @@ enum EventStatus {
   CLOSED
 }
 
+// ─── Stand-Abfrage (monatliche Umfrage-Runden) ───────────────────────────────
+
+enum UmfrageRundeStatus {
+  OFFEN
+  ABGESCHLOSSEN
+}
+
+// Störgröße je Runde für den Kohortenvergleich; bei ≠ NORMAL keine Erinnerung.
+enum Jahreszeit {
+  NORMAL
+  FERIENFENSTER
+  JAHRESWECHSEL
+}
+
+// Antwort auf die Rollenfrage. WEISS_NICHT ist ein Alarm, keine Antwort.
+enum TeilnehmerRolle {
+  VERTRIEB
+  BERATUNG
+  BEIDES
+  TECHNIK
+  GESCHAEFTSFUEHRUNG
+  WEISS_NICHT
+}
+
+// Größenklasse der Firma (Mitarbeiter) für den Kohortenvergleich.
+enum Groessenklasse {
+  UNTER_10
+  VON_10_BIS_50
+  VON_51_BIS_150
+  UEBER_150
+}
+
+// Antwortoptionen der rotierenden Programmfrage.
+enum RotierendeAntwort {
+  JA
+  NEIN_GEPLANT
+  NEIN
+  NICHT_RELEVANT
+}
+
+// Über welchen Weg die Antwort kam: persönlicher Mail-Link oder Klassen-QR.
+enum UmfrageKanal {
+  EMAIL
+  KLASSE
+}
+
 enum EventRegistrationStatus {
   CONFIRMED
   CANCELLED
@@ -126,10 +172,14 @@ model Klasse {
   // Array von Mustern: [{ week: 1-4 | -1 (=letzter), weekday: 1-7 (ISO, 1=Mo),
   // time: "HH:mm" }]. Siehe lib/termine/regel.ts.
   terminRegel       Json?        @map("termin_regel")
+  // Curriculum-Stand bei Kickoff, Freitext z.B. "M1-M4" (Störgröße für den
+  // Kohortenvergleich der Stand-Abfrage).
+  curriculumStand   String?      @map("curriculum_stand")
   webinars          Webinar[]
   bestellungen      Bestellung[]
   leads             Lead[]
   termine           KlasseTermin[]
+  umfrageRunden     UmfrageRunde[]
   createdAt         DateTime     @default(now()) @map("created_at")
   updatedAt         DateTime     @updatedAt @map("updated_at")
 
@@ -147,6 +197,9 @@ model KlasseTermin {
   thema     String?
   notizen   String?
   status    TerminStatus @default(GEPLANT)
+  // Termin liegt im Ferienfenster oder Jahreswechsel: wirkt auf die Erinnerung
+  // der Stand-Abfrage und die Deutung von Anwesenheit/ausbleibenden Antworten.
+  ferien    Boolean      @default(false)
   // Links für schnellen Zugriff: SharePoint-Aufzeichnung und Teams-Meeting.
   videoUrl            String?   @map("video_url")
   teamsLink           String?   @map("teams_link")
@@ -310,6 +363,11 @@ model Bestellung {
   longitude            Float?
   status               String   @default("neu")
   adnChannel           AdnChannel @default(NONE) @map("adn_channel")
+  // Interne Bestellung (ke solutions, Secom IT, NextVideo): wird vom
+  // Umfrage-Versand UND jeder Auswertung ausgeschlossen.
+  intern               Boolean  @default(false)
+  // Größenklasse der Firma (Mitarbeiter), Störgröße für den Kohortenvergleich.
+  groessenklasse       Groessenklasse?
   klasseId             String   @map("klasse_id")
   klasse               Klasse   @relation(fields: [klasseId], references: [id])
   // sevDesk-Kontakt-Cache: gesetzt, sobald für diese Bestellung einmal ein
@@ -333,13 +391,104 @@ model BestellungTeilnehmer {
   nachname     String     @default("")
   email        String     @default("")
   teamsEingeladenAm DateTime? @map("teams_eingeladen_am")
+  // Zuletzt in der Stand-Abfrage gemeldete Rolle (wird je Antwort aktualisiert).
+  rolle        TeilnehmerRolle?
   erstelltAm   DateTime   @default(now()) @map("erstellt_am")
   aktualisiertAm DateTime @updatedAt @map("aktualisiert_am")
   eventTeilnahmen EventTeilnehmer[]
+  umfrageAntworten UmfrageAntwort[]
 
   @@unique([bestellungId, position])
   @@index([bestellungId])
   @@map("bestellung_teilnehmer")
+}
+
+// ─── Stand-Abfrage: Runden, Antworten, anonymes Feedback ─────────────────────
+
+// Eine Stand-Abfrage-Runde je Klasse. Entsteht am ersten Werktag des Monats
+// (Cron-Scan, 08:00 Berlin), sofern die Klasse seit der letzten Runde
+// mindestens einen durchgeführten Termin hatte (Schutz gegen leere Runden bei
+// verschobenen Sessions). "Runde endet" = Status ABGESCHLOSSEN, gesetzt beim
+// Anlegen der Folgerunde. Tokens sind nur gültig, solange status = OFFEN.
+model UmfrageRunde {
+  id          String             @id @default(cuid())
+  klasseId    String             @map("klasse_id")
+  klasse      Klasse             @relation(fields: [klasseId], references: [id], onDelete: Cascade)
+  nummer      Int // 1-basiert je Klasse; Kohortenvergleich läuft über diese Nummer
+  status      UmfrageRundeStatus @default(OFFEN)
+  // Datum des Runden-Starts (der Werktag, an dem die Runde entstand)
+  stichtag    DateTime
+  // Kalendertage seit Klasse.startDate am Stichtag (Europe/Berlin)
+  programmtag Int
+  jahreszeit  Jahreszeit         @default(NORMAL)
+  // Inhalt der rotierenden Frage: "Hast du [Inhalt] in den letzten 30 Tagen
+  // bei einem echten Kunden angewendet?" Editierbar bis zum Versand.
+  rotierenderInhalt String       @map("rotierender_inhalt")
+  // Versand-Claims (Muster protokollGesendetAm / Newsletter-Claiming)
+  versandAm              DateTime? @map("versand_am")
+  erinnerungAm           DateTime? @map("erinnerung_am")
+  lieferrisikoGeprueftAm DateTime? @map("lieferrisiko_geprueft_am")
+  abgeschlossenAm        DateTime? @map("abgeschlossen_am")
+  erstelltAm             DateTime  @default(now()) @map("erstellt_am")
+  aktualisiertAm         DateTime  @updatedAt @map("aktualisiert_am")
+  antworten      UmfrageAntwort[]
+  anonymFeedback UmfrageAnonymFeedback[]
+
+  @@unique([klasseId, nummer])
+  @@index([status])
+  @@map("umfrage_runden")
+}
+
+// Eine Antwort je Platz je Runde (Upsert, letzter Schreibvorgang gewinnt --
+// egal ob über den persönlichen Link oder den Klassen-QR-Link).
+model UmfrageAntwort {
+  id           String               @id @default(cuid())
+  rundeId      String               @map("runde_id")
+  runde        UmfrageRunde         @relation(fields: [rundeId], references: [id], onDelete: Cascade)
+  teilnehmerId Int                  @map("teilnehmer_id")
+  teilnehmer   BestellungTeilnehmer @relation(fields: [teilnehmerId], references: [id], onDelete: Cascade)
+  // Snapshot zum Antwortzeitpunkt (Muster EventTeilnehmer): Rückschritte
+  // werden namentlich gelistet, auch wenn der Platz später umbenannt wird.
+  vorname  String
+  nachname String
+  email    String
+  // Rollenfrage (wird zusätzlich auf BestellungTeilnehmer.rolle persistiert)
+  rolle TeilnehmerRolle
+  // Kernfrage: genau EINES der beiden Felder ist gesetzt (SQL-CHECK):
+  // stufe 0-9 (Roadmap-Leiter) ODER techStufe 0-4 (Technik-Leiter bei TECHNIK)
+  stufe     Int?
+  techStufe Int? @map("tech_stufe")
+  // Blocker 1-8 + bedingte Folgefragen
+  blocker      Int
+  blockerStufe Int?    @map("blocker_stufe") // nur bei blocker=1: Stufe 1-9
+  blockerSuche String? @map("blocker_suche") // nur bei blocker=7: Freitext
+  // Rotierende Programmfrage
+  rotierend RotierendeAntwort
+  kanal     UmfrageKanal @default(EMAIL)
+  // Einmal-Flag: Rückschritt-Benachrichtigung an den Betreiber wurde gesendet
+  rueckschrittGemeldetAm DateTime? @map("rueckschritt_gemeldet_am")
+  erstelltAm     DateTime @default(now()) @map("erstellt_am")
+  aktualisiertAm DateTime @updatedAt @map("aktualisiert_am")
+
+  @@unique([rundeId, teilnehmerId])
+  @@index([rundeId])
+  @@index([teilnehmerId])
+  @@map("umfrage_antworten")
+}
+
+// Anonymes Freitext-Feedback: BEWUSST ohne Personen-/Platz-Referenz und ohne
+// Zeitstempel (Zeitstempel würden die Korrelation mit umfrage_antworten
+// erlauben). UUID statt cuid als PK: cuids sind zeitlich sortierbar und wären
+// damit ebenfalls ein Korrelations-Kanal.
+model UmfrageAnonymFeedback {
+  id       String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rundeId  String       @map("runde_id")
+  runde    UmfrageRunde @relation(fields: [rundeId], references: [id], onDelete: Cascade)
+  klasseId String       @map("klasse_id")
+  text     String
+
+  @@index([rundeId])
+  @@map("umfrage_anonym_feedback")
 }
 
 // ─── Events (z.B. Connect Day) ───────────────────────────────────────────────

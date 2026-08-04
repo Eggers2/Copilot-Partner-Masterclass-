@@ -13,6 +13,10 @@ import { KlasseAnwesenheitKpi } from "@/components/admin/KlasseAnwesenheitKpi";
 import { TeilnehmerExportButton } from "@/components/admin/TeilnehmerExportButton";
 import { parseTerminRegel } from "@/lib/termine/regel";
 import { getKlasseAnwesenheitAuswertung } from "@/lib/db/anwesenheit";
+import { getRundenFuerKlasse } from "@/lib/umfrage/runden";
+import { signKlasseToken } from "@/lib/umfrage/tokens";
+import { UmfrageRunden } from "@/components/admin/UmfrageRunden";
+import { resolveAppBaseUrl } from "@/lib/auth/customer";
 
 export default async function KlasseDetailPage({
   params,
@@ -51,6 +55,7 @@ export default async function KlasseDetailPage({
           thema: true,
           notizen: true,
           status: true,
+          ferien: true,
           videoUrl: true,
           teamsLink: true,
           zusammenfassung: true,
@@ -69,6 +74,14 @@ export default async function KlasseDetailPage({
   const anwesenheitByTermin = new Map(
     anwesenheit.proTermin.map((t) => [t.terminId, t])
   );
+
+  const [runden, empfaengerGesamt, baseUrl] = await Promise.all([
+    getRundenFuerKlasse(klasse.id),
+    prisma.bestellungTeilnehmer.count({
+      where: { email: { not: "" }, bestellung: { klasseId: klasse.id, intern: false } },
+    }),
+    resolveAppBaseUrl(),
+  ]);
 
   const terminRegel = parseTerminRegel(klasse.terminRegel);
   const conf = KLASSE_STATUS_CONFIG[klasse.status];
@@ -137,6 +150,7 @@ export default async function KlasseDetailPage({
               teilnehmerSperre: klasse.teilnehmerSperre,
               teamsGroupId: klasse.teamsGroupId,
               description: klasse.description,
+              curriculumStand: klasse.curriculumStand,
               terminRegel,
             }}
           />
@@ -162,6 +176,7 @@ export default async function KlasseDetailPage({
                 thema: t.thema,
                 notizen: t.notizen,
                 status: t.status,
+                ferien: t.ferien,
                 videoUrl: t.videoUrl,
                 teamsLink: t.teamsLink,
                 zusammenfassung: t.zusammenfassung,
@@ -183,6 +198,35 @@ export default async function KlasseDetailPage({
                   : null,
               };
             })}
+          />
+        </section>
+
+        <section className="bg-white rounded-2xl border border-dark-slate-100 p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-dark-slate-900 mb-1">
+            Stand-Abfrage ({runden.length} {runden.length === 1 ? "Runde" : "Runden"})
+          </h2>
+          <p className="text-sm text-dark-slate-500 mb-4">
+            Monatliche Abfrage der 90-Tage-Transformation-Roadmap. Runden entstehen
+            automatisch am ersten Werktag des Monats, sofern seit der letzten Runde
+            mindestens ein Termin durchgeführt wurde. Der Klassen-Link ist für den
+            QR-Code auf der Folie in der Live-Session.
+          </p>
+          <UmfrageRunden
+            klasseSlug={klasse.slug}
+            empfaengerGesamt={empfaengerGesamt}
+            runden={runden.map((r) => ({
+              id: r.id,
+              nummer: r.nummer,
+              status: r.status,
+              stichtag: r.stichtag.toISOString(),
+              programmtag: r.programmtag,
+              jahreszeit: r.jahreszeit,
+              rotierenderInhalt: r.rotierenderInhalt,
+              versandAm: r.versandAm ? r.versandAm.toISOString() : null,
+              erinnerungAm: r.erinnerungAm ? r.erinnerungAm.toISOString() : null,
+              antworten: r._count.antworten,
+              klassenLink: `${baseUrl}/umfrage/klasse/${signKlasseToken(r.id)}`,
+            }))}
           />
         </section>
 
