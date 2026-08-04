@@ -20,7 +20,8 @@ export interface AntwortInput {
   rolle?: string;
   stufe?: number | null;
   techStufe?: number | null;
-  blocker?: number;
+  /** Mehrfachauswahl der Blocker 1-8 */
+  blocker?: unknown;
   blockerStufe?: number | null;
   blockerSuche?: string | null;
   rotierend?: string;
@@ -110,13 +111,17 @@ export async function speichereAntwort(
     }
   }
 
-  const blocker = Number(input.blocker);
-  if (!Number.isInteger(blocker) || blocker < 1 || blocker > 8) {
-    return fehler("Bitte wähle aus, was dich gerade am stärksten bremst.");
+  // Blocker: Mehrfachauswahl, mindestens einer, Werte 1-8, ohne Duplikate.
+  const blockerRoh = Array.isArray(input.blocker) ? input.blocker : [];
+  const blocker = [...new Set(blockerRoh.map((b) => Number(b)))]
+    .filter((b) => Number.isInteger(b) && b >= 1 && b <= 8)
+    .sort((a, b) => a - b);
+  if (blocker.length === 0 || blocker.length !== blockerRoh.length) {
+    return fehler("Bitte wähle aus, was dich gerade bremst.");
   }
 
   let blockerStufe: number | null = null;
-  if (blocker === 1) {
+  if (blocker.includes(1)) {
     blockerStufe = Number(input.blockerStufe);
     if (!Number.isInteger(blockerStufe) || blockerStufe < 1 || blockerStufe > 9) {
       return fehler("Bitte wähle, welcher konkrete Schritt liegen geblieben ist.");
@@ -124,7 +129,7 @@ export async function speichereAntwort(
   }
 
   let blockerSuche: string | null = null;
-  if (blocker === 7) {
+  if (blocker.includes(7)) {
     blockerSuche = String(input.blockerSuche ?? "").trim().slice(0, 300);
     if (!blockerSuche) return fehler("Bitte schreib kurz, was du gesucht hast.");
   }

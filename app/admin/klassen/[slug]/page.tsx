@@ -206,12 +206,13 @@ export default async function KlasseDetailPage({
             Stand-Abfrage ({runden.length} {runden.length === 1 ? "Runde" : "Runden"})
           </h2>
           <p className="text-sm text-dark-slate-500 mb-4">
-            Monatliche Abfrage der 90-Tage-Transformation-Roadmap. Runden entstehen
-            automatisch am ersten Werktag des Monats, sofern seit der letzten Runde
-            mindestens ein Termin durchgeführt wurde. Der Klassen-Link ist für den
-            QR-Code auf der Folie in der Live-Session.
+            Monatliche Abfrage der 90-Tage-Transformation-Roadmap. Der Ablauf ist
+            manuell: Runde starten, bei Bedarf die rotierende Frage anpassen, dann
+            Einladungen senden. Die eine Erinnerung nach 4 Tagen läuft automatisch.
+            Der Klassen-Link ist für den QR-Code auf der Folie in der Live-Session.
           </p>
           <UmfrageRunden
+            klasseId={klasse.id}
             klasseSlug={klasse.slug}
             empfaengerGesamt={empfaengerGesamt}
             runden={runden.map((r) => ({

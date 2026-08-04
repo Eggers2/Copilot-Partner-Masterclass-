@@ -1,7 +1,9 @@
 name: Umfrage Cron
 
-# Stößt den geschützten Endpoint /api/cron/umfrage an (Stand-Abfrage). Die
-# Logik und die Zeitprüfung liegen serverseitig: der Endpoint prüft die echte
+# Stößt den geschützten Endpoint /api/cron/umfrage an (Stand-Abfrage). Der
+# Cron übernimmt NUR die Erinnerung 4 Tage nach dem Versand und die
+# Lieferrisiko-Prüfung; Runden-Start und Einladungsversand laufen manuell aus
+# dem Admin. Die Zeitprüfung liegt serverseitig: der Endpoint prüft die echte
 # Europe/Berlin-Zeit (Ziel 08:00) und arbeitet über Claims idempotent. Dieser
 # Workflow muss daher nur "oft genug im richtigen Fenster" feuern.
 #

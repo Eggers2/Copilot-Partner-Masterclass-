@@ -12,10 +12,11 @@ export const runtime = "nodejs";
  * (CRON_SECRET). Zielzeit 08:00 Europe/Berlin; die Zeitprüfung liegt hier,
  * damit der UTC-Cron Sommer-/Winterzeit automatisch korrekt abbildet.
  *
- * Ein Lauf: Runden anlegen (nur am ersten Werktag des Monats plus
- * Nachholfenster), Einladungen senden, genau eine Erinnerung nach 4 Tagen,
- * Lieferrisiko prüfen. Alle Schritte sind über Claims idempotent; das
- * Antwort-JSON protokolliert je Schritt, was passiert ist.
+ * Ein Lauf macht genau zwei Dinge: genau eine Erinnerung 4 Tage nach dem
+ * Versand (nur normale Runden) und die Lieferrisiko-Prüfung. Runden-Start und
+ * Einladungsversand laufen MANUELL aus dem Admin (Klassenseite, Sektion
+ * Stand-Abfrage). Alle Schritte sind über Claims idempotent; das Antwort-JSON
+ * protokolliert, was passiert ist.
  *
  * Zum Testen überspringt `?force=1` die Zeitprüfung (weiterhin
  * secret-geschützt).

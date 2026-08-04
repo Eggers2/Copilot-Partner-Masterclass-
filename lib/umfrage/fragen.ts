@@ -65,7 +65,7 @@ export function rolleLabel(rolle: TeilnehmerRolle): string {
 // ─── Blocker-Frage (unveränderlich) ─────────────────────────────────────────
 
 export const BLOCKER_FRAGE = "Was bremst dich gerade am stärksten?";
-export const BLOCKER_HINWEIS = "Eine Auswahl, die wichtigste.";
+export const BLOCKER_HINWEIS = "Wähle alles aus, was gerade bremst.";
 
 export const BLOCKER: { wert: number; label: string }[] = [
   { wert: 1, label: "Zeit und Tagesgeschäft" },
@@ -78,10 +78,12 @@ export const BLOCKER: { wert: number; label: string }[] = [
   { wert: 8, label: "Nichts, läuft" },
 ];
 
-/** Folgefrage nur bei Blocker 1 (Zeit): Ort des Stillstands auf der Leiter. */
+/** Folgefrage nur, wenn Blocker 1 (Zeit) ausgewählt ist. */
 export const BLOCKER_ZEIT_FOLGEFRAGE = "Welcher konkrete Schritt ist dabei liegen geblieben?";
-/** Folgefrage nur bei Blocker 7 (Material): einzeiliger Freitext. */
+/** Folgefrage nur, wenn Blocker 7 (Material) ausgewählt ist: einzeiliger Freitext. */
 export const BLOCKER_MATERIAL_FOLGEFRAGE = "Was hast du gesucht?";
+/** "Nichts, läuft" schließt die übrigen Blocker aus (exklusive Option). */
+export const BLOCKER_NICHTS = 8;
 
 // ─── Rotierende Programmfrage ────────────────────────────────────────────────
 
@@ -139,12 +141,3 @@ export const NAECHSTER_SCHRITT_TECHNIK: string[] = [
 export const ANONYM_LABEL = "Möchtest du uns noch etwas mitgeben?";
 export const ANONYM_HINWEIS =
   "Dieses Feld ist anonym. Es wird ohne deinen Namen gespeichert und kann dir nicht zugeordnet werden.";
-
-// ─── Rollout-Stichtag ────────────────────────────────────────────────────────
-
-/**
- * Termine vor diesem Datum zählen nie als Auslöser: verhindert, dass
- * Bestandsklassen beim Rollout sofort triggern, obwohl die letzte Session
- * lange her ist. Format YYYY-MM-DD (Berlin-Kalendertag).
- */
-export const UMFRAGE_STICHTAG = "2026-08-01";
