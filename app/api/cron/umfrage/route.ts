@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { resolveAppBaseUrl } from "@/lib/auth/customer";
 import { berlinNow } from "@/lib/newsletter/schedule";
 import { runUmfrageCron } from "@/lib/umfrage/versand";
+import { meldeCronLauf, meldeCronPing } from "@/lib/umfrage/cronStatus";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -33,6 +34,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
+  // Lebenszeichen für die Anzeige im Admin (auch außerhalb der Zielstunde).
+  await meldeCronPing().catch((err) =>
+    console.error("[cron/umfrage] Ping konnte nicht gespeichert werden:", err)
+  );
+
   const force = new URL(req.url).searchParams.get("force") === "1";
   const t = berlinNow();
   if (!force && t.hour !== 8) {
@@ -48,6 +54,15 @@ export async function POST(req: NextRequest) {
   try {
     const baseUrl = await resolveAppBaseUrl();
     const ergebnis = await runUmfrageCron(baseUrl);
+    await meldeCronLauf({
+      zeit: new Date().toISOString(),
+      erinnerungenRunden: ergebnis.erinnerungen.length,
+      erinnerungenMails: ergebnis.erinnerungen.reduce((acc, e) => acc + e.gesendet, 0),
+      lieferrisikoRunden: ergebnis.lieferrisiko.length,
+      lieferrisikoMails: ergebnis.lieferrisiko.filter((l) => l.gesendet).length,
+    }).catch((err) =>
+      console.error("[cron/umfrage] Lauf-Status konnte nicht gespeichert werden:", err)
+    );
     return NextResponse.json({ ok: true, ...ergebnis });
   } catch (err) {
     console.error("[cron/umfrage] Fehler:", err);

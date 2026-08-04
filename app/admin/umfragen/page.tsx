@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
 import { resolveAppBaseUrl } from "@/lib/auth/customer";
 import {
@@ -8,6 +8,7 @@ import {
   getKohortenVergleich,
   getUmfrageUebersicht,
 } from "@/lib/umfrage/auswertung";
+import { getUmfrageCronStatus } from "@/lib/umfrage/cronStatus";
 
 export const dynamic = "force-dynamic";
 
@@ -36,10 +37,21 @@ export default async function UmfragenPage({
   const nummer = sp.runde ? Number.parseInt(sp.runde, 10) : null;
   const baseUrl = await resolveAppBaseUrl();
 
-  const [uebersicht, vergleich] = await Promise.all([
+  const [uebersicht, vergleich, cron] = await Promise.all([
     getUmfrageUebersicht(),
     getKohortenVergleich(Number.isInteger(nummer) ? nummer : null, baseUrl),
+    getUmfrageCronStatus(),
   ]);
+
+  const formatZeit = (d: Date) =>
+    d.toLocaleString("de-DE", {
+      timeZone: "Europe/Berlin",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
   return (
     <div>
@@ -53,6 +65,52 @@ export default async function UmfragenPage({
       </div>
 
       <div className="space-y-6">
+        <section
+          className={`rounded-2xl border p-4 shadow-sm ${
+            cron.pingVeraltet
+              ? "bg-red-50 border-red-200"
+              : "bg-white border-dark-slate-100"
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            {cron.pingVeraltet ? (
+              <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+            ) : (
+              <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
+            )}
+            <div className="text-sm">
+              <p
+                className={`font-semibold ${
+                  cron.pingVeraltet ? "text-red-700" : "text-dark-slate-900"
+                }`}
+              >
+                {cron.ping
+                  ? `Erinnerungs-Cron zuletzt gemeldet: ${formatZeit(cron.ping)} Uhr`
+                  : "Der Erinnerungs-Cron hat sich noch nie gemeldet."}
+                {cron.pingVeraltet && cron.ping ? " (über 26 Stunden her)" : ""}
+              </p>
+              <p className="text-dark-slate-500 mt-0.5">
+                {cron.lauf
+                  ? `Letzter 08:00-Lauf: ${formatZeit(new Date(cron.lauf.zeit))} Uhr, ${
+                      cron.lauf.erinnerungenMails
+                    } Erinnerungen (${cron.lauf.erinnerungenRunden} Runden geprüft), ${
+                      cron.lauf.lieferrisikoMails
+                    } Lieferrisiko-Mails.`
+                  : "Noch kein 08:00-Lauf protokolliert."}{" "}
+                Der Cron übernimmt nur Erinnerung und Lieferrisiko; Details und
+                Fehler stehen im GitHub-Repo unter Actions, Workflow &quot;Umfrage
+                Cron&quot;.
+              </p>
+              {cron.pingVeraltet && (
+                <p className="text-red-700 mt-1">
+                  Bitte im GitHub-Repo unter Actions prüfen, ob der Workflow
+                  &quot;Umfrage Cron&quot; läuft (Repo-Secret CRON_SECRET gesetzt?).
+                </p>
+              )}
+            </div>
+          </div>
+        </section>
+
         <section className="bg-white rounded-2xl border border-dark-slate-100 p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-dark-slate-900 mb-4">
             Klassen im Überblick
