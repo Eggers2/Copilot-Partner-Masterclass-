@@ -4,13 +4,15 @@ import { getEmailTemplate } from "@/lib/db/emailTemplates";
 import { sendBulk, sendEmail, type BulkMessage } from "@/lib/email/resend";
 import { getTemplateDefinition, renderTemplate } from "@/lib/email/renderTemplate";
 import { signSlotToken } from "./tokens";
-import { syncUmfrageRunden, type RundenSyncErgebnis } from "./runden";
 
 /**
  * Mailversand der Stand-Abfrage. Läuft ausschließlich über Resend (eigener
  * Absender via RESEND_UMFRAGE_FROM_EMAIL möglich, z.B. eigene Subdomain).
- * Jeder Versand-Schritt claimt seine Runde atomar über ein Zeitstempel-Feld
- * (updateMany mit null-Guard), damit parallele Cron-Treffer nie doppelt senden.
+ * Einladungen werden MANUELL im Admin ausgelöst; der Cron übernimmt nur die
+ * Erinnerung nach 4 Tagen und die Lieferrisiko-Mail. Jeder Versand-Schritt
+ * claimt seine Runde atomar über ein Zeitstempel-Feld (updateMany mit
+ * null-Guard), damit Doppelklicks und parallele Cron-Treffer nie doppelt
+ * senden.
  */
 
 /** Absender der Umfrage-Mails (eigene Subdomain), sonst Standard-Absender. */
@@ -65,55 +67,67 @@ export interface VersandErgebnis {
   uebersprungen?: string;
 }
 
-// ─── Einladungen ─────────────────────────────────────────────────────────────
+// ─── Einladungen (manuell aus dem Admin ausgelöst) ──────────────────────────
 
-export async function sendeEinladungen(baseUrl: string): Promise<VersandErgebnis[]> {
+export type EinladungsErgebnis =
+  | { ok: true; empfaenger: number; gesendet: number; fehler: number }
+  | { ok: false; error: string };
+
+export async function sendeEinladungenFuerRunde(
+  rundeId: string,
+  baseUrl: string
+): Promise<EinladungsErgebnis> {
   const jetzt = new Date();
-  const faellig = await prisma.umfrageRunde.findMany({
-    where: { status: "OFFEN", versandAm: null },
+  const runde = await prisma.umfrageRunde.findUnique({
+    where: { id: rundeId },
     include: { klasse: true },
   });
-
-  const ergebnisse: VersandErgebnis[] = [];
-  for (const runde of faellig) {
-    // Atomarer Claim: nur wer versandAm von null auf jetzt setzt, sendet.
-    const claim = await prisma.umfrageRunde.updateMany({
-      where: { id: runde.id, versandAm: null },
-      data: { versandAm: jetzt },
-    });
-    if (claim.count !== 1) continue;
-
-    const template = await resolveTemplate("umfrage_einladung");
-    if (!template) continue;
-
-    const empfaenger = await getUmfrageEmpfaenger(runde.klasseId);
-    const messages: BulkMessage[] = empfaenger.map((t) => {
-      const vars = {
-        vorname: t.vorname || "zusammen",
-        klasse: runde.klasse.name,
-        link: `${baseUrl}/umfrage/${signSlotToken(runde.id, t.id)}`,
-      };
-      return {
-        to: t.email,
-        subject: renderTemplate(template.betreff, vars),
-        html: renderTemplate(template.html, vars),
-      };
-    });
-
-    const res = await sendBulk(messages, {
-      templateKey: "umfrage_einladung",
-      from: umfrageFrom(),
-    });
-    ergebnisse.push({
-      runde: runde.id,
-      klasse: runde.klasse.name,
-      nummer: runde.nummer,
-      empfaenger: messages.length,
-      gesendet: res.sent,
-      fehler: res.failed.length,
-    });
+  if (!runde) return { ok: false, error: "Runde nicht gefunden." };
+  if (runde.status !== "OFFEN") {
+    return { ok: false, error: "Die Runde ist abgeschlossen, kein Versand mehr möglich." };
   }
-  return ergebnisse;
+
+  const template = await resolveTemplate("umfrage_einladung");
+  if (!template) return { ok: false, error: "Einladungs-Template nicht gefunden." };
+
+  const empfaenger = await getUmfrageEmpfaenger(runde.klasseId);
+  if (empfaenger.length === 0) {
+    return { ok: false, error: "Keine belegten Plätze in dieser Klasse." };
+  }
+
+  // Atomarer Claim gegen Doppelklick: nur wer versandAm von null auf jetzt
+  // setzt, sendet.
+  const claim = await prisma.umfrageRunde.updateMany({
+    where: { id: runde.id, versandAm: null },
+    data: { versandAm: jetzt },
+  });
+  if (claim.count !== 1) {
+    return { ok: false, error: "Die Einladungen wurden bereits versendet." };
+  }
+
+  const messages: BulkMessage[] = empfaenger.map((t) => {
+    const vars = {
+      vorname: t.vorname || "zusammen",
+      klasse: runde.klasse.name,
+      link: `${baseUrl}/umfrage/${signSlotToken(runde.id, t.id)}`,
+    };
+    return {
+      to: t.email,
+      subject: renderTemplate(template.betreff, vars),
+      html: renderTemplate(template.html, vars),
+    };
+  });
+
+  const res = await sendBulk(messages, {
+    templateKey: "umfrage_einladung",
+    from: umfrageFrom(),
+  });
+  return {
+    ok: true,
+    empfaenger: messages.length,
+    gesendet: res.sent,
+    fehler: res.failed.length,
+  };
 }
 
 // ─── Erinnerung (genau eine, nach 4 Tagen, nur Nicht-Antwortende) ───────────
@@ -320,21 +334,18 @@ export async function sendeRueckschrittMail(args: {
 // ─── Orchestrator für den Cron ───────────────────────────────────────────────
 
 export interface UmfrageCronErgebnis {
-  sync: RundenSyncErgebnis;
-  einladungen: VersandErgebnis[];
   erinnerungen: VersandErgebnis[];
   lieferrisiko: LieferrisikoErgebnis[];
 }
 
 /**
- * Ein Cron-Lauf macht genau vier Dinge: Runden anlegen (nur im Monats-Fenster),
- * Einladungen senden, die eine Erinnerung senden, Lieferrisiko prüfen. Sonst
- * nichts. Keine Eskalation, keine Partner-Mails bei Non-Response.
+ * Ein Cron-Lauf macht genau zwei Dinge: die eine Erinnerung nach 4 Tagen
+ * senden und das Lieferrisiko prüfen. Runden-Start und Einladungsversand
+ * laufen manuell aus dem Admin. Keine Eskalation, keine Partner-Mails bei
+ * Non-Response.
  */
 export async function runUmfrageCron(baseUrl: string): Promise<UmfrageCronErgebnis> {
-  const sync = await syncUmfrageRunden();
-  const einladungen = await sendeEinladungen(baseUrl);
   const erinnerungen = await sendeErinnerungen(baseUrl);
   const lieferrisiko = await pruefeLieferrisiko(baseUrl);
-  return { sync, einladungen, erinnerungen, lieferrisiko };
+  return { erinnerungen, lieferrisiko };
 }

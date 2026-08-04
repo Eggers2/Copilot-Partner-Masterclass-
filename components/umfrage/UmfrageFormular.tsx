@@ -8,6 +8,7 @@ import {
   BLOCKER_FRAGE,
   BLOCKER_HINWEIS,
   BLOCKER_MATERIAL_FOLGEFRAGE,
+  BLOCKER_NICHTS,
   BLOCKER_ZEIT_FOLGEFRAGE,
   KERNFRAGE,
   KERNFRAGE_HINWEIS,
@@ -25,7 +26,7 @@ export interface VorhandeneAntwort {
   rolle: string;
   stufe: number | null;
   techStufe: number | null;
-  blocker: number;
+  blocker: number[];
   blockerStufe: number | null;
   blockerSuche: string | null;
   rotierend: string;
@@ -100,7 +101,7 @@ export default function UmfrageFormular({
   const [techStufe, setTechStufe] = useState<number | null>(
     vorhandeneAntwort?.techStufe ?? null
   );
-  const [blocker, setBlocker] = useState<number | null>(vorhandeneAntwort?.blocker ?? null);
+  const [blocker, setBlocker] = useState<number[]>(vorhandeneAntwort?.blocker ?? []);
   const [blockerStufe, setBlockerStufe] = useState<number | null>(
     vorhandeneAntwort?.blockerStufe ?? null
   );
@@ -119,12 +120,22 @@ export default function UmfrageFormular({
   const vollstaendig = useMemo(() => {
     if (!rolle) return false;
     if (istTechnik ? techStufe === null : stufe === null) return false;
-    if (blocker === null) return false;
-    if (blocker === 1 && blockerStufe === null) return false;
-    if (blocker === 7 && blockerSuche.trim() === "") return false;
+    if (blocker.length === 0) return false;
+    if (blocker.includes(1) && blockerStufe === null) return false;
+    if (blocker.includes(7) && blockerSuche.trim() === "") return false;
     if (!rotierend) return false;
     return true;
   }, [rolle, istTechnik, techStufe, stufe, blocker, blockerStufe, blockerSuche, rotierend]);
+
+  // "Nichts, läuft" ist exklusiv: sie deaktiviert die übrigen Blocker und
+  // umgekehrt.
+  function toggleBlocker(wert: number) {
+    setBlocker((aktuell) => {
+      if (aktuell.includes(wert)) return aktuell.filter((b) => b !== wert);
+      if (wert === BLOCKER_NICHTS) return [BLOCKER_NICHTS];
+      return [...aktuell.filter((b) => b !== BLOCKER_NICHTS), wert].sort((a, b) => a - b);
+    });
+  }
 
   async function absenden() {
     if (!vollstaendig || sende) return;
@@ -141,8 +152,8 @@ export default function UmfrageFormular({
           stufe: istTechnik ? null : stufe,
           techStufe: istTechnik ? techStufe : null,
           blocker,
-          blockerStufe: blocker === 1 ? blockerStufe : null,
-          blockerSuche: blocker === 7 ? blockerSuche : null,
+          blockerStufe: blocker.includes(1) ? blockerStufe : null,
+          blockerSuche: blocker.includes(7) ? blockerSuche : null,
           rotierend,
           anonym,
           website,
@@ -234,14 +245,14 @@ export default function UmfrageFormular({
           {BLOCKER.map((b) => (
             <OptionButton
               key={b.wert}
-              selected={blocker === b.wert}
-              onClick={() => setBlocker(b.wert)}
+              selected={blocker.includes(b.wert)}
+              onClick={() => toggleBlocker(b.wert)}
             >
               {b.label}
             </OptionButton>
           ))}
         </div>
-        {blocker === 1 ? (
+        {blocker.includes(1) ? (
           <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
             <p className="text-sm font-semibold text-slate">{BLOCKER_ZEIT_FOLGEFRAGE}</p>
             <div className="space-y-2">
@@ -258,7 +269,7 @@ export default function UmfrageFormular({
             </div>
           </div>
         ) : null}
-        {blocker === 7 ? (
+        {blocker.includes(7) ? (
           <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
             <label className="text-sm font-semibold text-slate" htmlFor="blockerSuche">
               {BLOCKER_MATERIAL_FOLGEFRAGE}

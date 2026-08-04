@@ -458,10 +458,10 @@ model UmfrageAntwort {
   // stufe 0-9 (Roadmap-Leiter) ODER techStufe 0-4 (Technik-Leiter bei TECHNIK)
   stufe     Int?
   techStufe Int? @map("tech_stufe")
-  // Blocker 1-8 + bedingte Folgefragen
-  blocker      Int
-  blockerStufe Int?    @map("blocker_stufe") // nur bei blocker=1: Stufe 1-9
-  blockerSuche String? @map("blocker_suche") // nur bei blocker=7: Freitext
+  // Blocker 1-8, Mehrfachauswahl + bedingte Folgefragen
+  blocker      Int[]
+  blockerStufe Int?    @map("blocker_stufe") // nur wenn 1 (Zeit) dabei: Stufe 1-9
+  blockerSuche String? @map("blocker_suche") // nur wenn 7 (Material) dabei: Freitext
   // Rotierende Programmfrage
   rotierend RotierendeAntwort
   kanal     UmfrageKanal @default(EMAIL)

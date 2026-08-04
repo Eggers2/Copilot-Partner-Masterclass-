@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { setAuthCookie, clearAuthCookie, requireAuth } from "@/lib/auth";
-import { requestOtpCode } from "@/lib/auth/customer";
+import { requestOtpCode, resolveAppBaseUrl } from "@/lib/auth/customer";
 import { parseBerlinDate } from "@/lib/datetime";
 import {
   updateLead,
@@ -69,7 +69,8 @@ import type {
   KlasseStatus,
   TerminStatus,
 } from "@prisma/client";
-import { syncUmfrageRunden } from "@/lib/umfrage/runden";
+import { starteRunde } from "@/lib/umfrage/runden";
+import { sendeEinladungenFuerRunde } from "@/lib/umfrage/versand";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { isAdnChannelKey } from "@/lib/packages";
@@ -1805,26 +1806,63 @@ export async function updateRundeInhaltAction(
 }
 
 /**
- * "Runden jetzt prüfen": stößt den Runden-Scan sofort an (ohne auf den Cron zu
- * warten). Überspringt nur die Monats-Fenster-Prüfung; Monats-Idempotenz und
- * der Termin-Schutz gelten weiterhin. Versendet nichts, das macht der Cron.
+ * Startet manuell eine neue Runde für eine Klasse (ohne Versand). Ohne
+ * durchgeführten Termin seit der letzten Runde kommt eine Rückfrage, die mit
+ * `erzwingen` bestätigt wird.
  */
-export async function syncUmfrageRundenAction(): Promise<{
+export async function starteUmfrageRundeAction(
+  klasseId: string,
+  erzwingen = false
+): Promise<{
   success?: boolean;
   error?: string;
-  meldungen?: string[];
+  brauchtBestaetigung?: boolean;
+  nummer?: number;
 }> {
   await requireAuth();
 
-  const ergebnis = await syncUmfrageRunden(new Date(), true);
-  const meldungen = ergebnis.ergebnisse.map((e) =>
-    e.aktion === "angelegt"
-      ? `${e.klasse}: Runde ${e.nummer} angelegt.`
-      : `${e.klasse}: übersprungen (${e.grund})`
-  );
+  const ergebnis = await starteRunde(klasseId, { erzwingen });
+  if (!ergebnis.ok) {
+    return { error: ergebnis.error, brauchtBestaetigung: ergebnis.brauchtBestaetigung };
+  }
 
-  revalidatePath("/admin/klassen");
-  return { success: true, meldungen };
+  const slug = await getKlasseSlug(klasseId);
+  if (slug) revalidatePath(`/admin/klassen/${slug}`);
+  return { success: true, nummer: ergebnis.nummer };
+}
+
+/**
+ * Versendet die Einladungen einer Runde manuell an alle belegten, nicht
+ * internen Plätze der Klasse. Doppelklick-sicher über den versandAm-Claim.
+ */
+export async function sendeUmfrageEinladungenAction(
+  rundeId: string
+): Promise<{
+  success?: boolean;
+  error?: string;
+  empfaenger?: number;
+  gesendet?: number;
+  fehler?: number;
+}> {
+  await requireAuth();
+
+  const runde = await prisma.umfrageRunde.findUnique({
+    where: { id: rundeId },
+    include: { klasse: { select: { slug: true } } },
+  });
+  if (!runde) return { error: "Runde nicht gefunden." };
+
+  const baseUrl = await resolveAppBaseUrl();
+  const ergebnis = await sendeEinladungenFuerRunde(rundeId, baseUrl);
+  if (!ergebnis.ok) return { error: ergebnis.error };
+
+  revalidatePath(`/admin/klassen/${runde.klasse.slug}`);
+  return {
+    success: true,
+    empfaenger: ergebnis.empfaenger,
+    gesendet: ergebnis.gesendet,
+    fehler: ergebnis.fehler,
+  };
 }
 
 /**

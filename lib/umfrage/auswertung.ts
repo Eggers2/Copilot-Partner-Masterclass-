@@ -245,10 +245,11 @@ export async function getRundenAuswertung(
     bewegung = { vergleichbar, vor, gleich, zurueck: rueckschritte.length, rueckschritte };
   }
 
-  // Blocker-Verteilung + Folgefragen.
+  // Blocker-Verteilung + Folgefragen. Mehrfachauswahl: eine Person kann in
+  // mehreren Kategorien zählen, die Summe kann daher über der Antwortzahl liegen.
   const blocker = BLOCKER.map((b) => ({
     ...b,
-    anzahl: antworten.filter((a) => a.blocker === b.wert).length,
+    anzahl: antworten.filter((a) => a.blocker.includes(b.wert)).length,
   }));
   const blockerStufen = STUFEN.filter((s) => s.wert >= 1).map((s) => ({
     ...s,
