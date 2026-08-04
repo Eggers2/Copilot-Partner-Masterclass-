@@ -23,6 +23,11 @@ import {
   createKlasseAbgleich,
   setAnwesenheitIgnorierliste,
 } from "@/lib/db/anwesenheit";
+import { parseKursFortschrittExport } from "@/lib/kurs/fortschritt";
+import {
+  replaceKursFortschritt,
+  clearKursFortschritt,
+} from "@/lib/db/kursFortschritt";
 import {
   buildTerminProtokollHtml,
   formatTerminDatum,
@@ -1663,6 +1668,80 @@ export async function updateAnwesenheitIgnorierlisteAction(
   await setAnwesenheitIgnorierliste(emails);
   revalidatePath(`/admin/klassen/${klasseSlug}`);
   return { success: true, count: emails.length };
+}
+
+// ─── VIDEOKURS: FORTSCHRITT (ABLEFY-EXPORT) ─────────────────────────────────
+// Der Kurs-Teilnehmer-Export aus ablefy ("export course_sessions") enthält je
+// Buchung den Anteil gesehener Videos (FORTSCHRITT, 0-100). Der Datenstand
+// ist global – ein Videokurs für alle Klassen – und wird beim Upload komplett
+// ersetzt (Parser in lib/kurs/fortschritt.ts, Persistenz in
+// lib/db/kursFortschritt.ts). Der Abgleich mit den Teilnehmern der jeweiligen
+// Klasse passiert zur Lesezeit auf der Klassen-Detailseite.
+
+/** Speichert den hochgeladenen Videokurs-Export (gilt für alle Klassen). */
+export async function uploadKursFortschrittAction(
+  klasseId: string,
+  exportText: string,
+  filename: string
+): Promise<{
+  success?: boolean;
+  error?: string;
+  eintraege?: number;
+  zugeordnet?: number;
+}> {
+  await requireAuth();
+  if (!klasseId) return { error: "Klasse fehlt." };
+  if (!exportText?.trim()) return { error: "Die Datei ist leer." };
+
+  const klasse = await prisma.klasse.findUnique({
+    where: { id: klasseId },
+    select: { slug: true },
+  });
+  if (!klasse) return { error: "Klasse nicht gefunden." };
+
+  const parsed = parseKursFortschrittExport(exportText);
+  if (parsed.error) return { error: parsed.error };
+  if (parsed.eintraege.length === 0) {
+    return { error: "Der Export enthält keine Zeilen mit E-Mail-Adresse." };
+  }
+
+  await replaceKursFortschritt(filename, parsed.eintraege);
+
+  // Direktes Feedback für die Upload-Meldung: wie viele Kurs-Einträge passen
+  // zu Teilnehmern dieser Klasse? Nutzt denselben intelligenten Abgleich
+  // (E-Mail, Name, Heuristik) wie die Auswertung.
+  const { abgleich, registrierte } = await createKlasseAbgleich(klasseId);
+  const zugeordnet = new Set<string>();
+  for (const e of parsed.eintraege) {
+    const treffer = abgleich.match(e.name, e.email);
+    if (treffer.teilnehmerEmail && registrierte.has(treffer.teilnehmerEmail)) {
+      zugeordnet.add(treffer.teilnehmerEmail);
+    }
+  }
+
+  revalidatePath(`/admin/klassen/${klasse.slug}`);
+  return {
+    success: true,
+    eintraege: parsed.eintraege.length,
+    zugeordnet: zugeordnet.size,
+  };
+}
+
+/** Entfernt den Videokurs-Datenstand wieder (wirkt auf alle Klassen). */
+export async function deleteKursFortschrittAction(
+  klasseId: string
+): Promise<{ success?: boolean; error?: string }> {
+  await requireAuth();
+
+  const klasse = await prisma.klasse.findUnique({
+    where: { id: klasseId },
+    select: { slug: true },
+  });
+  if (!klasse) return { error: "Klasse nicht gefunden." };
+
+  await clearKursFortschritt();
+  revalidatePath(`/admin/klassen/${klasse.slug}`);
+  return { success: true };
 }
 
 /** Entfernt den Anwesenheitsbericht eines Termins wieder. */
