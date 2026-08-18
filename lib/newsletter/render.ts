@@ -33,9 +33,8 @@ const COLORS = {
   cardBg: "#22223C", // ~ rgba(232,232,240,0.06)
   cardBorder: "#2B2B48", // ~ rgba(232,232,240,0.1)
   cardStrongBorder: "#353555", // ~ rgba(232,232,240,0.2)
-  promptBg: "#1E2A3A", // ~ Prompt-Card Mix aus ivory/accent auf ds
+  infoBg: "#1E2A3A", // Hintergrund der Masterclass-Inside-Box
   statBg: "#1D2B3E", // Gradient-Annäherung für Zahl der Woche
-  codeBg: "#141426", // innerer Prompt-Kasten
   accentSoft: "#1B3B38", // accent @ low alpha auf ds
   accentStrong: "#2D5249", // accent box (CTA)
   eventBg: "#1E2E3F", // Event-Block Hintergrund
@@ -108,6 +107,62 @@ function newsCard(item: NewsletterNewsItem, index: number): string {
       </table>
     </td>
   </tr>`;
+}
+
+/**
+ * "Masterclass Inside" – manuell gepflegte Info rund um die Masterclass.
+ * Sind Titel und Text leer, wird gar nichts gerendert (inkl. Sektionsheader).
+ */
+function masterclassSection(content: NewsletterContent): string {
+  const news = content.masterclassNews;
+  const title = (news?.title ?? "").trim();
+  const body = (news?.body ?? "").trim();
+  if (!title && !body) return "";
+
+  const ctaUrl = (news?.ctaUrl ?? "").trim();
+  const ctaLabel = (news?.ctaLabel ?? "").trim() || "Mehr erfahren";
+  const cta = ctaUrl
+    ? `<div style="margin-top:16px;font-family:'DM Sans',Arial,Helvetica,sans-serif;"><a href="${esc(ctaUrl)}" target="_blank" style="display:inline-block;font-size:14px;font-weight:600;color:${COLORS.accent};text-decoration:none;">${esc(ctaLabel)} &rarr;</a></div>`
+    : "";
+
+  const titleHtml = title
+    ? `<div style="color:${COLORS.cool};font-size:18px;font-weight:600;line-height:1.35;font-family:'DM Sans',Arial,Helvetica,sans-serif;">${esc(title)}</div>`
+    : "";
+
+  const bodyHtml = body
+    ? `<div style="margin-top:${title ? "10px" : "0"};color:${COLORS.gray};font-size:15px;line-height:1.65;font-family:'DM Sans',Arial,Helvetica,sans-serif;white-space:pre-wrap;">${esc(body)}</div>`
+    : "";
+
+  return `
+        <!-- SECTION: MASTERCLASS INSIDE -->
+        <tr>
+          <td style="padding:32px 0 14px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td width="170" style="color:${COLORS.accent};font-size:11px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;font-family:'DM Sans',Arial,Helvetica,sans-serif;white-space:nowrap;">Masterclass Inside</td>
+                <td style="padding-left:10px;">
+                  <div style="height:1px;background:${COLORS.cardStrongBorder};line-height:1px;font-size:0;">&nbsp;</div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 0 12px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLORS.infoBg};border:1px solid ${themeFor("CHAT").border};border-radius:16px;">
+              <tr>
+                <td style="background:${COLORS.accent};border-radius:16px 16px 0 0;line-height:3px;font-size:0;">&nbsp;</td>
+              </tr>
+              <tr>
+                <td style="padding:26px 28px;">
+                  ${titleHtml}
+                  ${bodyHtml}
+                  ${cta}
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>`;
 }
 
 function eventBlock(content: NewsletterContent): string {
@@ -287,10 +342,8 @@ export function renderNewsletterHtml(
   const newsCards = newsItems.map((item, i) => newsCard(item, i)).join("");
 
   const subtitle = esc(
-    opts.subtitle ?? "Prompts, News und Insights – dein wöchentlicher Vorsprung."
+    opts.subtitle ?? "News, Termine und Insights – dein wöchentlicher Vorsprung."
   );
-
-  const prompt = content.prompt;
 
   return `<!doctype html>
 <html lang="de">
@@ -354,37 +407,7 @@ body, table, td, a { font-family: Arial, Helvetica, sans-serif !important; }
         <!-- EVENT (manuell, optional) -->
         ${eventBlock(content)}
 
-        <!-- SECTION: PROMPT DER WOCHE -->
-        <tr>
-          <td style="padding:32px 0 14px 0;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-              <tr>
-                <td width="150" style="color:${COLORS.accent};font-size:11px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;font-family:'DM Sans',Arial,Helvetica,sans-serif;white-space:nowrap;">Prompt der Woche</td>
-                <td style="padding-left:10px;">
-                  <div style="height:1px;background:${COLORS.cardStrongBorder};line-height:1px;font-size:0;">&nbsp;</div>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:0 0 12px 0;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLORS.promptBg};border:1px solid ${themeFor("CHAT").border};border-radius:16px;">
-              <tr>
-                <td style="background:${COLORS.accent};border-radius:16px 16px 0 0;line-height:3px;font-size:0;">&nbsp;</td>
-              </tr>
-              <tr>
-                <td style="padding:26px 28px;">
-                  ${badgePill("PREMIUM", prompt.badge || "Copilot Premium")}
-                  <div style="margin-top:14px;color:${COLORS.cool};font-size:18px;font-weight:600;line-height:1.35;font-family:'DM Sans',Arial,Helvetica,sans-serif;">${esc(prompt.title)}</div>
-                  ${prompt.tipp ? "" : ""}
-                  <div style="margin-top:18px;padding:18px;background:${COLORS.codeBg};border:1px solid ${COLORS.cardBorder};border-radius:10px;color:${COLORS.cool};font-family:'JetBrains Mono','Courier New',Consolas,monospace;font-size:13px;line-height:1.7;white-space:pre-wrap;word-break:break-word;">${esc(prompt.body)}</div>
-                  ${prompt.tipp ? `<div style="margin-top:18px;padding:14px 18px;background:${COLORS.accentSoft};border-left:3px solid ${COLORS.accent};border-radius:0 10px 10px 0;font-family:'DM Sans',Arial,Helvetica,sans-serif;"><span style="color:${COLORS.cool};font-weight:600;font-size:13px;">Sales-Tipp:</span> <span style="color:${COLORS.gray};font-size:13px;line-height:1.55;">${esc(prompt.tipp)}</span></div>` : ""}
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
+        ${masterclassSection(content)}
 
         <!-- SECTION: NEWS DER WOCHE -->
         <tr>

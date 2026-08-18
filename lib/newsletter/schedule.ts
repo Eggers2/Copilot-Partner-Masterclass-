@@ -17,7 +17,7 @@ import type { Newsletter } from "@prisma/client";
 const EMPTY_CONTENT: NewsletterContent = {
   candidates: [],
   selectedIds: [],
-  prompt: { badge: "", title: "", body: "", tipp: "" },
+  masterclassNews: { title: "", body: "", ctaLabel: "", ctaUrl: "" },
   events: [],
 };
 

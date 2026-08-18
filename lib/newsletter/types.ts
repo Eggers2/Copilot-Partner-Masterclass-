@@ -17,11 +17,18 @@ export interface NewsletterNewsItem {
   sourceUrl: string;
 }
 
-export interface NewsletterPromptOfWeek {
-  badge: string;
+/**
+ * Manuell gepflegte Info-Box "Masterclass Inside". Wird nur gerendert, wenn
+ * Titel oder Text gefüllt sind – ansonsten taucht die Sektion im Newsletter
+ * überhaupt nicht auf.
+ */
+export interface NewsletterMasterclassNews {
   title: string;
   body: string;
-  tipp: string;
+  /** Optionaler Link-Text; leer = kein Link */
+  ctaLabel: string;
+  /** Optionale Ziel-URL; leer = kein Link */
+  ctaUrl: string;
 }
 
 export interface NewsletterEventItem {
@@ -42,7 +49,8 @@ export interface NewsletterEventItem {
 export interface NewsletterContent {
   candidates: NewsletterNewsItem[];
   selectedIds: string[];
-  prompt: NewsletterPromptOfWeek;
+  /** Manuelle Masterclass-Info (optional – leer = Sektion entfällt). */
+  masterclassNews?: NewsletterMasterclassNews;
   /** Bis zu 3 kommende Termine aus der Linksammlung (oben im Newsletter). */
   events: NewsletterEventItem[];
   eventBlock?: {
