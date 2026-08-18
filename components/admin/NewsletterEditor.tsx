@@ -20,6 +20,7 @@ import type {
   NewsletterContent,
   NewsletterNewsItem,
   NewsletterEventItem,
+  NewsletterMasterclassNews,
 } from "@/lib/newsletter/types";
 import type { NewsletterStatus } from "@prisma/client";
 import { NewsletterStatusBadge } from "./NewsletterStatusBadge";
@@ -28,7 +29,6 @@ import {
   deleteNewsletterAction,
   fetchMoreNewsAction,
   refreshEventsAction,
-  regeneratePromptAction,
   retractApprovalAction,
   saveContentAction,
   sendNewsletterAction,
@@ -80,9 +80,10 @@ export function NewsletterEditor(props: NewsletterEditorProps) {
   const [liveError, setLiveError] = useState<string | null>(props.fehlerText);
 
   const newsReady = content.candidates.length > 0;
-  const promptReady = !!content.prompt?.title?.trim();
-  const isGenerating = !newsReady || !promptReady;
+  const isGenerating = !newsReady;
   const events = content.events ?? [];
+  const masterclassNews: NewsletterMasterclassNews =
+    content.masterclassNews ?? { title: "", body: "", ctaLabel: "", ctaUrl: "" };
 
   // Polling solange mindestens eine Sektion noch leer ist. Wir mergen vom
   // Server nur die Sektionen, die im Client noch nicht gefüllt sind, damit
@@ -111,9 +112,6 @@ export function NewsletterEditor(props: NewsletterEditorProps) {
             current.candidates.length > 0
               ? current.candidates
               : data.content.candidates,
-          prompt: current.prompt?.title?.trim()
-            ? current.prompt
-            : data.content.prompt,
           events:
             current.events && current.events.length > 0
               ? current.events
@@ -230,19 +228,21 @@ export function NewsletterEditor(props: NewsletterEditorProps) {
     });
   }
 
-  function regeneratePrompt() {
-    startTransition(async () => {
-      await saveContentAction(props.id, {
-        content,
-        titel,
-        subtitle,
-        zusatzMails,
-      });
-      const { content: next } = await regeneratePromptAction(props.id);
-      setContent(next);
-      await renderPreview(next, titel, subtitle);
-      flash("ok", "Prompt der Woche neu generiert.");
-    });
+  function updateMasterclassField(
+    field: keyof NewsletterMasterclassNews,
+    value: string
+  ) {
+    setContent((c) => ({
+      ...c,
+      masterclassNews: {
+        title: "",
+        body: "",
+        ctaLabel: "",
+        ctaUrl: "",
+        ...(c.masterclassNews ?? {}),
+        [field]: value,
+      },
+    }));
   }
 
   function refreshEvents() {
@@ -398,12 +398,12 @@ export function NewsletterEditor(props: NewsletterEditorProps) {
         <div className="flex items-start gap-3 px-4 py-3 rounded-lg text-sm bg-blue-50 text-blue-800 border border-blue-200">
           <Loader2 className="w-4 h-4 mt-0.5 flex-shrink-0 animate-spin" />
           <div className="flex-1">
-            <strong>Wird generiert…</strong> News (aus der Linksammlung), der
-            Prompt der Woche und die kommenden Termine werden parallel geladen.
-            Die Abschnitte erscheinen hier, sobald sie fertig sind.
+            <strong>Wird generiert…</strong> Die News (aus der Linksammlung) und
+            die kommenden Termine werden parallel geladen. Die Abschnitte
+            erscheinen hier, sobald sie fertig sind.
             <div className="flex gap-4 mt-2 text-xs">
               <GenStatus label="News" done={newsReady} />
-              <GenStatus label="Prompt der Woche" done={promptReady} />
+              <GenStatus label="Termine" done={events.length > 0} />
             </div>
             {liveError && (
               <div className="mt-2 text-xs text-red-700">
@@ -449,7 +449,7 @@ export function NewsletterEditor(props: NewsletterEditorProps) {
               value={subtitle}
               onChange={(e) => setSubtitle(e.target.value)}
               disabled={readOnly}
-              placeholder="Prompts, News und Insights – dein wöchentlicher Vorsprung."
+              placeholder="News, Termine und Insights – dein wöchentlicher Vorsprung."
               className="mt-1 w-full rounded-lg border border-dark-slate-200 px-3 py-2 text-sm focus:border-[#030386] focus:outline-none disabled:bg-dark-slate-50"
             />
           </label>
@@ -458,63 +458,54 @@ export function NewsletterEditor(props: NewsletterEditorProps) {
 
       <div className="grid lg:grid-cols-2 gap-4">
         <div className="bg-white rounded-2xl border border-dark-slate-100 p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-dark-slate-900 flex items-center gap-2">
-              Prompt der Woche
-              {!promptReady && isGenerating && (
-                <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-              )}
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-dark-slate-900">
+              Masterclass Inside
             </h2>
-            <button
-              onClick={regeneratePrompt}
-              disabled={pending || readOnly}
-              className="flex items-center gap-1.5 text-xs text-dark-slate-500 hover:text-[#030386] disabled:opacity-50"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              Neu generieren
-            </button>
+            <p className="text-xs text-dark-slate-500 mt-0.5">
+              Deine eigene Info rund um die Masterclass. Bleibt alles leer,
+              erscheint die Box im Newsletter gar nicht.
+            </p>
           </div>
           <div className="space-y-3">
             <input
               type="text"
-              value={content.prompt.badge}
-              onChange={(e) =>
-                setContent((c) => ({ ...c, prompt: { ...c.prompt, badge: e.target.value } }))
-              }
+              value={masterclassNews.title}
+              onChange={(e) => updateMasterclassField("title", e.target.value)}
               disabled={readOnly}
-              placeholder="Badge (z.B. COPILOT PREMIUM)"
-              className="w-full rounded-lg border border-dark-slate-200 px-3 py-2 text-xs font-semibold uppercase tracking-wide focus:border-[#030386] focus:outline-none disabled:bg-dark-slate-50"
-            />
-            <input
-              type="text"
-              value={content.prompt.title}
-              onChange={(e) =>
-                setContent((c) => ({ ...c, prompt: { ...c.prompt, title: e.target.value } }))
-              }
-              disabled={readOnly}
-              placeholder="Titel"
+              placeholder="Überschrift (z.B. Neues Modul ist online)"
               className="w-full rounded-lg border border-dark-slate-200 px-3 py-2 text-sm font-semibold focus:border-[#030386] focus:outline-none disabled:bg-dark-slate-50"
             />
             <textarea
-              value={content.prompt.body}
-              onChange={(e) =>
-                setContent((c) => ({ ...c, prompt: { ...c.prompt, body: e.target.value } }))
-              }
+              value={masterclassNews.body}
+              onChange={(e) => updateMasterclassField("body", e.target.value)}
               disabled={readOnly}
               rows={6}
-              placeholder="Der Prompt-Text (wird mono gerendert)"
-              className="w-full rounded-lg border border-dark-slate-200 px-3 py-2 text-sm font-mono focus:border-[#030386] focus:outline-none disabled:bg-dark-slate-50"
-            />
-            <input
-              type="text"
-              value={content.prompt.tipp}
-              onChange={(e) =>
-                setContent((c) => ({ ...c, prompt: { ...c.prompt, tipp: e.target.value } }))
-              }
-              disabled={readOnly}
-              placeholder="Sales-Tipp"
+              placeholder="Deine Info an die Community – Zeilenumbrüche bleiben erhalten."
               className="w-full rounded-lg border border-dark-slate-200 px-3 py-2 text-sm focus:border-[#030386] focus:outline-none disabled:bg-dark-slate-50"
             />
+            <div className="grid grid-cols-3 gap-2">
+              <input
+                type="text"
+                value={masterclassNews.ctaLabel}
+                onChange={(e) => updateMasterclassField("ctaLabel", e.target.value)}
+                disabled={readOnly}
+                placeholder="Link-Text"
+                className="rounded-lg border border-dark-slate-200 px-3 py-2 text-xs focus:border-[#030386] focus:outline-none disabled:bg-dark-slate-50"
+              />
+              <input
+                type="url"
+                value={masterclassNews.ctaUrl}
+                onChange={(e) => updateMasterclassField("ctaUrl", e.target.value)}
+                disabled={readOnly}
+                placeholder="https://... (optional)"
+                className="col-span-2 rounded-lg border border-dark-slate-200 px-3 py-2 text-xs font-mono focus:border-[#030386] focus:outline-none disabled:bg-dark-slate-50"
+              />
+            </div>
+            <p className="text-xs text-dark-slate-400">
+              Der Link erscheint nur, wenn eine URL eingetragen ist. Ohne
+              Link-Text wird &bdquo;Mehr erfahren&ldquo; verwendet.
+            </p>
           </div>
         </div>
 

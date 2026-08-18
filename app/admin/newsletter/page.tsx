@@ -33,8 +33,9 @@ export default async function NewsletterListPage() {
 
       <p className="text-xs text-dark-slate-400 mb-4">
         Hinweis: Nach Klick auf &quot;Neuer Newsletter&quot; springst du sofort in den Editor –
-        News, Prompt und Zahl werden im Hintergrund von Claude generiert (ca. 20–40 s)
-        und erscheinen dort live.
+        News und Termine werden im Hintergrund generiert (ca. 20–40 s) und erscheinen
+        dort live. Die Box &bdquo;Masterclass Inside&ldquo; füllst du selbst; bleibt sie
+        leer, erscheint sie nicht im Newsletter.
       </p>
 
       {newsletters.length === 0 ? (

@@ -18,7 +18,6 @@ import {
   updateContent,
 } from "@/lib/db/newsletters";
 import {
-  generatePromptOfWeek,
   newsFromLinksammlung,
   eventsFromLinksammlung,
 } from "@/lib/newsletter/research";
@@ -35,7 +34,7 @@ import type { NewsletterContent } from "@/lib/newsletter/types";
 const EMPTY_CONTENT: NewsletterContent = {
   candidates: [],
   selectedIds: [],
-  prompt: { badge: "", title: "", body: "", tipp: "" },
+  masterclassNews: { title: "", body: "", ctaLabel: "", ctaUrl: "" },
   events: [],
 };
 
@@ -99,20 +98,6 @@ export async function fetchMoreNewsAction(
     ...content,
     candidates: [...content.candidates, ...filtered],
   };
-  await updateContent(id, { content: next });
-  revalidatePath(`/admin/newsletter/${id}`);
-  return { content: next };
-}
-
-export async function regeneratePromptAction(
-  id: string
-): Promise<{ content: NewsletterContent }> {
-  await requireAuth();
-  const nl = await getNewsletter(id);
-  if (!nl) throw new Error("Newsletter nicht gefunden");
-  const content = readContent(nl);
-  const prompt = await generatePromptOfWeek();
-  const next: NewsletterContent = { ...content, prompt };
   await updateContent(id, { content: next });
   revalidatePath(`/admin/newsletter/${id}`);
   return { content: next };
