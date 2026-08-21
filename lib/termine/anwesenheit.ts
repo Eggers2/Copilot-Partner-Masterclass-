@@ -142,7 +142,6 @@ export function parseBerichtZeit(raw: string): Date | null {
 
 /**
  * Quote-bewusstes Zerlegen einer CSV-Zeile am gegebenen Trennzeichen.
- * Auch vom Videokurs-Parser (lib/kurs/fortschritt.ts) genutzt.
  */
 export function splitCsvZeile(line: string, delimiter: string): string[] {
   const result: string[] = [];

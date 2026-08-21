@@ -6,10 +6,6 @@ import {
   type AbgleichStatus,
   type TeilnehmerAbgleich,
 } from "@/lib/termine/abgleich";
-import {
-  getKursFortschrittStand,
-  type KursFortschrittImportMeta,
-} from "@/lib/db/kursFortschritt";
 
 /**
  * Ersetzt den Anwesenheitsbericht eines Termins komplett (erneuter Upload
@@ -128,11 +124,6 @@ export interface RankingEintrag {
   firma: string;
   /** Anzahl Termine (mit Bericht), an denen die Person anwesend war. */
   anwesend: number;
-  /**
-   * Anteil gesehener Videos des Kurses in Prozent (0–100);
-   * null = die Person taucht im Videokurs-Export nicht auf.
-   */
-  video: number | null;
 }
 
 export interface UnbekannterTeilnehmer {
@@ -146,8 +137,6 @@ export interface FirmenMitarbeiter {
   email: string;
   /** Anzahl Termine (mit Bericht), an denen die Person anwesend war. */
   anwesend: number;
-  /** Videokurs-Fortschritt in Prozent; null = nicht im Kurs-Export. */
-  video: number | null;
 }
 
 export interface BestellerKontakt {
@@ -165,18 +154,6 @@ export interface FirmenStatistik {
   moeglich: number;
   /** Teilnahmequote in Prozent (0–100). */
   quote: number;
-  /**
-   * Durchschnittlicher Videokurs-Fortschritt (0–100) über die Mitarbeiter mit
-   * Kurs-Daten; null = niemand der Firma taucht im Kurs-Export auf.
-   */
-  videoQuote: number | null;
-  /** Mitarbeiter ohne Eintrag im Kurs-Export (nicht in videoQuote enthalten). */
-  ohneVideoDaten: number;
-  /**
-   * Kombinierter Engagement-Score (0–100): Mittel aus Teilnahmequote und
-   * Video-Fortschritt; ohne Video-Daten entspricht er der Teilnahmequote.
-   */
-  engagement: number;
   /** Alle registrierten Mitarbeiter mit ihrer Präsenz (für die Erinnerungs-Mail). */
   mitarbeiter: FirmenMitarbeiter[];
   /** Besteller-Kontakte der Firma (Empfänger der Erinnerungs-Mail). */
@@ -192,18 +169,14 @@ export interface KlasseAnwesenheitAuswertung {
   /** Über alle Termine: unbekannte Anwesende (nicht in der Teilnehmerübersicht). */
   unbekannte: UnbekannterTeilnehmer[];
   /**
-   * Wenig engagierte Firmen/Partner: Teilnahmequote oder Videokurs-Fortschritt
-   * unter 50 %, sortiert nach Engagement-Score (die schwächsten zuerst).
+   * Wenig engagierte Firmen/Partner: Teilnahmequote unter 50 %, sortiert
+   * nach Quote (die schwächsten zuerst).
    */
   inaktiveFirmen: FirmenStatistik[];
   /** Aktuelle Ignorierliste (für die Pflege im Admin). */
   ignorierliste: string[];
   /** Anzahl registrierter Teilnehmer der Klasse (dedupliziert nach E-Mail). */
   teilnehmerGesamt: number;
-  /** Metadaten des letzten Videokurs-Imports; null = noch keiner hochgeladen. */
-  kursImport: KursFortschrittImportMeta | null;
-  /** Kurs-Einträge, die Teilnehmern dieser Klasse zugeordnet werden konnten. */
-  kursZugeordnet: number;
 }
 
 const RANKING_SIZE = 20;
@@ -291,55 +264,35 @@ export async function createKlasseAbgleich(klasseId: string): Promise<{
  *   Teilnehmer (intelligent: E-Mail, Name, E-Mail-Heuristik – siehe
  *   lib/termine/abgleich.ts) unter Berücksichtigung der Ignorierliste,
  * - Rangliste der registrierten Teilnehmer (Top/Bottom 20 nach Präsenz),
- * - Liste unbekannter Anwesender (deutlicher Hinweis auf weitergegebene Links),
- * - Videokurs-Fortschritt je Teilnehmer/Firma aus dem ablefy-Export.
+ * - Liste unbekannter Anwesender (deutlicher Hinweis auf weitergegebene Links).
  */
 export async function getKlasseAnwesenheitAuswertung(
   klasseId: string
 ): Promise<KlasseAnwesenheitAuswertung> {
-  const [
-    termine,
-    { abgleich, registrierte, bestellerByFirma, ignorierliste },
-    kursStand,
-  ] = await Promise.all([
-    prisma.klasseTermin.findMany({
-      where: { klasseId, anwesenheitImportiertAm: { not: null } },
-      orderBy: { datum: "asc" },
-      select: {
-        id: true,
-        datum: true,
-        thema: true,
-        anwesenheitDateiname: true,
-        anwesenheitImportiertAm: true,
-        anwesenheiten: {
-          orderBy: { dauerSekunden: "desc" },
-          select: {
-            name: true,
-            email: true,
-            rolle: true,
-            dauerSekunden: true,
+  const [termine, { abgleich, registrierte, bestellerByFirma, ignorierliste }] =
+    await Promise.all([
+      prisma.klasseTermin.findMany({
+        where: { klasseId, anwesenheitImportiertAm: { not: null } },
+        orderBy: { datum: "asc" },
+        select: {
+          id: true,
+          datum: true,
+          thema: true,
+          anwesenheitDateiname: true,
+          anwesenheitImportiertAm: true,
+          anwesenheiten: {
+            orderBy: { dauerSekunden: "desc" },
+            select: {
+              name: true,
+              email: true,
+              rolle: true,
+              dauerSekunden: true,
+            },
           },
         },
-      },
-    }),
-    createKlasseAbgleich(klasseId),
-    getKursFortschrittStand(),
-  ]);
-
-  // Videokurs-Fortschritt den registrierten Teilnehmern zuordnen – derselbe
-  // intelligente Abgleich wie beim Teams-Bericht (E-Mail, Name, Heuristik),
-  // damit abweichende Adressen im Kurs-Export trotzdem matchen. Einträge
-  // anderer Klassen bleiben unberücksichtigt (der Export ist global).
-  const videoByTeilnehmer = new Map<string, number>();
-  for (const eintrag of kursStand.eintraege) {
-    const treffer = abgleich.match(eintrag.name, eintrag.email);
-    const key = treffer.teilnehmerEmail;
-    if (!key || !registrierte.has(key)) continue;
-    const bisher = videoByTeilnehmer.get(key);
-    if (bisher === undefined || eintrag.fortschritt > bisher) {
-      videoByTeilnehmer.set(key, eintrag.fortschritt);
-    }
-  }
+      }),
+      createKlasseAbgleich(klasseId),
+    ]);
 
   const praesenz = new Map<string, number>();
   const unbekannteMap = new Map<string, UnbekannterTeilnehmer>();
@@ -399,7 +352,6 @@ export async function getKlasseAnwesenheitAuswertung(
       email,
       firma: info.firma,
       anwesend: praesenz.get(email) ?? 0,
-      video: videoByTeilnehmer.get(email) ?? null,
     })
   );
 
@@ -413,11 +365,9 @@ export async function getKlasseAnwesenheitAuswertung(
     .slice(0, RANKING_SIZE);
 
   // Engagement pro Firma/Partner über alle Mitarbeiter: Firmen mit unter 50 %
-  // Teilnahmequote ODER unter 50 % Videokurs-Fortschritt machen wenig
-  // engagierte Partner sichtbar; sortiert nach kombiniertem Engagement-Score.
-  // Mitarbeiter ohne Eintrag im Kurs-Export fließen nicht in den Video-
-  // Durchschnitt ein (sie werden separat gezählt). Mitarbeiter-Details und
-  // Besteller-Kontakte werden für die Erinnerungs-Mail mitgeliefert.
+  // Teilnahmequote machen wenig engagierte Partner sichtbar; sortiert nach
+  // Quote (die schwächsten zuerst). Mitarbeiter-Details und Besteller-Kontakte
+  // werden für die Erinnerungs-Mail mitgeliefert.
   const firmen = new Map<string, FirmenMitarbeiter[]>();
   for (const [email, info] of registrierte) {
     const key = info.firma.trim() || "(ohne Firma)";
@@ -426,7 +376,6 @@ export async function getKlasseAnwesenheitAuswertung(
       name: info.name,
       email,
       anwesend: praesenz.get(email) ?? 0,
-      video: videoByTeilnehmer.get(email) ?? null,
     });
     firmen.set(key, liste);
   }
@@ -439,26 +388,12 @@ export async function getKlasseAnwesenheitAuswertung(
             const moeglich = mitarbeiter.length * termine.length;
             const quote =
               moeglich > 0 ? Math.round((anwesend / moeglich) * 100) : 0;
-            const mitVideo = mitarbeiter.filter((m) => m.video !== null);
-            const videoQuote =
-              mitVideo.length > 0
-                ? Math.round(
-                    mitVideo.reduce((sum, m) => sum + (m.video ?? 0), 0) /
-                      mitVideo.length
-                  )
-                : null;
             return {
               firma,
               teilnehmer: mitarbeiter.length,
               anwesend,
               moeglich,
               quote,
-              videoQuote,
-              ohneVideoDaten: mitarbeiter.length - mitVideo.length,
-              engagement:
-                videoQuote === null
-                  ? quote
-                  : Math.round((quote + videoQuote) / 2),
               mitarbeiter: [...mitarbeiter].sort(
                 (a, b) =>
                   b.anwesend - a.anwesend || a.name.localeCompare(b.name, "de")
@@ -466,12 +401,9 @@ export async function getKlasseAnwesenheitAuswertung(
               besteller: bestellerByFirma.get(firma) ?? [],
             };
           })
-          .filter(
-            (f) => f.quote < 50 || (f.videoQuote !== null && f.videoQuote < 50)
-          )
+          .filter((f) => f.quote < 50)
           .sort(
-            (a, b) =>
-              a.engagement - b.engagement || a.firma.localeCompare(b.firma, "de")
+            (a, b) => a.quote - b.quote || a.firma.localeCompare(b.firma, "de")
           );
 
   return {
@@ -483,7 +415,5 @@ export async function getKlasseAnwesenheitAuswertung(
     inaktiveFirmen,
     ignorierliste,
     teilnehmerGesamt: registrierte.size,
-    kursImport: kursStand.meta,
-    kursZugeordnet: videoByTeilnehmer.size,
   };
 }
