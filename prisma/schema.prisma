@@ -20,6 +20,8 @@ enum LeadStatus {
   WAITLIST
   WEBINAR_ATTENDED
   FOLLOW_UP
+  EXPERTE
+  ONE_MAN_SHOW
 }
 
 enum LeadSource {
