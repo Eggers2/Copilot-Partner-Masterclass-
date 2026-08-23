@@ -569,6 +569,18 @@ export async function bulkMarkAttendanceAction(
 
 // ─── STREAMYARD CSV PROCESSING ──────────────────────
 
+// Status, die ein CSV-Import nicht überschreiben darf: entweder liegt der Lead
+// im Funnel schon weiter, oder er wurde manuell eingeordnet (EXPERTE /
+// ONE_MAN_SHOW).
+const STATUS_NICHT_UEBERSCHREIBEN: LeadStatus[] = [
+  "WEBINAR_ATTENDED",
+  "WON",
+  "QUALIFIED",
+  "PROPOSAL",
+  "EXPERTE",
+  "ONE_MAN_SHOW",
+];
+
 export interface CsvParticipant {
   email: string;
   firstName: string;
@@ -664,7 +676,7 @@ export async function processCsvAction(
     const updates: Record<string, unknown> = {};
     if (!lead.name && fullName) updates.name = fullName;
     if (!lead.company && p.company) updates.company = p.company;
-    if (attended && lead.status !== "WEBINAR_ATTENDED" && lead.status !== "WON" && lead.status !== "QUALIFIED" && lead.status !== "PROPOSAL") {
+    if (attended && !STATUS_NICHT_UEBERSCHREIBEN.includes(lead.status)) {
       updates.status = "WEBINAR_ATTENDED";
     }
 

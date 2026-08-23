@@ -23,6 +23,9 @@ export const LEAD_STATUS_CONFIG: Record<
   FOLLOW_UP: { label: "Follow-up", color: "#d97706", bg: "#fef3c7", order: 6 },
   WON: { label: "Gewonnen", color: "#16a34a", bg: "#dcfce7", order: 7 },
   LOST: { label: "Verloren", color: "#dc2626", bg: "#fef2f2", order: 8 },
+  // Einordnung außerhalb des regulären Funnels – bewusst nicht in FUNNEL_STAGES.
+  EXPERTE: { label: "Experte", color: "#0891b2", bg: "#cffafe", order: 9 },
+  ONE_MAN_SHOW: { label: "One Man Show", color: "#db2777", bg: "#fce7f3", order: 10 },
 };
 
 export const LEAD_SOURCE_CONFIG: Record<LeadSource, { label: string }> = {
@@ -74,6 +77,8 @@ export const KLASSE_STATUS_CONFIG: Record<
   COMPLETED: { label: "Abgeschlossen",  color: "#0891b2", bg: "#cffafe" },
 };
 
+// Nur echte Funnel-Stufen. EXPERTE und ONE_MAN_SHOW sind Einordnungen abseits
+// des Funnels und tauchen deshalb im Funnel-Chart nicht auf.
 export const FUNNEL_STAGES: LeadStatus[] = [
   "NEW",
   "WAITLIST",
