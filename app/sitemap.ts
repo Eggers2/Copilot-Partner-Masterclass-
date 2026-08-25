@@ -1,6 +1,6 @@
 import { MetadataRoute } from "next";
 
-const BASE_URL = "https://copilot.next-skills.de";
+const BASE_URL = process.env.APP_BASE_URL ?? "https://www.copilotberater.de";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
