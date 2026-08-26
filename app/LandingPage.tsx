@@ -497,7 +497,7 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
             >
               <div className="flex items-center justify-between mb-6">
                 <span className="text-[#00C896] text-xs font-semibold tracking-wider uppercase">
-                  Klasse 03 &middot; Start vsl. September 2026
+                  Klasse 03 &middot; Start vsl. Oktober 2026
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-[#1A1A2E]" style={{ background: "#00C896" }}>
                   Bewerbung offen
@@ -508,7 +508,7 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
                 <div>
                   <div className="mb-3 flex items-baseline justify-between">
                     <span className="text-white/80 text-sm font-medium">{klasse3Belegt} / {klasse3Capacity} Plätze vergeben</span>
-                    <span className="text-white/40 text-sm">Start: September 2026</span>
+                    <span className="text-white/40 text-sm">Start: Oktober 2026</span>
                   </div>
                   <div className="w-full h-2 rounded-full overflow-hidden mb-4 border border-[#00C896]/30" style={{ background: "rgba(0,200,150,.05)" }}>
                     <div className="h-full rounded-full" style={{ width: `${percent}%`, background: "#00C896" }} />
@@ -1025,14 +1025,14 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
         <div className="relative container-main text-center">
           <div className="reveal">
             <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium border border-[#00C896]/30 text-[#00C896] mb-8" style={{ background: "rgba(0,200,150,.08)" }}>
-              Bewerbung Klasse 3 &middot; Start vsl. September 2026
+              Bewerbung Klasse 3 &middot; Start vsl. Oktober 2026
             </span>
 
             <h2
               className="text-white font-bold mb-4 max-w-[700px] mx-auto"
               style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", letterSpacing: "-0.025em" }}
             >
-              {klasse3Capacity} Plätze.<br /><span className="text-[#00C896]">Klasse 3 startet im September 2026.</span>
+              {klasse3Capacity} Plätze.<br /><span className="text-[#00C896]">Klasse 3 startet im Oktober 2026.</span>
             </h2>
 
             <div className="text-white/50 text-lg max-w-[560px] mx-auto mb-10 leading-relaxed">
