@@ -109,7 +109,7 @@ export async function listKlassenMitBelegung() {
  * Gezählt wird die Klasse, in die neue Bestellungen laufen: die erste offene
  * Klasse (status OPEN, nach Kickoff sortiert) mit freier Kapazität – dieselbe
  * Auswahl wie in getNextOpenKlasse(). Sind alle offenen Klassen voll, zählt die
- * jüngste; "25 von 25 vergeben" ist auf der Startseite die wichtigste Aussage.
+ * jüngste; "20 von 20 vergeben" ist auf der Startseite die wichtigste Aussage.
  * So bleibt der Zähler korrekt, auch wenn ausgebuchte Altklassen noch auf OPEN
  * stehen.
  *
