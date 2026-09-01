@@ -31,6 +31,7 @@ enum LeadSource {
   WEBINAR
   COLD_OUTREACH
   OTHER
+  SYNAXON
 }
 
 enum ActivityType {
