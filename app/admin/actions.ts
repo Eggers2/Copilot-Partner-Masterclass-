@@ -854,6 +854,7 @@ export async function updateBestellungAction(
   const {
     isPaketKey,
     isZahlungsmodell,
+    isZahlungsmodellErlaubt,
     getPreisNetto,
     getInvoicedPreisNetto,
     calculateMwst,
@@ -861,6 +862,11 @@ export async function updateBestellungAction(
 
   if (!isPaketKey(input.paket) || !isZahlungsmodell(input.zahlungsmodell)) {
     return { error: "Paket oder Zahlungsmodell ungültig." };
+  }
+  // Interne Pakete (Single Trainer) sind Einmal-Plätze und ausschließlich
+  // jährlich abrechenbar.
+  if (!isZahlungsmodellErlaubt(input.paket, input.zahlungsmodell)) {
+    return { error: "Dieses Zahlungsmodell ist für das gewählte Paket nicht verfügbar." };
   }
 
   const adnChannel: AdnChannel = input.adnChannel ?? "NONE";

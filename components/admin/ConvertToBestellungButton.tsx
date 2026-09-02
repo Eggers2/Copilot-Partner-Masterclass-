@@ -4,7 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShoppingCart, X, AlertTriangle, Check } from "lucide-react";
 import type { AdnChannel } from "@prisma/client";
-import { PACKAGES, type PaketKey, type Zahlungsmodell } from "@/lib/packages";
+import {
+  PACKAGES,
+  getZahlungsmodelle,
+  isInternalPaketKey,
+  type PaketKey,
+  type Zahlungsmodell,
+} from "@/lib/packages";
 import { ADN_CHANNEL_CONFIG } from "@/lib/constants/lead-config";
 
 type Confidence = "high" | "medium" | "low" | "ambiguous";
@@ -76,6 +82,23 @@ export function ConvertToBestellungButton(props: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Interne Pakete (Single Trainer) sind Einmal-Plätze und nur jährlich abrechenbar.
+  const erlaubteZahlungsmodelle: Zahlungsmodell[] = paket
+    ? getZahlungsmodelle(paket)
+    : ["jahresabo", "monatlich"];
+
+  function handlePaketChange(next: PaketKey | "") {
+    setPaket(next);
+    if (next) {
+      const erlaubt = getZahlungsmodelle(next);
+      if (erlaubt.length === 1) {
+        setZahlungsmodell(erlaubt[0]);
+      } else if (zahlungsmodell && !erlaubt.includes(zahlungsmodell)) {
+        setZahlungsmodell("");
+      }
+    }
+  }
 
   if (props.hasBestellung) {
     return (
@@ -219,16 +242,24 @@ export function ConvertToBestellungButton(props: Props) {
                 </label>
                 <select
                   value={paket}
-                  onChange={(e) => setPaket(e.target.value as PaketKey | "")}
+                  onChange={(e) => handlePaketChange(e.target.value as PaketKey | "")}
                   className="w-full border border-dark-slate-200 rounded-lg px-3 py-2 text-sm"
                 >
                   <option value="">— bitte wählen —</option>
                   {(Object.keys(PACKAGES) as PaketKey[]).map((k) => (
                     <option key={k} value={k}>
-                      {PACKAGES[k].label} — {PACKAGES[k].users} User · ab {PACKAGES[k].monthly} €/Monat
+                      {isInternalPaketKey(k)
+                        ? `${PACKAGES[k].label} — ${PACKAGES[k].users} User · ${PACKAGES[k].yearly.toLocaleString("de-DE")} € netto (nur intern)`
+                        : `${PACKAGES[k].label} — ${PACKAGES[k].users} User · ab ${PACKAGES[k].monthly} €/Monat`}
                     </option>
                   ))}
                 </select>
+                {paket && isInternalPaketKey(paket) && (
+                  <p className="text-xs text-amber-700 mt-2">
+                    Interner Auffüll-Platz für Restplätze einer Klasse. Wird nicht
+                    öffentlich angeboten und zählt normal im Umsatz mit.
+                  </p>
+                )}
               </section>
 
               <section>
@@ -246,12 +277,19 @@ export function ConvertToBestellungButton(props: Props) {
                     />
                     Jährlich
                   </label>
-                  <label className="flex items-center gap-2 text-sm">
+                  <label
+                    className={`flex items-center gap-2 text-sm ${
+                      erlaubteZahlungsmodelle.includes("monatlich")
+                        ? ""
+                        : "text-dark-slate-400"
+                    }`}
+                  >
                     <input
                       type="radio"
                       name="abo"
                       value="monatlich"
                       checked={zahlungsmodell === "monatlich"}
+                      disabled={!erlaubteZahlungsmodelle.includes("monatlich")}
                       onChange={() => setZahlungsmodell("monatlich")}
                     />
                     Monatlich

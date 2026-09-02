@@ -119,6 +119,8 @@ export class BestellungCreateError extends Error {
   }
 }
 
+// Nur öffentliche Pakete: interne Pakete (Single Trainer) werden bewusst nicht
+// aus Notizen oder E-Mails erkannt, sie werden im Admin immer explizit gewählt.
 const PAKET_REGEX = /\b(starter|team|business)\b/i;
 const MONATLICH_REGEX = /\b(monatlich|monthly|pro\s*monat)\b/i;
 const JAHRESABO_REGEX = /\b(jahresabo|j[aä]hrlich(?:es)?|yearly|annual)\b/i;

@@ -2,10 +2,57 @@ export const PACKAGES = {
   starter: { label: "Starter", users: 3, yearly: 8900, monthly: 890 },
   team: { label: "Team", users: 6, yearly: 9900, monthly: 990 },
   business: { label: "Business", users: 15, yearly: 14900, monthly: 1490 },
+  // Interner Auffüll-Platz für Restplätze in einer Klasse. Wird ausschließlich
+  // in der Administration gewählt und taucht an keiner Stelle öffentlich auf
+  // (siehe INTERNAL_PAKET_KEYS).
+  single: { label: "Single Trainer", users: 1, yearly: 3900, monthly: 3900 },
 } as const;
 
 export type PaketKey = keyof typeof PACKAGES;
 export type Zahlungsmodell = "jahresabo" | "monatlich";
+
+/**
+ * Pakete, die nur intern in der Administration vergeben werden dürfen.
+ *
+ * Sie erscheinen bewusst NICHT auf der Webseite, in Flyern oder im
+ * öffentlichen Bestellformular. Der öffentliche Bestell-Flow lehnt sie
+ * serverseitig ab (siehe lib/orders/createBestellung.ts), sie werden von der
+ * Paket-Heuristik nicht erkannt und im Admin sind sie als "nur intern"
+ * gekennzeichnet. In Umsatz-KPIs und der Klassenbelegung zählen sie normal mit.
+ */
+export const INTERNAL_PAKET_KEYS = ["single"] as const;
+
+export type InternalPaketKey = (typeof INTERNAL_PAKET_KEYS)[number];
+export type PublicPaketKey = Exclude<PaketKey, InternalPaketKey>;
+
+export function isInternalPaketKey(value: unknown): value is InternalPaketKey {
+  return (INTERNAL_PAKET_KEYS as readonly unknown[]).includes(value);
+}
+
+export function isPublicPaketKey(value: unknown): value is PublicPaketKey {
+  return isPaketKey(value) && !isInternalPaketKey(value);
+}
+
+/** Öffentlich buchbare Pakete in Anzeigereihenfolge. */
+export const PUBLIC_PAKET_KEYS: PublicPaketKey[] = (
+  Object.keys(PACKAGES) as PaketKey[]
+).filter(isPublicPaketKey);
+
+/**
+ * Interne Pakete sind Einmal-Plätze und werden ausschließlich jährlich
+ * abgerechnet, damit in Rechnung und Umsatzzahlen kein Monatsbetrag entsteht.
+ */
+export function getZahlungsmodelle(paket: PaketKey): Zahlungsmodell[] {
+  return isInternalPaketKey(paket) ? ["jahresabo"] : ["jahresabo", "monatlich"];
+}
+
+/** Prüft, ob die Kombination aus Paket und Zahlungsmodell zulässig ist. */
+export function isZahlungsmodellErlaubt(
+  paket: PaketKey,
+  zahlungsmodell: Zahlungsmodell
+): boolean {
+  return getZahlungsmodelle(paket).includes(zahlungsmodell);
+}
 
 export type AdnChannelKey = "NONE" | "ADN_50" | "ADN_15";
 

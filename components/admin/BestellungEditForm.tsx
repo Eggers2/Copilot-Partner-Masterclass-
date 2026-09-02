@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import { CheckCircle, AlertCircle, Users, Plus, Minus } from "lucide-react";
 import type { AdnChannel, Groessenklasse } from "@prisma/client";
 import { updateBestellungAction } from "@/app/admin/actions";
-import { PACKAGES } from "@/lib/packages";
+import {
+  PACKAGES,
+  getZahlungsmodelle,
+  isInternalPaketKey,
+  isPaketKey,
+  type Zahlungsmodell,
+} from "@/lib/packages";
 import { ADN_CHANNEL_CONFIG } from "@/lib/constants/lead-config";
 
 interface Teilnehmer {
@@ -119,6 +125,9 @@ export function BestellungEditForm({
   );
 
   const paketInfo = PACKAGES[paket as keyof typeof PACKAGES] ?? PACKAGES.starter;
+  const erlaubteZahlungsmodelle: Zahlungsmodell[] = isPaketKey(paket)
+    ? getZahlungsmodelle(paket)
+    : ["jahresabo", "monatlich"];
 
   const [slotCount, setSlotCount] = useState<number>(() => {
     // Gespeicherte Platzanzahl respektieren – sie kann vom Admin auch unter
@@ -169,6 +178,14 @@ export function BestellungEditForm({
 
   const handlePaketChange = (newPaket: string) => {
     setPaket(newPaket);
+    // Interne Pakete (Single Trainer) sind Einmal-Plätze und nur jährlich
+    // abrechenbar, deshalb wird das Zahlungsmodell nachgezogen.
+    if (isPaketKey(newPaket)) {
+      const erlaubt = getZahlungsmodelle(newPaket);
+      if (!erlaubt.includes(zahlungsmodell as Zahlungsmodell)) {
+        setZahlungsmodell(erlaubt[0]);
+      }
+    }
     const newPaketUsers =
       PACKAGES[newPaket as keyof typeof PACKAGES]?.users ?? paketInfo.users;
     setSlotCount((prev) => {
@@ -259,9 +276,15 @@ export function BestellungEditForm({
               {(Object.keys(PACKAGES) as (keyof typeof PACKAGES)[]).map((k) => (
                 <option key={k} value={k}>
                   {PACKAGES[k].label} ({PACKAGES[k].users} User)
+                  {isInternalPaketKey(k) ? " (nur intern)" : ""}
                 </option>
               ))}
             </select>
+            {isInternalPaketKey(paket) && (
+              <p className="text-xs text-amber-700 mt-1">
+                Interner Auffüll-Platz, nicht öffentlich buchbar.
+              </p>
+            )}
           </div>
           <div>
             <label className={labelClass}>Zahlungsmodell</label>
@@ -272,7 +295,9 @@ export function BestellungEditForm({
               className={inputClass}
             >
               <option value="jahresabo">Jahresabo</option>
-              <option value="monatlich">Monatlich</option>
+              {erlaubteZahlungsmodelle.includes("monatlich") && (
+                <option value="monatlich">Monatlich</option>
+              )}
             </select>
           </div>
           <div>

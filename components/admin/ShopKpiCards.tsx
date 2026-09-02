@@ -1,4 +1,5 @@
 import { ShoppingCart, Euro, AlertCircle, Package } from "lucide-react";
+import { PACKAGES } from "@/lib/packages";
 
 interface ShopKpiData {
   total: number;
@@ -10,9 +11,13 @@ interface ShopKpiData {
 }
 
 export function ShopKpiCards({ data }: { data: ShopKpiData }) {
-  const paketSummary = Object.entries(data.byPaket)
-    .map(([name, count]) => `${name}: ${count}`)
-    .join(", ") || "Keine";
+  const paketSummary =
+    Object.entries(data.byPaket)
+      .map(([name, count]) => {
+        const label = PACKAGES[name as keyof typeof PACKAGES]?.label ?? name;
+        return `${label}: ${count}`;
+      })
+      .join(", ") || "Keine";
 
   const cards = [
     {
