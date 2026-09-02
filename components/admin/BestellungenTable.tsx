@@ -19,6 +19,7 @@ import {
   updateBestellungStatusAction,
 } from "@/app/admin/actions";
 import { ADN_CHANNEL_CONFIG } from "@/lib/constants/lead-config";
+import { PACKAGES } from "@/lib/packages";
 
 interface Bestellung {
   id: number;
@@ -105,6 +106,14 @@ function compareValues(
   }
   const cmp = (a as number) - (b as number);
   return dir === "asc" ? cmp : -cmp;
+}
+
+/** Anzeigename eines Pakets; unbekannte Werte werden kapitalisiert ausgegeben. */
+function paketLabel(paket: string): string {
+  return (
+    PACKAGES[paket as keyof typeof PACKAGES]?.label ??
+    paket.charAt(0).toUpperCase() + paket.slice(1)
+  );
 }
 
 export function BestellungenTable({
@@ -386,7 +395,7 @@ export function BestellungenTable({
           <option value="">Alle Pakete</option>
           {uniquePakete.map((p) => (
             <option key={p} value={p}>
-              {p.charAt(0).toUpperCase() + p.slice(1)}
+              {paketLabel(p)}
             </option>
           ))}
         </select>
@@ -535,7 +544,7 @@ export function BestellungenTable({
                     <td className="px-4 py-4">
                       <div className="flex flex-wrap items-center gap-1">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#E3ECF8] text-[#030386]">
-                          {b.paket.charAt(0).toUpperCase() + b.paket.slice(1)}
+                          {paketLabel(b.paket)}
                         </span>
                         {b.adnChannel !== "NONE" && (
                           <span

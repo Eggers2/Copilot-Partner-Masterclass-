@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import {
   PACKAGES,
   isPaketKey,
+  isInternalPaketKey,
+  isZahlungsmodellErlaubt,
   isZahlungsmodell,
   isAdnChannelKey,
   calculateMwst,
@@ -75,8 +77,21 @@ function validate(input: OrderInput): ValidatedOrder {
   if (!isPaketKey(input.paket)) {
     throw new OrderValidationError("paket", "Ungültiges Paket gewählt.");
   }
+  // Interne Pakete (z. B. Single Trainer) dürfen nur in der Administration
+  // vergeben werden. Dieser Pfad bedient das öffentliche Bestellformular und
+  // die öffentlichen API-Routen, deshalb wird hier hart abgelehnt, auch bei
+  // manipuliertem Request-Body.
+  if (isInternalPaketKey(input.paket)) {
+    throw new OrderValidationError("paket", "Ungültiges Paket gewählt.");
+  }
   if (!isZahlungsmodell(input.zahlungsmodell)) {
     throw new OrderValidationError("zahlungsmodell", "Ungültiges Zahlungsmodell.");
+  }
+  if (!isZahlungsmodellErlaubt(input.paket, input.zahlungsmodell)) {
+    throw new OrderValidationError(
+      "zahlungsmodell",
+      "Dieses Zahlungsmodell ist für das gewählte Paket nicht verfügbar."
+    );
   }
 
   const firma = typeof input.firma === "string" ? input.firma.trim() : "";

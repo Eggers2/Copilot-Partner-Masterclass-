@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { setKlasseStatusAction } from "@/app/admin/actions";
 import { KlasseForm } from "../klasse-form";
 import { KLASSE_STATUS_CONFIG } from "@/lib/constants/lead-config";
+import { PACKAGES } from "@/lib/packages";
 import { isGraphConfigured } from "@/lib/teams/graph";
 import { TeamsTestInvite } from "@/components/admin/TeamsTestInvite";
 import { KlasseTermine } from "@/components/admin/KlasseTermine";
@@ -299,7 +300,7 @@ export default async function KlasseDetailPage({
                     {b.firma} <span className="text-dark-slate-500">· {b.email}</span>
                   </Link>
                   <span className="text-xs text-dark-slate-500">
-                    {b.paket}
+                    {PACKAGES[b.paket as keyof typeof PACKAGES]?.label ?? b.paket}
                     {b.adnChannel !== "NONE" && ` · ${b.adnChannel}`}
                   </span>
                 </li>

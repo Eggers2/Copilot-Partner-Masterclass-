@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthenticated } from "@/lib/auth";
-import { isPaketKey, isZahlungsmodell, isAdnChannelKey } from "@/lib/packages";
+import {
+  isPaketKey,
+  isZahlungsmodell,
+  isZahlungsmodellErlaubt,
+  isAdnChannelKey,
+} from "@/lib/packages";
 import {
   createBestellungFromLead,
   BestellungCreateError,
@@ -35,6 +40,13 @@ export async function POST(
   }
   if (!isZahlungsmodell(zahlungsmodell)) {
     return NextResponse.json({ error: "Ungültiges Zahlungsmodell." }, { status: 400 });
+  }
+  // Interne Pakete sind Einmal-Plätze und ausschließlich jährlich abrechenbar.
+  if (!isZahlungsmodellErlaubt(paket, zahlungsmodell)) {
+    return NextResponse.json(
+      { error: "Dieses Zahlungsmodell ist für das gewählte Paket nicht verfügbar." },
+      { status: 400 }
+    );
   }
 
   const adnOverride = isAdnChannelKey(adnChannel) ? adnChannel : undefined;
