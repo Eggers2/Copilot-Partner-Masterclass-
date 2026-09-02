@@ -8,6 +8,8 @@ interface ShopKpiData {
   abgeschlossen: number;
   revenueNetto: number;
   byPaket: Record<string, number>;
+  /** Anzahl Bestellungen mit manuell vereinbartem Sonderpreis */
+  sonderpreisCount: number;
 }
 
 export function ShopKpiCards({ data }: { data: ShopKpiData }) {
@@ -40,7 +42,10 @@ export function ShopKpiCards({ data }: { data: ShopKpiData }) {
     {
       title: "Umsatz Netto",
       value: `${data.revenueNetto.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`,
-      subtitle: `${data.bearbeitet} in Bearbeitung`,
+      subtitle:
+        data.sonderpreisCount > 0
+          ? `${data.bearbeitet} in Bearbeitung · ${data.sonderpreisCount} mit Sonderpreis`
+          : `${data.bearbeitet} in Bearbeitung`,
       icon: Euro,
       iconBg: "bg-purple-50",
       iconColor: "text-purple-600",

@@ -343,6 +343,10 @@ model Bestellung {
   zahlungsmodell       String
   preisNetto           Decimal  @db.Decimal(10, 2) @map("preis_netto")
   listPreisNetto       Decimal? @db.Decimal(10, 2) @map("list_preis_netto")
+  // Manuell im Admin vereinbarter Sonderpreis (netto). Ist er gesetzt, ersetzt
+  // er Listenpreis und ADN-Anpassung: preisNetto, mwstBetrag und preisBrutto
+  // werden daraus berechnet. NULL = regulaerer Preis aus Paket/Zahlungsmodell.
+  sonderpreisNetto     Decimal? @db.Decimal(10, 2) @map("sonderpreis_netto")
   mwstSatz             Decimal  @db.Decimal(4, 2) @map("mwst_satz")
   mwstBetrag           Decimal  @db.Decimal(10, 2) @map("mwst_betrag")
   reverseCharge        Boolean  @default(false) @map("reverse_charge")

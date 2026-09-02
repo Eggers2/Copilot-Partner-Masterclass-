@@ -90,6 +90,7 @@ export default async function BestellungDetailPage({
           klasseId: bestellung.klasseId,
           intern: bestellung.intern,
           groessenklasse: bestellung.groessenklasse,
+          sonderpreisNetto: bestellung.sonderpreisNetto?.toString() ?? null,
           teilnehmer: bestellung.teilnehmer.map((t) => ({
             position: t.position,
             vorname: t.vorname,

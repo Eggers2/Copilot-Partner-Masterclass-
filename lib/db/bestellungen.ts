@@ -51,7 +51,7 @@ export async function updateBestellungStatus(id: number, status: string) {
 }
 
 export async function getShopKpis() {
-  const [total, byStatus, byPaket, revenueAgg] = await Promise.all([
+  const [total, byStatus, byPaket, revenueAgg, sonderpreisAgg] = await Promise.all([
     prisma.bestellung.count(),
     prisma.bestellung.groupBy({
       by: ["status"],
@@ -62,6 +62,13 @@ export async function getShopKpis() {
       _count: { id: true },
     }),
     prisma.bestellung.aggregate({
+      _sum: { preisNetto: true },
+    }),
+    // Bestellungen mit manuell vereinbartem Sonderpreis, damit in der Übersicht
+    // sichtbar ist, wie viel des Umsatzes auf abweichenden Preisen beruht.
+    prisma.bestellung.aggregate({
+      where: { sonderpreisNetto: { not: null } },
+      _count: { id: true },
       _sum: { preisNetto: true },
     }),
   ]);
@@ -83,6 +90,8 @@ export async function getShopKpis() {
     abgeschlossen: statusMap["abgeschlossen"] ?? 0,
     revenueNetto: Number(revenueAgg._sum.preisNetto ?? 0),
     byPaket: paketMap,
+    sonderpreisCount: sonderpreisAgg._count.id,
+    sonderpreisRevenueNetto: Number(sonderpreisAgg._sum.preisNetto ?? 0),
   };
 }
 

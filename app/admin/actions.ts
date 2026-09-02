@@ -839,6 +839,11 @@ interface UpdateBestellungInput {
   intern?: boolean;
   /** Größenklasse der Firma (Mitarbeiter), leer erlaubt */
   groessenklasse?: Groessenklasse | null;
+  /**
+   * Manuell vereinbarter Sonderpreis (netto). Ersetzt Listenpreis und
+   * ADN-Anpassung. null oder Leerstring bedeutet: regulärer Preis.
+   */
+  sonderpreisNetto?: number | string | null;
 }
 
 export async function updateBestellungAction(
@@ -856,7 +861,8 @@ export async function updateBestellungAction(
     isZahlungsmodell,
     isZahlungsmodellErlaubt,
     getPreisNetto,
-    getInvoicedPreisNetto,
+    getEffektivPreisNetto,
+    parseSonderpreisNetto,
     calculateMwst,
   } = await import("@/lib/packages");
 
@@ -875,8 +881,22 @@ export async function updateBestellungAction(
   // richtet sich allein nach Paket/Zahlungsmodell/Land/ADN, nicht nach der
   // Anzahl der Teilnehmerplätze.
   const effectiveSlotCount = Math.max(1, input.userAnzahl);
+
+  // Sonderpreis: ein gesetzter Wert ersetzt Listenpreis und ADN-Anpassung als
+  // fakturierten Netto-Betrag, MwSt und Brutto rechnen sich daraus neu.
+  const sonderpreis = parseSonderpreisNetto(input.sonderpreisNetto);
+  if (sonderpreis.error) {
+    return { error: sonderpreis.error };
+  }
+  const sonderpreisNetto = sonderpreis.value;
+
   const listPreisNetto = getPreisNetto(input.paket, input.zahlungsmodell);
-  const preisNetto = getInvoicedPreisNetto(input.paket, input.zahlungsmodell, adnChannel);
+  const preisNetto = getEffektivPreisNetto(
+    input.paket,
+    input.zahlungsmodell,
+    adnChannel,
+    sonderpreisNetto
+  );
   const { mwstSatz, mwstBetrag, preisBrutto, reverseCharge, reverseChargeHinweis } =
     calculateMwst(input.land, input.ustId ?? undefined, preisNetto);
 
@@ -890,7 +910,15 @@ export async function updateBestellungAction(
 
   const current = await prisma.bestellung.findUnique({
     where: { id },
-    select: { strasse: true, plz: true, ort: true },
+    select: {
+      strasse: true,
+      plz: true,
+      ort: true,
+      email: true,
+      bestellNr: true,
+      preisNetto: true,
+      zahlungsmodell: true,
+    },
   });
   const newStrasse = input.strasse.trim();
   const newPlz = input.plz.trim();
@@ -910,6 +938,7 @@ export async function updateBestellungAction(
         zahlungsmodell: input.zahlungsmodell,
         preisNetto,
         listPreisNetto,
+        sonderpreisNetto,
         mwstSatz,
         mwstBetrag,
         reverseCharge,
@@ -1039,11 +1068,79 @@ export async function updateBestellungAction(
     }
   }
 
+  // Preisänderung (z. B. Sonderpreis) auf den Umsatz des Leads übertragen,
+  // damit die Umsatz-KPI auf dem Admin-Dashboard zur Bestellung passt. Der
+  // Umsatz eines Leads summiert mehrere Bestellungen, deshalb wird nur die
+  // Differenz verrechnet. Best-effort: Fehler blockieren das Speichern nicht.
+  if (current && !current.preisNetto.equals(preisNetto)) {
+    try {
+      await syncLeadRevenueDelta({
+        // Bewusst die bisherige E-Mail der Bestellung: dort wurde der Umsatz
+        // gebucht, auch wenn die Adresse in diesem Speichervorgang wechselt.
+        email: current.email,
+        bestellNr: current.bestellNr,
+        alt: { preisNetto: Number(current.preisNetto), zahlungsmodell: current.zahlungsmodell },
+        neu: { preisNetto, zahlungsmodell: input.zahlungsmodell },
+      });
+    } catch (err) {
+      console.error("[Admin] Umsatz-Abgleich am Lead fehlgeschlagen:", err);
+    }
+  }
+
   revalidatePath("/admin/shop");
   revalidatePath(`/admin/shop/${id}`);
   revalidatePath("/suche");
+  revalidatePath("/admin");
+  revalidatePath("/admin/leads");
 
   return { success: true };
+}
+
+/**
+ * Verrechnet eine Preisänderung einer Bestellung mit dem Umsatz des zugehörigen
+ * Leads und legt dazu eine Aktivität an. Es wird bewusst nur die Differenz
+ * gebucht, weil ein Lead mehrere Bestellungen tragen kann.
+ */
+async function syncLeadRevenueDelta(data: {
+  email: string;
+  bestellNr: string;
+  alt: { preisNetto: number; zahlungsmodell: string };
+  neu: { preisNetto: number; zahlungsmodell: string };
+}): Promise<void> {
+  const jahresNetto = (p: { preisNetto: number; zahlungsmodell: string }) =>
+    p.zahlungsmodell === "monatlich" ? p.preisNetto * 12 : p.preisNetto;
+
+  const deltaCents =
+    Math.round(jahresNetto(data.neu) * 100) - Math.round(jahresNetto(data.alt) * 100);
+  if (deltaCents === 0) return;
+
+  const lead = await prisma.lead.findUnique({
+    where: { email: data.email.toLowerCase().trim() },
+    select: { id: true, revenue: true },
+  });
+  if (!lead) return;
+
+  const neuerUmsatz = Math.max(0, lead.revenue + deltaCents);
+  await prisma.lead.update({
+    where: { id: lead.id },
+    data: { revenue: neuerUmsatz },
+  });
+
+  const euro = (cents: number) =>
+    (cents / 100).toLocaleString("de-DE", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  await addActivity(lead.id, {
+    type: "NOTE",
+    content:
+      `Preis der Bestellung ${data.bestellNr} geändert: ` +
+      `${euro(Math.round(data.alt.preisNetto * 100))} € → ` +
+      `${euro(Math.round(data.neu.preisNetto * 100))} € netto. ` +
+      `Umsatz am Lead angepasst auf ${euro(neuerUmsatz)} €.`,
+    oldValue: String(lead.revenue),
+    newValue: String(neuerUmsatz),
+  });
 }
 
 export async function sendCustomerOtpCodeAction(

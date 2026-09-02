@@ -28,6 +28,8 @@ interface Bestellung {
   userAnzahl: number;
   zahlungsmodell: string;
   preisNetto: string;
+  /** Manuell vereinbarter Sonderpreis (netto), null = Listenpreis */
+  sonderpreisNetto: string | null;
   listPreisNetto: string | null;
   mwstBetrag: string;
   preisBrutto: string;
@@ -227,6 +229,7 @@ export function BestellungenTable({
       "Zahlungsmodell",
       "Netto",
       "Listenpreis",
+      "Sonderpreis",
       "MwSt",
       "Brutto",
       "ADN-Kanal",
@@ -249,6 +252,7 @@ export function BestellungenTable({
       b.zahlungsmodell,
       b.preisNetto,
       b.listPreisNetto ?? b.preisNetto,
+      b.sonderpreisNetto ?? "",
       b.mwstBetrag,
       b.preisBrutto,
       ADN_CHANNEL_CONFIG[b.adnChannel].label,
@@ -591,6 +595,22 @@ export function BestellungenTable({
                         })}{" "}
                         €
                       </p>
+                      {b.sonderpreisNetto !== null && (
+                        <p
+                          className="text-xs font-medium text-amber-700"
+                          title={
+                            b.listPreisNetto
+                              ? `Sonderpreis statt Listenpreis ${parseFloat(
+                                  b.listPreisNetto
+                                ).toLocaleString("de-DE", {
+                                  minimumFractionDigits: 2,
+                                })} €`
+                              : "Manuell vereinbarter Sonderpreis"
+                          }
+                        >
+                          Sonderpreis
+                        </p>
+                      )}
                       <p className="text-xs text-dark-slate-400">
                         Brutto:{" "}
                         {parseFloat(b.preisBrutto).toLocaleString("de-DE", {

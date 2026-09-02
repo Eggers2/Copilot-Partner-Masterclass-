@@ -90,6 +90,53 @@ export function getInvoicedPreisNetto(
   return list;
 }
 
+/**
+ * Fakturierter Netto-Betrag inklusive eines manuell vereinbarten Sonderpreises.
+ *
+ * Ein gesetzter Sonderpreis ersetzt den Listenpreis und die ADN-Anpassung
+ * vollstaendig, weil er der mit dem Kunden ausgehandelte Endbetrag ist.
+ * Ohne Sonderpreis gilt die regulaere Preislogik.
+ */
+export function getEffektivPreisNetto(
+  paket: PaketKey,
+  zahlungsmodell: Zahlungsmodell,
+  adnChannel: AdnChannelKey,
+  sonderpreisNetto?: number | null
+): number {
+  if (sonderpreisNetto != null) {
+    return Math.round(sonderpreisNetto * 100) / 100;
+  }
+  return getInvoicedPreisNetto(paket, zahlungsmodell, adnChannel);
+}
+
+/** Obergrenze fuer einen manuell eingetragenen Sonderpreis (netto). */
+export const SONDERPREIS_MAX_NETTO = 999999.99;
+
+/**
+ * Normalisiert eine Sonderpreis-Eingabe.
+ *  - null / undefined / leer  → { value: null }  (regulaerer Preis)
+ *  - gueltige Zahl >= 0       → { value: gerundet auf 2 Dezimalstellen }
+ *  - alles andere             → { error: Meldung }
+ */
+export function parseSonderpreisNetto(
+  input: unknown
+): { value: number | null; error?: undefined } | { value?: undefined; error: string } {
+  if (input === null || input === undefined || input === "") {
+    return { value: null };
+  }
+  const num = typeof input === "number" ? input : Number(String(input).replace(",", "."));
+  if (!Number.isFinite(num)) {
+    return { error: "Sonderpreis muss eine Zahl sein." };
+  }
+  if (num < 0) {
+    return { error: "Sonderpreis darf nicht negativ sein." };
+  }
+  if (num > SONDERPREIS_MAX_NETTO) {
+    return { error: "Sonderpreis ist zu hoch." };
+  }
+  return { value: Math.round(num * 100) / 100 };
+}
+
 export function calculateMwst(
   land: string,
   ustId: string | undefined,
