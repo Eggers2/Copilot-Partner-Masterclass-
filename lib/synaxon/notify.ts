@@ -65,6 +65,57 @@ function buildHtml(input: SynaxonLeadNotification, adminUrl: string): string {
 </body></html>`;
 }
 
+// Kontakt, der in der Bestätigung an den Absender genannt wird und zugleich
+// als Antwortadresse dient.
+const KONTAKT_EMAIL = "ae@next-skills.de";
+
+function vorname(name: string): string {
+  return name.trim().split(/\s+/)[0] || name.trim();
+}
+
+function buildConfirmationHtml(input: SynaxonLeadNotification): string {
+  return `<!doctype html>
+<html lang="de"><body style="margin:0;background:#E8E8F0;font-family:Figtree,system-ui,-apple-system,sans-serif">
+  <div style="max-width:560px;margin:0 auto;padding:24px 16px">
+    <div style="background:#FFFFFF;border-radius:12px;padding:28px 24px">
+      <p style="margin:0 0 6px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#00C896;font-weight:700">Copilot Partner Masterclass</p>
+      <h1 style="margin:0 0 16px;font-size:22px;color:#1A1A2E">Deine Anfrage ist eingegangen.</h1>
+      <p style="margin:0 0 12px;color:#1A1A2E;font-size:16px;line-height:1.6">Hallo ${esc(vorname(input.name))},</p>
+      <p style="margin:0 0 12px;color:#1A1A2E;font-size:16px;line-height:1.6">
+        danke für dein Interesse an der Copilot Partner Masterclass. Deine Anfrage ist bei uns angekommen, wir melden uns in den nächsten Tagen persönlich bei dir.
+      </p>
+      <p style="margin:0 0 20px;color:#1A1A2E;font-size:16px;line-height:1.6">
+        Wenn du vorher Fragen hast, melde dich bei Alex unter
+        <a href="mailto:${KONTAKT_EMAIL}" style="color:#00a87e;font-weight:600">${KONTAKT_EMAIL}</a>.
+      </p>
+      <p style="margin:0;color:#1A1A2E;font-size:16px;line-height:1.6">Viele Grüße<br>Alexander Eggers<br><span style="color:#6B6B8A">NextSkills GmbH</span></p>
+    </div>
+    <p style="margin:12px 0 0;font-size:12px;color:#6B6B8A">Du bekommst diese Mail, weil du über copilotberater.de/synaxon Unterlagen angefordert hast.</p>
+  </div>
+</body></html>`;
+}
+
+/**
+ * Bestätigung an den Absender: "Deine Anfrage ist eingegangen." Nur über
+ * Resend, ohne n8n-Fallback. Wirft nicht.
+ */
+export async function sendSynaxonConfirmation(input: SynaxonLeadNotification): Promise<void> {
+  if (!isResendConfigured()) {
+    console.warn("[synaxon] Keine Bestätigung an den Absender möglich: Resend ist nicht konfiguriert.");
+    return;
+  }
+  const result = await sendEmail({
+    to: input.email,
+    subject: "Deine Anfrage ist eingegangen",
+    html: buildConfirmationHtml(input),
+    replyTo: KONTAKT_EMAIL,
+    templateKey: "synaxon_bestaetigung",
+  });
+  if (!result.ok) {
+    console.error("[synaxon] Bestätigung an den Absender fehlgeschlagen:", result.error);
+  }
+}
+
 export async function notifySynaxonLead(input: SynaxonLeadNotification): Promise<void> {
   const to = process.env.SYNAXON_NOTIFY_EMAIL?.trim() || DEFAULT_NOTIFY_EMAIL;
   const baseUrl = process.env.APP_BASE_URL ?? "https://www.copilotberater.de";

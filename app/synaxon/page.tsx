@@ -7,7 +7,8 @@ import { SynaxonForm } from "./synaxon-form";
 // ─── Konfiguration ───────────────────────────────────────────────────────────
 // Microsoft-Bookings-Link für "Termin mit Alexander buchen". Solange die URL
 // leer ist, führt der Button zum Formular weiter unten auf der Seite.
-const BOOKINGS_URL = "";
+const BOOKINGS_URL =
+  "https://outlook.office.com/bookwithme/user/4b050f737ab34ce585384802dacd4143@nextvideo.de/meetingtype/SVRwCe7HMUGxuT6WGxi68g2?anonymous&ismsaljsauthenabled&ep=mLinkFromTile";
 
 // Buchung über die SYNAXON Akademie, zweiter Button im Abschlussbereich.
 const AKADEMIE_URL =
