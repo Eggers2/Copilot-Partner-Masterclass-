@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { buildSynaxonQuelle, parseSynaxonSrc } from "@/lib/synaxon/source";
-import { notifySynaxonLead } from "@/lib/synaxon/notify";
+import { notifySynaxonLead, sendSynaxonConfirmation } from "@/lib/synaxon/notify";
 
 // Unterlagen-Anfrage der SYNAXON-Landingpage (/synaxon).
 //
@@ -150,8 +150,9 @@ export async function POST(request: NextRequest) {
       data: { leadId, type: "NOTE", content: aktivitaet },
     });
 
-    // Benachrichtigung fire-and-forget, damit der Besucher nicht auf den Mailversand wartet.
-    notifySynaxonLead({
+    // Mails fire-and-forget, damit der Besucher nicht auf den Versand wartet:
+    // interne Benachrichtigung und Eingangsbestätigung an den Absender.
+    const mailInput = {
       leadId,
       name: input.name,
       firma: input.firma,
@@ -160,7 +161,13 @@ export async function POST(request: NextRequest) {
       nachricht: input.nachricht,
       quelle,
       bestehenderLead,
-    }).catch((err) => console.error("[synaxon] Benachrichtigung fehlgeschlagen:", err));
+    };
+    notifySynaxonLead(mailInput).catch((err) =>
+      console.error("[synaxon] Benachrichtigung fehlgeschlagen:", err)
+    );
+    sendSynaxonConfirmation(mailInput).catch((err) =>
+      console.error("[synaxon] Bestätigung fehlgeschlagen:", err)
+    );
 
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (error) {
