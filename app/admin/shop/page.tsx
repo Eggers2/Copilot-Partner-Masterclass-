@@ -52,6 +52,7 @@ export default async function ShopDashboard() {
           ...b,
           preisNetto: b.preisNetto.toString(),
           listPreisNetto: b.listPreisNetto?.toString() ?? null,
+          sonderpreisNetto: b.sonderpreisNetto?.toString() ?? null,
           mwstBetrag: b.mwstBetrag.toString(),
           preisBrutto: b.preisBrutto.toString(),
           erstelltAm: b.erstelltAm.toISOString(),

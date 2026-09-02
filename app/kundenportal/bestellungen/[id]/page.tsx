@@ -101,7 +101,14 @@ export default async function KundeBestellungDetailPage({
             <dt className="text-xs text-gray">Preis (Netto)</dt>
             <dd className="font-medium text-slate">
               {formatEuro(
-                Number(bestellung.listPreisNetto ?? bestellung.preisNetto)
+                Number(
+                  // Bei einem vereinbarten Sonderpreis gilt dieser Betrag,
+                  // sonst der Listenpreis (bei ADN 85/15 fakturiert ADN den
+                  // Restbetrag, der Kunde sieht deshalb den Listenpreis).
+                  bestellung.sonderpreisNetto ??
+                    bestellung.listPreisNetto ??
+                    bestellung.preisNetto
+                )
               )}
             </dd>
           </div>

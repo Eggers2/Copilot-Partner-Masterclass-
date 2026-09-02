@@ -7,9 +7,14 @@ import type { AdnChannel, Groessenklasse } from "@prisma/client";
 import { updateBestellungAction } from "@/app/admin/actions";
 import {
   PACKAGES,
+  calculateMwst,
+  getEffektivPreisNetto,
+  getInvoicedPreisNetto,
+  getPreisNetto,
   getZahlungsmodelle,
   isInternalPaketKey,
   isPaketKey,
+  parseSonderpreisNetto,
   type Zahlungsmodell,
 } from "@/lib/packages";
 import { ADN_CHANNEL_CONFIG } from "@/lib/constants/lead-config";
@@ -51,6 +56,8 @@ interface BestellungData {
   klasseId: string;
   intern: boolean;
   groessenklasse: Groessenklasse | null;
+  /** Manuell vereinbarter Sonderpreis (netto) als String, null = Listenpreis */
+  sonderpreisNetto: string | null;
 }
 
 const GROESSENKLASSE_OPTIONS: { value: Groessenklasse; label: string }[] = [
@@ -123,11 +130,43 @@ export function BestellungEditForm({
   const [groessenklasse, setGroessenklasse] = useState<Groessenklasse | "">(
     bestellung.groessenklasse ?? ""
   );
+  const [sonderpreis, setSonderpreis] = useState<string>(
+    bestellung.sonderpreisNetto ?? ""
+  );
 
   const paketInfo = PACKAGES[paket as keyof typeof PACKAGES] ?? PACKAGES.starter;
   const erlaubteZahlungsmodelle: Zahlungsmodell[] = isPaketKey(paket)
     ? getZahlungsmodelle(paket)
     : ["jahresabo", "monatlich"];
+
+  // Preisvorschau: zeigt vor dem Speichern, was Paket, ADN-Kanal, Land und ein
+  // eventueller Sonderpreis ergeben. Die Server-Action rechnet identisch.
+  const sonderpreisParsed = parseSonderpreisNetto(sonderpreis);
+  const preisVorschau = (() => {
+    if (!isPaketKey(paket) || !erlaubteZahlungsmodelle.includes(zahlungsmodell as Zahlungsmodell)) {
+      return null;
+    }
+    const zm = zahlungsmodell as Zahlungsmodell;
+    const listPreisNetto = getPreisNetto(paket, zm);
+    const regulaerNetto = getInvoicedPreisNetto(paket, zm, adnChannel);
+    if (sonderpreisParsed.error) {
+      return { listPreisNetto, regulaerNetto, error: sonderpreisParsed.error };
+    }
+    const netto = getEffektivPreisNetto(paket, zm, adnChannel, sonderpreisParsed.value);
+    const mwst = calculateMwst(land, ustId || undefined, netto);
+    return {
+      listPreisNetto,
+      regulaerNetto,
+      netto,
+      mwstSatz: mwst.mwstSatz,
+      mwstBetrag: mwst.mwstBetrag,
+      preisBrutto: mwst.preisBrutto,
+      aktiv: sonderpreisParsed.value != null,
+    };
+  })();
+
+  const formatEuro = (value: number) =>
+    value.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const [slotCount, setSlotCount] = useState<number>(() => {
     // Gespeicherte Platzanzahl respektieren – sie kann vom Admin auch unter
@@ -245,6 +284,7 @@ export function BestellungEditForm({
         klasseId,
         intern,
         groessenklasse: groessenklasse || null,
+        sonderpreisNetto: sonderpreis.trim() === "" ? null : sonderpreis.trim(),
       });
 
       if (result.error) {
@@ -380,10 +420,94 @@ export function BestellungEditForm({
             </span>
           </span>
         </label>
-        <p className="text-xs text-dark-slate-400 mt-3">
-          Preis und MwSt werden beim Speichern automatisch anhand von Paket,
-          Zahlungsmodell, Land, USt-IdNr. und ADN-Kanal neu berechnet.
-        </p>
+        {/* Sonderpreis: manuell vereinbarter Netto-Betrag für diese Bestellung */}
+        <div className="mt-6 rounded-xl border border-dark-slate-100 bg-dark-slate-50 p-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className={labelClass}>Sonderpreis netto (optional)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                value={sonderpreis}
+                onChange={(e) => setSonderpreis(e.target.value)}
+                disabled={isPending}
+                placeholder={
+                  preisVorschau
+                    ? `Listenpreis ${formatEuro(preisVorschau.regulaerNetto)}`
+                    : "Listenpreis"
+                }
+                className={inputClass}
+              />
+              {sonderpreis.trim() !== "" && (
+                <button
+                  type="button"
+                  onClick={() => setSonderpreis("")}
+                  disabled={isPending}
+                  className="mt-2 text-xs font-medium text-[#030386] hover:underline"
+                >
+                  Auf Listenpreis zurücksetzen
+                </button>
+              )}
+            </div>
+            <div className="md:col-span-2">
+              <p className="text-xs font-semibold text-dark-slate-500 uppercase tracking-wide mb-2">
+                Berechnung
+              </p>
+              {preisVorschau?.error ? (
+                <p className="text-sm text-red-600">{preisVorschau.error}</p>
+              ) : preisVorschau ? (
+                <dl className="text-sm space-y-1">
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-dark-slate-500">Listenpreis netto</dt>
+                    <dd
+                      className={
+                        preisVorschau.aktiv
+                          ? "text-dark-slate-400 line-through"
+                          : "text-dark-slate-700"
+                      }
+                    >
+                      {formatEuro(preisVorschau.regulaerNetto)} €
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-dark-slate-500">
+                      Netto {preisVorschau.aktiv ? "(Sonderpreis)" : "(fakturiert)"}
+                    </dt>
+                    <dd className="font-semibold text-dark-slate-900">
+                      {formatEuro(preisVorschau.netto ?? 0)} €
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-dark-slate-500">
+                      MwSt {preisVorschau.mwstSatz} %
+                    </dt>
+                    <dd className="text-dark-slate-700">
+                      {formatEuro(preisVorschau.mwstBetrag ?? 0)} €
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-4 pt-1 border-t border-dark-slate-100">
+                    <dt className="text-dark-slate-500">Brutto</dt>
+                    <dd className="font-semibold text-dark-slate-900">
+                      {formatEuro(preisVorschau.preisBrutto ?? 0)} €
+                    </dd>
+                  </div>
+                </dl>
+              ) : (
+                <p className="text-sm text-dark-slate-400">
+                  Paket und Zahlungsmodell wählen, um die Berechnung zu sehen.
+                </p>
+              )}
+            </div>
+          </div>
+          <p className="text-xs text-dark-slate-500 mt-3">
+            Leer lassen bedeutet regulärer Preis aus Paket, Zahlungsmodell, Land,
+            USt-IdNr. und ADN-Kanal. Ein Sonderpreis ersetzt diesen Betrag
+            vollständig, MwSt und Brutto rechnen sich daraus neu. Der Betrag geht
+            in die Umsatzsumme der Shop-Übersicht ein.
+          </p>
+        </div>
       </section>
 
       {/* Unternehmen */}
