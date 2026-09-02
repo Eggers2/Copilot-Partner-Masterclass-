@@ -53,7 +53,7 @@ export const dynamic = "force-dynamic";
 const MOVES = [
   {
     zitat: "Wir haben die Lizenzen, aber keiner nutzt sie.",
-    reflex: "Nachlizenzierung.",
+    reflex: "Lizenzen kündigen.",
     move: "Ein bezahlter Aktivierungstermin.",
   },
   {
