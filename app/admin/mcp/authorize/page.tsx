@@ -79,13 +79,21 @@ export default async function McpAuthorizePage({
             <dt className="text-dark-slate-500 w-32 shrink-0">Client-ID</dt>
             <dd className="font-mono text-dark-slate-800 break-all">{client.clientId}</dd>
           </div>
+          <div className="flex gap-2">
+            <dt className="text-dark-slate-500 w-32 shrink-0">Client-Typ</dt>
+            <dd className="text-dark-slate-800">
+              {client.tokenEndpointAuthMethod === "none"
+                ? "Public Client mit PKCE (z.B. Claude)"
+                : "Vertraulicher Client mit Secret (z.B. Copilot Studio)"}
+            </dd>
+          </div>
         </dl>
 
         <form action={decideMcpAuthorizationAction} className="space-y-5">
           <input type="hidden" name="response_type" value="code" />
           <input type="hidden" name="client_id" value={client.clientId} />
           <input type="hidden" name="redirect_uri" value={request.redirectUri} />
-          <input type="hidden" name="code_challenge" value={request.codeChallenge} />
+          <input type="hidden" name="code_challenge" value={request.codeChallenge ?? ""} />
           <input type="hidden" name="code_challenge_method" value="S256" />
           <input type="hidden" name="scope" value={request.scope.join(" ")} />
           {request.state && <input type="hidden" name="state" value={request.state} />}

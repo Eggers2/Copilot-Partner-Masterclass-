@@ -853,6 +853,11 @@ model McpClient {
   clientId     String        @unique @map("client_id")
   name         String?
   redirectUris String[]      @map("redirect_uris")
+  // "none" = Public Client (Claude, PKCE Pflicht). "client_secret_post" /
+  // "client_secret_basic" = vertraulicher Client (Copilot Studio, M365 Copilot),
+  // der sich am Token-Endpunkt zusätzlich mit dem Secret ausweist.
+  tokenEndpointAuthMethod String  @default("none") @map("token_endpoint_auth_method")
+  clientSecretHash        String? @map("client_secret_hash")
   createdAt    DateTime      @default(now()) @map("created_at")
   authCodes    McpAuthCode[]
   tokens       McpToken[]
@@ -866,7 +871,8 @@ model McpAuthCode {
   clientId      String    @db.Uuid @map("client_id")
   client        McpClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
   redirectUri   String    @map("redirect_uri")
-  codeChallenge String    @map("code_challenge")
+  // NULL nur bei vertraulichen Clients ohne PKCE (das Secret ersetzt den Schutz).
+  codeChallenge String?   @map("code_challenge")
   scope         String
   expiresAt     DateTime  @map("expires_at")
   usedAt        DateTime? @map("used_at")
