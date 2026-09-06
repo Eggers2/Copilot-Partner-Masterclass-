@@ -13,12 +13,23 @@ wie das Admin-Portal. Es gibt keinen direkten Datenbankzugriff und kein SQL.
 
 Verwaltung, Protokoll und Trennen unter `/admin/mcp`.
 
+### Copilot Studio
+
+Tool „Model Context Protocol" → Server-URL `https://<host>/api/mcp`, Authentifizierung
+**OAuth 2.0 → Dynamische Ermittlung**. Copilot Studio registriert sich selbst; weil
+Microsoft dabei zwingend ein Client-Secret verlangt, erhält jeder Client, dessen
+Redirect nicht auf claude.ai oder Loopback zeigt, automatisch eines
+(`token_endpoint_auth_method = client_secret_post`). Die Rück-Adresse liegt auf
+`*.consent.azure-apim.net` und ist in der Allowlist. Die Freigabe läuft wie bei
+Claude über `/admin/mcp/authorize`; die Verbindung sollte in Copilot Studio als
+Maker-Verbindung genutzt werden, damit Endnutzer des Agents kein Admin-Passwort brauchen.
+
 ## Sicherheit
 
 | Maßnahme | Umsetzung |
 | --- | --- |
-| Kein statisches Secret | OAuth 2.1 mit Dynamic Client Registration (RFC 7591) und PKCE S256 (Pflicht). |
-| Redirect-Allowlist | Nur `https://claude.ai/...` und Loopback (`http://localhost`, Port egal, für Claude Code). Erweiterbar per `MCP_ALLOWED_REDIRECT_HOSTS`. |
+| Kein statisches Secret | OAuth 2.1 mit Dynamic Client Registration (RFC 7591). Public Clients (Claude) mit PKCE-Pflicht, vertrauliche Clients (Copilot Studio) mit generiertem Secret, PKCE optional. |
+| Redirect-Allowlist | `https://claude.ai/...`, `https://*.consent.azure-apim.net/...` (Power Platform) und Loopback (`http://localhost`, Port egal, für Claude Code). Erweiterbar per `MCP_ALLOWED_REDIRECT_HOSTS`. |
 | Freigabe nur durch Admin | `/admin/mcp/authorize` verlangt den Admin-Login; Login leitet per `next` zurück. |
 | Kurze Laufzeiten | Auth-Code 5 min (einmalig), Access-Token 1 h, Refresh-Token 30 Tage mit Rotation. |
 | Diebstahl-Erkennung | Wiederverwendeter Auth-Code widerruft alle Tokens des Clients; altes Refresh-Token ist nach Rotation wertlos. |

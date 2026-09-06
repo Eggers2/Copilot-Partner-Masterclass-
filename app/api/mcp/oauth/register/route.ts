@@ -25,14 +25,18 @@ export async function POST(req: Request) {
   }
 
   try {
-    const client = await registerClient((body ?? {}) as Parameters<typeof registerClient>[0]);
+    const { client, clientSecret } = await registerClient(
+      (body ?? {}) as Parameters<typeof registerClient>[0]
+    );
     return NextResponse.json(
       {
         client_id: client.clientId,
         client_id_issued_at: Math.floor(client.createdAt.getTime() / 1000),
+        // Secret nur für vertrauliche Clients (Copilot Studio); 0 = läuft nicht ab.
+        ...(clientSecret ? { client_secret: clientSecret, client_secret_expires_at: 0 } : {}),
         client_name: client.name ?? undefined,
         redirect_uris: client.redirectUris,
-        token_endpoint_auth_method: "none",
+        token_endpoint_auth_method: client.tokenEndpointAuthMethod,
         grant_types: ["authorization_code", "refresh_token"],
         response_types: ["code"],
       },

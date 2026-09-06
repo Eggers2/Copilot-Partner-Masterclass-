@@ -56,15 +56,31 @@ export async function getMcpUrls(): Promise<McpUrls> {
 }
 
 /**
- * Erlaubte Redirect-Hosts für die Dynamic Client Registration. Standardmäßig nur
- * die gehosteten Claude-Oberflächen (claude.ai) sowie Loopback-Adressen für
- * Claude Code (RFC 8252, Port wird ignoriert). Erweiterbar per
- * MCP_ALLOWED_REDIRECT_HOSTS="host1,host2".
+ * Erlaubte Redirect-Hosts für die Dynamic Client Registration:
+ * - claude.ai (Claude Chat, Cowork, Desktop, Mobile)
+ * - *.consent.azure-apim.net (Power Platform Connectors, also Copilot Studio)
+ * - Loopback-Adressen für Claude Code (RFC 8252, Port wird ignoriert)
+ * Erweiterbar per MCP_ALLOWED_REDIRECT_HOSTS="host1,.suffix2" (Einträge mit
+ * führendem Punkt gelten als Domain-Suffix).
  */
-export function allowedRedirectHosts(): string[] {
+const DEFAULT_REDIRECT_HOSTS = ["claude.ai"];
+const DEFAULT_REDIRECT_SUFFIXES = [".consent.azure-apim.net"];
+
+export function isAllowedRedirectHost(hostname: string): boolean {
+  const host = hostname.toLowerCase();
   const extra = (process.env.MCP_ALLOWED_REDIRECT_HOSTS ?? "")
     .split(",")
     .map((h) => h.trim().toLowerCase())
     .filter(Boolean);
-  return Array.from(new Set(["claude.ai", ...extra]));
+  const hosts = [...DEFAULT_REDIRECT_HOSTS, ...extra.filter((h) => !h.startsWith("."))];
+  const suffixes = [...DEFAULT_REDIRECT_SUFFIXES, ...extra.filter((h) => h.startsWith("."))];
+  return hosts.includes(host) || suffixes.some((s) => host.endsWith(s));
 }
+
+/**
+ * Hosts, für die ein Client ohne Angabe von token_endpoint_auth_method als
+ * Public Client (ohne Secret) registriert wird. Claude registriert sich laut
+ * Anthropic-Doku als Public Client; Microsoft (Copilot Studio, M365 Copilot)
+ * verlangt dagegen zwingend ein Client-Secret bei der Registrierung.
+ */
+export const PUBLIC_CLIENT_HOSTS = ["claude.ai"];

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ALL_SCOPES, getMcpUrls } from "@/lib/mcp/config";
+import { CLIENT_AUTH_METHODS } from "@/lib/mcp/oauth";
 
 export const dynamic = "force-dynamic";
 
@@ -17,8 +18,8 @@ export async function GET() {
       response_types_supported: ["code"],
       response_modes_supported: ["query"],
       grant_types_supported: ["authorization_code", "refresh_token"],
-      token_endpoint_auth_methods_supported: ["none"],
-      revocation_endpoint_auth_methods_supported: ["none"],
+      token_endpoint_auth_methods_supported: CLIENT_AUTH_METHODS,
+      revocation_endpoint_auth_methods_supported: CLIENT_AUTH_METHODS,
       code_challenge_methods_supported: ["S256"],
       service_documentation: `${urls.base}/admin/mcp`,
       ui_locales_supported: ["de"],

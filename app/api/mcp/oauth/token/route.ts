@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { exchangeAuthCode, OAuthError, refreshTokens } from "@/lib/mcp/oauth";
+import {
+  exchangeAuthCode,
+  OAuthError,
+  readClientCredentials,
+  refreshTokens,
+} from "@/lib/mcp/oauth";
 
 export const dynamic = "force-dynamic";
 
@@ -20,20 +25,27 @@ export async function POST(req: Request) {
 
   try {
     const grantType = params.get("grant_type");
+    // client_secret_basic (Header) oder client_secret_post (Formular); Public
+    // Clients senden nur die client_id.
+    const creds = readClientCredentials(params, req.headers.get("authorization"));
     let tokens;
     if (grantType === "authorization_code") {
-      tokens = await exchangeAuthCode({
-        code: params.get("code"),
-        client_id: params.get("client_id"),
-        redirect_uri: params.get("redirect_uri"),
-        code_verifier: params.get("code_verifier"),
-      });
+      tokens = await exchangeAuthCode(
+        {
+          code: params.get("code"),
+          redirect_uri: params.get("redirect_uri"),
+          code_verifier: params.get("code_verifier"),
+        },
+        creds
+      );
     } else if (grantType === "refresh_token") {
-      tokens = await refreshTokens({
-        refresh_token: params.get("refresh_token"),
-        client_id: params.get("client_id"),
-        scope: params.get("scope"),
-      });
+      tokens = await refreshTokens(
+        {
+          refresh_token: params.get("refresh_token"),
+          scope: params.get("scope"),
+        },
+        creds
+      );
     } else {
       throw new OAuthError("unsupported_grant_type", `grant_type nicht unterstützt: ${grantType}`);
     }
@@ -70,6 +82,13 @@ async function readParams(req: Request): Promise<URLSearchParams | null> {
 function oauthError(e: OAuthError) {
   return NextResponse.json(
     { error: e.code, error_description: e.message },
-    { status: e.status, headers: { "Cache-Control": "no-store" } }
+    {
+      status: e.status,
+      headers: {
+        "Cache-Control": "no-store",
+        // RFC 6749 5.2: bei fehlgeschlagener Client-Authentifizierung per Basic
+        ...(e.code === "invalid_client" ? { "WWW-Authenticate": 'Basic realm="mcp"' } : {}),
+      },
+    }
   );
 }
