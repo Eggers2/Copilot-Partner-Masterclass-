@@ -841,3 +841,69 @@ model AppSetting {
 
   @@map("app_settings")
 }
+
+// ─── MCP-Server für Claude (Chat, Cowork, Code) ─────────────────────────────
+// Claude verbindet sich per OAuth 2.1 (Dynamic Client Registration + PKCE) mit
+// dem Endpunkt /api/mcp. Es werden nur Hashes von Codes und Tokens gespeichert,
+// die Klartext-Werte kennt ausschließlich der Client. Jeder Tool-Aufruf landet
+// im Audit-Log (mcp_audit_logs), Verbindungen lassen sich unter /admin/mcp
+// jederzeit trennen.
+model McpClient {
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clientId     String        @unique @map("client_id")
+  name         String?
+  redirectUris String[]      @map("redirect_uris")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  authCodes    McpAuthCode[]
+  tokens       McpToken[]
+
+  @@map("mcp_clients")
+}
+
+model McpAuthCode {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  codeHash      String    @unique @map("code_hash")
+  clientId      String    @db.Uuid @map("client_id")
+  client        McpClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  redirectUri   String    @map("redirect_uri")
+  codeChallenge String    @map("code_challenge")
+  scope         String
+  expiresAt     DateTime  @map("expires_at")
+  usedAt        DateTime? @map("used_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@map("mcp_auth_codes")
+}
+
+model McpToken {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clientId         String        @db.Uuid @map("client_id")
+  client           McpClient     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  accessTokenHash  String        @unique @map("access_token_hash")
+  refreshTokenHash String        @unique @map("refresh_token_hash")
+  scope            String
+  accessExpiresAt  DateTime      @map("access_expires_at")
+  refreshExpiresAt DateTime      @map("refresh_expires_at")
+  revokedAt        DateTime?     @map("revoked_at")
+  lastUsedAt       DateTime?     @map("last_used_at")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  auditLogs        McpAuditLog[]
+
+  @@index([clientId])
+  @@map("mcp_tokens")
+}
+
+model McpAuditLog {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tokenId    String?   @db.Uuid @map("token_id")
+  token      McpToken? @relation(fields: [tokenId], references: [id], onDelete: SetNull)
+  tool       String
+  args       Json?
+  ok         Boolean
+  error      String?
+  durationMs Int       @map("duration_ms")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("mcp_audit_logs")
+}
