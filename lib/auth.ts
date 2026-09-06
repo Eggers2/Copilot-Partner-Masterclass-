@@ -44,3 +44,16 @@ export async function clearAuthCookie(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(COOKIE_NAME);
 }
+
+/**
+ * Erlaubt nach dem Login nur Weiterleitungen innerhalb von /admin (relativer
+ * Pfad, kein Protokoll, kein "//"), damit der next-Parameter nicht für Open
+ * Redirects missbraucht werden kann.
+ */
+export function safeAdminRedirectPath(value: string | null | undefined): string | undefined {
+  if (!value) return undefined;
+  if (!value.startsWith("/admin") || value.startsWith("//") || value.includes("\\")) {
+    return undefined;
+  }
+  return value.slice(0, 2000);
+}

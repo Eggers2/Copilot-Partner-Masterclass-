@@ -10,6 +10,7 @@ import {
   GraduationCap,
   CalendarDays,
   ClipboardList,
+  Plug,
 } from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
 import { logoutAction } from "./actions";
@@ -56,6 +57,7 @@ export default async function AdminLayout({
                 <NavLink href="/admin/shop" icon={ShoppingCart} label="Online Shop" badge={neuCount} />
                 <NavLink href="/admin/newsletter" icon={Mail} label="Newsletter" />
                 <NavLink href="/admin/emails" icon={Send} label="E-Mails" />
+                <NavLink href="/admin/mcp" icon={Plug} label="Claude" />
               </nav>
             </div>
             <form action={logoutAction}>

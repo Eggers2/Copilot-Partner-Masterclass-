@@ -2,7 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { setAuthCookie, clearAuthCookie, requireAuth } from "@/lib/auth";
+import {
+  setAuthCookie,
+  clearAuthCookie,
+  requireAuth,
+  safeAdminRedirectPath,
+} from "@/lib/auth";
 import { requestOtpCode, resolveAppBaseUrl } from "@/lib/auth/customer";
 import { parseBerlinDate } from "@/lib/datetime";
 import {
@@ -91,7 +96,10 @@ export async function loginAction(
     return { error: "Falsches Passwort. Bitte versuche es erneut." };
   }
 
-  redirect("/admin");
+  // Nach dem Login zurück zur ursprünglich aufgerufenen Admin-Seite
+  // (z.B. die OAuth-Freigabe für Claude), sonst zum Dashboard.
+  const next = safeAdminRedirectPath(formData.get("next") as string | null);
+  redirect(next ?? "/admin");
 }
 
 export async function logoutAction() {
