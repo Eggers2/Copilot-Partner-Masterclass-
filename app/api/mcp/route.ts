@@ -16,12 +16,10 @@ const MAX_BODY_BYTES = 256 * 1024;
 export async function POST(req: Request) {
   const urls = await getMcpUrls();
 
-  // Schutz vor DNS-Rebinding: Browser-Aufrufe fremder Origins ablehnen.
-  const origin = req.headers.get("origin");
-  if (origin && origin !== urls.base) {
-    return NextResponse.json({ error: "forbidden_origin" }, { status: 403 });
-  }
-
+  // Bewusst keine Origin-Prüfung: Die MCP-Spezifikation empfiehlt sie gegen
+  // DNS-Rebinding bei lokalen Servern. Hier schützt das Bearer-Token, und ohne
+  // CORS-Header kann ein Browser die Antwort ohnehin nicht lesen. Power Platform
+  // (Copilot Studio) sendet einen Origin-Header mit und wurde sonst mit 403 abgewiesen.
   const auth = await authenticateAccessToken(extractBearer(req));
   if (!auth) {
     return unauthorized(urls.protectedResourceMetadata, urls.mcp);
