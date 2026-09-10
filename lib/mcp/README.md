@@ -39,7 +39,7 @@ Maker-Verbindung genutzt werden, damit Endnutzer des Agents kein Admin-Passwort 
 | Kein Massenexport | Listen liefern maximal 50 Datensätze; Tracking-Felder (UTM, Referrer) nur auf Anfrage. |
 | Audit | Jeder Tool-Aufruf mit Argumenten, Dauer und Ergebnis in `mcp_audit_logs`; Schreibaktionen erzeugen zusätzlich `LeadActivity`-Einträge wie im Admin. |
 | Rate-Limit | 120 Aufrufe/min pro Token, Registrierungs- und Token-Endpunkt pro IP limitiert. |
-| Origin-Prüfung | Fremde `Origin`-Header werden mit 403 abgewiesen (DNS-Rebinding). |
+| Kein CORS | Der Endpunkt setzt keine CORS-Header, Browser können Antworten nicht auslesen. Eine Origin-Sperre gibt es bewusst nicht, weil Power Platform einen Origin-Header mitsendet und das Bearer-Token den Zugriff schützt. |
 
 ## Aufbau
 
