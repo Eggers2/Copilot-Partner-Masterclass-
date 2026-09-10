@@ -130,7 +130,7 @@ export async function registerClient(input: RegistrationInput) {
     if (!isAllowedRedirectUri(uri)) {
       throw new OAuthError(
         "invalid_redirect_uri",
-        `Redirect-URI nicht erlaubt: ${uri}. Zugelassen sind claude.ai und Loopback-Adressen.`
+        `Redirect-URI nicht erlaubt: ${uri}. Zugelassen sind claude.ai, *.consent.azure-apim.net (Power Platform) und Loopback-Adressen.`
       );
     }
   }
