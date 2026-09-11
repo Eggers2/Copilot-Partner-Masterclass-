@@ -52,6 +52,28 @@ Datenmigration und Anzeigeumstellung müssen **zusammen** live gehen. Deshalb li
 in `prisma/migrations/`: Railway führt beim Start `prisma migrate deploy` aus, bevor der neue
 Server hochkommt (siehe `railway.toml`). Ein getrenntes Ausrollen ist gar nicht erst möglich.
 
+### Der einfache Weg: Admin → Zeitzonen
+
+Nach dem Deployment steht das vollständige Ergebnis unter `/admin/zeitzonen`. Kein Terminal, kein
+Snapshot vorweg.
+
+Das geht, weil die Sicherungstabelle je Lead den alten **und** den neuen Wert hält. Beide Seiten
+des Vergleichs lassen sich daraus nachträglich ausrechnen:
+
+| | Quelle |
+|---|---|
+| Anzeige vorher | `naiveReading(alt_wert)`, so gab der alte Code den Wert aus |
+| Anzeige nachher | `formatBerlinDateTime(neu_wert)`, so gibt der neue Code ihn aus |
+
+Die Seite zeigt oben ein Gesamturteil, darunter jede Zeile mit gespeichertem und angezeigtem Wert
+vorher und nachher, und listet Termine auf, die sich zwangsläufig verschieben würden. Wurde ein
+Termin nach der Migration von Hand geändert, weist die Seite das getrennt aus statt es als Fehler
+zu melden. Vor dem Deployment sagt sie, dass die Migration noch nicht gelaufen ist.
+
+### Der Weg über das Terminal
+
+Nur nötig, wenn du den Trockenlauf vorab sehen oder eine Datei zum Archivieren haben willst.
+
 ```bash
 # 1. Vorher-Snapshot ziehen, gegen die Produktionsdatenbank
 npm run tz:snapshot -- --stand=vorher --out=vorher.json
