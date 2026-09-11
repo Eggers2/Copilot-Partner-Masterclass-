@@ -370,6 +370,10 @@ model Bestellung {
   longitude            Float?
   status               String   @default("neu")
   adnChannel           AdnChannel @default(NONE) @map("adn_channel")
+  // IAMCP-Aktion: 5% Rabatt auf den an ADN fakturierten Betrag. Der Rabatt
+  // greift nach der ADN-Kanal-Anpassung; ein gesetzter Sonderpreis ersetzt ihn
+  // wie jede andere Preislogik vollstaendig.
+  iamcpAktion          Boolean  @default(false) @map("iamcp_aktion")
   // Interne Bestellung (ke solutions, Secom IT, NextVideo): wird vom
   // Umfrage-Versand UND jeder Auswertung ausgeschlossen.
   intern               Boolean  @default(false)

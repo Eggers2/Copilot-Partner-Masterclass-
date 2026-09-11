@@ -842,14 +842,17 @@ interface UpdateBestellungInput {
   status: string;
   teilnehmer: TeilnehmerInput[];
   adnChannel?: AdnChannel;
+  /** IAMCP-Aktion: 5% Rabatt auf den an ADN fakturierten Betrag */
+  iamcpAktion?: boolean;
   klasseId?: string;
   /** Interne Bestellung: vom Umfrage-Versand und allen Auswertungen ausgeschlossen */
   intern?: boolean;
   /** Größenklasse der Firma (Mitarbeiter), leer erlaubt */
   groessenklasse?: Groessenklasse | null;
   /**
-   * Manuell vereinbarter Sonderpreis (netto). Ersetzt Listenpreis und
-   * ADN-Anpassung. null oder Leerstring bedeutet: regulärer Preis.
+   * Manuell vereinbarter Sonderpreis (netto). Ersetzt Listenpreis,
+   * ADN-Anpassung und IAMCP-Rabatt. null oder Leerstring bedeutet: regulärer
+   * Preis.
    */
   sonderpreisNetto?: number | string | null;
 }
@@ -884,14 +887,18 @@ export async function updateBestellungAction(
   }
 
   const adnChannel: AdnChannel = input.adnChannel ?? "NONE";
+  // IAMCP-Aktion nur im ADN-Kanal: ohne ADN-Kanal gibt es keinen Betrag, auf
+  // den der Rabatt sich beziehen könnte.
+  const iamcpAktion = input.iamcpAktion === true && adnChannel !== "NONE";
   // Plätze lassen sich unabhängig vom Paket nach oben erweitern oder nach
   // unten reduzieren – mindestens bleibt ein Platz bestehen. Der Preis
   // richtet sich allein nach Paket/Zahlungsmodell/Land/ADN, nicht nach der
   // Anzahl der Teilnehmerplätze.
   const effectiveSlotCount = Math.max(1, input.userAnzahl);
 
-  // Sonderpreis: ein gesetzter Wert ersetzt Listenpreis und ADN-Anpassung als
-  // fakturierten Netto-Betrag, MwSt und Brutto rechnen sich daraus neu.
+  // Sonderpreis: ein gesetzter Wert ersetzt Listenpreis, ADN-Anpassung und
+  // IAMCP-Rabatt als fakturierten Netto-Betrag, MwSt und Brutto rechnen sich
+  // daraus neu.
   const sonderpreis = parseSonderpreisNetto(input.sonderpreisNetto);
   if (sonderpreis.error) {
     return { error: sonderpreis.error };
@@ -903,7 +910,8 @@ export async function updateBestellungAction(
     input.paket,
     input.zahlungsmodell,
     adnChannel,
-    sonderpreisNetto
+    sonderpreisNetto,
+    iamcpAktion
   );
   const { mwstSatz, mwstBetrag, preisBrutto, reverseCharge, reverseChargeHinweis } =
     calculateMwst(input.land, input.ustId ?? undefined, preisNetto);
@@ -967,6 +975,7 @@ export async function updateBestellungAction(
         anmerkungen: input.anmerkungen?.trim() || null,
         status: input.status,
         adnChannel,
+        iamcpAktion,
         ...(input.intern !== undefined ? { intern: input.intern } : {}),
         ...(input.groessenklasse !== undefined
           ? { groessenklasse: input.groessenklasse }

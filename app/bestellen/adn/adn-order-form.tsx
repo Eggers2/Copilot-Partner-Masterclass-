@@ -56,9 +56,21 @@ function calculateMwst(land: Land, ustId: string, preisNetto: number) {
   return { mwstSatz, mwstBetrag, preisBrutto, reverseCharge, reverseChargeHinweis };
 }
 
-function getInvoicedPreisNetto(list: number, channel: AdnChannel): number {
-  if (channel === "ADN_15") return Math.round(list * 0.85 * 100) / 100;
-  return list;
+/** Rabatt der IAMCP-Aktion auf den an ADN fakturierten Betrag (Prozent). */
+const IAMCP_RABATT_PROZENT = 5;
+
+/**
+ * Spiegelt getInvoicedPreisNetto aus lib/packages.ts: erst die ADN-Anpassung,
+ * danach der IAMCP-Rabatt auf den so ermittelten Betrag.
+ */
+function getInvoicedPreisNetto(
+  list: number,
+  channel: AdnChannel,
+  iamcpAktion: boolean
+): number {
+  const nachAdn = channel === "ADN_15" ? list * 0.85 : list;
+  const nachIamcp = iamcpAktion ? nachAdn * (1 - IAMCP_RABATT_PROZENT / 100) : nachAdn;
+  return Math.round(nachIamcp * 100) / 100;
 }
 
 const ANMERKUNGEN_MAX = 500;
@@ -85,6 +97,7 @@ export function AdnOrderForm({ klassen }: { klassen: KlasseOption[] }) {
   const [successBestellNr, setSuccessBestellNr] = useState("");
 
   const [adnChannel, setAdnChannel] = useState<AdnChannel>("ADN_50");
+  const [iamcpAktion, setIamcpAktion] = useState(false);
   const [adnBestellnummer, setAdnBestellnummer] = useState("");
   const [adnMitarbeiter, setAdnMitarbeiter] = useState("");
   const [paket, setPaket] = useState<PacketKey>("team");
@@ -106,7 +119,9 @@ export function AdnOrderForm({ klassen }: { klassen: KlasseOption[] }) {
 
   const pkg = PACKAGES[paket];
   const listPreis = pkg.yearly;
-  const preisNetto = getInvoicedPreisNetto(listPreis, adnChannel);
+  const preisVorRabatt = getInvoicedPreisNetto(listPreis, adnChannel, false);
+  const preisNetto = getInvoicedPreisNetto(listPreis, adnChannel, iamcpAktion);
+  const iamcpRabattBetrag = Math.round((preisVorRabatt - preisNetto) * 100) / 100;
   const preisLabel = "/ Jahr";
 
   const mwst = useMemo(
@@ -135,6 +150,7 @@ export function AdnOrderForm({ klassen }: { klassen: KlasseOption[] }) {
           paket,
           zahlungsmodell: "jahresabo",
           adnChannel,
+          iamcpAktion,
           klasseId: klasseId || undefined,
           firma,
           strasse,
@@ -232,6 +248,30 @@ export function AdnOrderForm({ klassen }: { klassen: KlasseOption[] }) {
             </p>
           </button>
         </div>
+
+        {/* IAMCP-Aktion: 5% Rabatt auf den an ADN fakturierten Betrag */}
+        <label
+          htmlFor="iamcpAktion"
+          className={`mt-4 flex items-start gap-3 p-5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+            iamcpAktion ? "border-green shadow-lg bg-white" : "border-cool bg-white hover:border-gray/30"
+          }`}
+        >
+          <input
+            id="iamcpAktion"
+            type="checkbox"
+            checked={iamcpAktion}
+            onChange={(e) => setIamcpAktion(e.target.checked)}
+            disabled={formState === "loading"}
+            className="mt-0.5 w-5 h-5 accent-green shrink-0 disabled:opacity-50"
+          />
+          <span>
+            <span className="block font-bold text-slate mb-1">IAMCP Aktion</span>
+            <span className="block text-xs text-gray">
+              {IAMCP_RABATT_PROZENT}% Rabatt auf den an ADN fakturierten Betrag. Wird nach
+              dem ADN-Modell gerechnet und in der Bestellung vermerkt.
+            </span>
+          </span>
+        </label>
       </section>
 
       {/* ADN-Vorgangsdaten */}
@@ -556,6 +596,7 @@ export function AdnOrderForm({ klassen }: { klassen: KlasseOption[] }) {
               <span className="text-gray">ADN-Modell:</span>
               <span className="font-medium">
                 {adnChannel === "ADN_50" ? "ADN 50/50 (100% an ADN)" : "ADN 85/15 (85% an ADN)"}
+                {iamcpAktion && " + IAMCP"}
               </span>
             </div>
             <div className="flex justify-between">
@@ -570,6 +611,14 @@ export function AdnOrderForm({ klassen }: { klassen: KlasseOption[] }) {
               <span className="text-gray">Listenpreis:</span>
               <span className="font-medium">{formatEuro(listPreis)} netto {preisLabel}</span>
             </div>
+            {iamcpAktion && (
+              <div className="flex justify-between">
+                <span className="text-gray">IAMCP-Aktion ({IAMCP_RABATT_PROZENT}%):</span>
+                <span className="font-medium text-green">
+                  -{formatEuro(iamcpRabattBetrag)}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-gray">An ADN fakturiert:</span>
               <span className="font-medium">{formatEuro(preisNetto)} netto {preisLabel}</span>

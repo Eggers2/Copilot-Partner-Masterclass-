@@ -87,6 +87,7 @@ export default async function BestellungDetailPage({
           anmerkungen: bestellung.anmerkungen,
           status: bestellung.status,
           adnChannel: bestellung.adnChannel,
+          iamcpAktion: bestellung.iamcpAktion,
           klasseId: bestellung.klasseId,
           intern: bestellung.intern,
           groessenklasse: bestellung.groessenklasse,

@@ -42,6 +42,7 @@ export interface OrderInput {
   position?: unknown;
   anmerkungen?: unknown;
   adnChannel?: unknown;
+  iamcpAktion?: unknown;
   klasseId?: unknown;
 }
 
@@ -70,6 +71,7 @@ interface ValidatedOrder {
   position: string;
   anmerkungen: string;
   adnChannel: AdnChannelKey;
+  iamcpAktion: boolean;
   klasseId: string | null;
 }
 
@@ -159,6 +161,10 @@ function validate(input: OrderInput): ValidatedOrder {
 
   const adnChannel = isAdnChannelKey(input.adnChannel) ? input.adnChannel : "NONE";
 
+  // IAMCP-Aktion: 5% Rabatt auf den an ADN fakturierten Betrag. Nur im
+  // ADN-Kanal sinnvoll, deshalb wird der Haken ohne ADN-Kanal ignoriert.
+  const iamcpAktion = input.iamcpAktion === true && adnChannel !== "NONE";
+
   const klasseId =
     typeof input.klasseId === "string" && input.klasseId.length > 0
       ? input.klasseId
@@ -180,6 +186,7 @@ function validate(input: OrderInput): ValidatedOrder {
     position,
     anmerkungen,
     adnChannel,
+    iamcpAktion,
     klasseId,
   };
 }
@@ -234,7 +241,12 @@ export async function createBestellung(
 
   const pkg = PACKAGES[v.paket];
   const listPreisNetto = getPreisNetto(v.paket, v.zahlungsmodell);
-  const preisNetto = getInvoicedPreisNetto(v.paket, v.zahlungsmodell, v.adnChannel);
+  const preisNetto = getInvoicedPreisNetto(
+    v.paket,
+    v.zahlungsmodell,
+    v.adnChannel,
+    v.iamcpAktion
+  );
   const { mwstSatz, mwstBetrag, preisBrutto, reverseCharge, reverseChargeHinweis } =
     calculateMwst(v.land, v.ustId, preisNetto);
 
@@ -272,6 +284,7 @@ export async function createBestellung(
           position: v.position || null,
           anmerkungen: v.anmerkungen || null,
           adnChannel: v.adnChannel,
+          iamcpAktion: v.iamcpAktion,
           klasseId: klasse.id,
         },
       });
@@ -321,6 +334,7 @@ export async function createBestellung(
     reverseCharge,
     reverseChargeHinweis,
     adnChannel: v.adnChannel,
+    iamcpAktion: v.iamcpAktion,
     klasse: {
       id: klasse.id,
       name: klasse.name,
