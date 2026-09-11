@@ -39,3 +39,9 @@ next-env.d.ts
 
 # prisma
 prisma/migrations/.DS_Store
+
+# Zeitzonen-Snapshots und -Sicherungen (lokal, nicht ins Repo)
+tz-snapshot-*.json
+vorher.json
+nachher.json
+sicherung.json

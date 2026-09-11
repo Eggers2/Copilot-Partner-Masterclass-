@@ -1,4 +1,5 @@
 "use client";
+import { formatCalendarDate } from "@/lib/datetime";
 
 import { useState, useMemo } from "react";
 import { CheckCircle, AlertCircle } from "lucide-react";
@@ -303,10 +304,10 @@ export function OrderForm({ klassen }: { klassen: KlasseOption[] }) {
             <div className="p-4 bg-white border border-cool rounded-xl text-sm text-slate">
               <span className="font-semibold">{klassen[0].name}</span>
               <span className="text-gray ml-2">
-                Kickoff: {new Date(klassen[0].kickoffDate).toLocaleDateString("de-DE")} ·
+                Kickoff: {formatCalendarDate(klassen[0].kickoffDate)} ·
                 Programm:{" "}
-                {new Date(klassen[0].startDate).toLocaleDateString("de-DE")}–
-                {new Date(klassen[0].endDate).toLocaleDateString("de-DE")}
+                {formatCalendarDate(klassen[0].startDate)}–
+                {formatCalendarDate(klassen[0].endDate)}
               </span>
             </div>
           ) : (
@@ -326,11 +327,11 @@ export function OrderForm({ klassen }: { klassen: KlasseOption[] }) {
                   >
                     <h3 className="font-bold text-slate mb-1">{k.name}</h3>
                     <p className="text-xs text-gray">
-                      Kickoff: {new Date(k.kickoffDate).toLocaleDateString("de-DE")}
+                      Kickoff: {formatCalendarDate(k.kickoffDate)}
                     </p>
                     <p className="text-xs text-gray">
-                      {new Date(k.startDate).toLocaleDateString("de-DE")} –{" "}
-                      {new Date(k.endDate).toLocaleDateString("de-DE")}
+                      {formatCalendarDate(k.startDate)} –{" "}
+                      {formatCalendarDate(k.endDate)}
                     </p>
                   </button>
                 );

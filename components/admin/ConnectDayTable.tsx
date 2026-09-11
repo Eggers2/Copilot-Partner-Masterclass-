@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatBerlinDate, formatBerlinDateTime } from "@/lib/datetime";
 import { useRouter } from "next/navigation";
 import { Download, RefreshCw, XCircle, Loader2, Wallet, Undo2 } from "lucide-react";
 import {
@@ -101,8 +102,8 @@ export function ConnectDayTable({
         r.status === "CONFIRMED" ? "Angemeldet" : "Storniert",
         INVOICE_BADGES[r.invoiceStatus]?.label ?? r.invoiceStatus,
         r.sevdeskInvoiceNr ?? "",
-        r.bezahltAm ? new Date(r.bezahltAm).toLocaleDateString("de-DE") : "offen",
-        new Date(r.angemeldetAm).toLocaleString("de-DE"),
+        r.bezahltAm ? formatBerlinDate(r.bezahltAm) : "offen",
+        formatBerlinDateTime(r.angemeldetAm, ""),
       ])
     );
 
@@ -242,7 +243,7 @@ export function ConnectDayTable({
                       ) : r.bezahltAm ? (
                         <div className="flex items-center gap-1.5">
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border bg-green-50 text-green-700 border-green-200">
-                            Bezahlt {new Date(r.bezahltAm).toLocaleDateString("de-DE")}
+                            Bezahlt {formatBerlinDate(r.bezahltAm)}
                           </span>
                           <button
                             onClick={() => toggleBezahlt(r.id, false)}
@@ -270,10 +271,10 @@ export function ConnectDayTable({
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm text-dark-slate-400">
-                      {new Date(r.angemeldetAm).toLocaleDateString("de-DE")}
+                      {formatBerlinDate(r.angemeldetAm)}
                       {r.stornoAm && (
                         <p className="text-xs">
-                          Storno: {new Date(r.stornoAm).toLocaleDateString("de-DE")}
+                          Storno: {formatBerlinDate(r.stornoAm)}
                         </p>
                       )}
                     </td>

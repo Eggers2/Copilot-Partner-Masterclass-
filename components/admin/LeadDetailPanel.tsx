@@ -12,6 +12,7 @@ import {
   ADN_CHANNEL_CONFIG,
 } from "@/lib/constants/lead-config";
 import { updateLeadAction, deleteLeadAction } from "@/app/admin/actions";
+import { formatBerlinDateTime, utcToBerlinInput } from "@/lib/datetime";
 
 interface Lead {
   id: string;
@@ -75,7 +76,7 @@ function AttributionBlock({ lead }: { lead: Lead }) {
   if (!hasAttribution) return null;
 
   const firstTouchLabel = lead.firstTouchAt
-    ? new Date(lead.firstTouchAt).toLocaleString("de-DE")
+    ? formatBerlinDateTime(lead.firstTouchAt)
     : null;
 
   return (
@@ -304,11 +305,7 @@ export function LeadDetailPanel({
             <input
               name="followUpAt"
               type="datetime-local"
-              defaultValue={
-                lead.followUpAt
-                  ? new Date(lead.followUpAt).toISOString().slice(0, 16)
-                  : ""
-              }
+              defaultValue={utcToBerlinInput(lead.followUpAt)}
               className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none"
             />
           </div>

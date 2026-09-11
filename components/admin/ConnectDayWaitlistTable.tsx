@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatBerlinDate, formatBerlinDateTime } from "@/lib/datetime";
 import { useRouter } from "next/navigation";
 import { ArrowUpCircle, Loader2, Trash2, Undo2, Clock } from "lucide-react";
 import {
@@ -103,7 +104,7 @@ export function ConnectDayWaitlistTable({ entries }: { entries: WaitlistRow[] })
                           className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border bg-green-50 text-green-700 border-green-200"
                           title={
                             e.promotedAm
-                              ? `nachgerückt am ${new Date(e.promotedAm).toLocaleString("de-DE")}`
+                              ? `nachgerückt am ${formatBerlinDateTime(e.promotedAm, "")}`
                               : undefined
                           }
                         >
@@ -116,7 +117,7 @@ export function ConnectDayWaitlistTable({ entries }: { entries: WaitlistRow[] })
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm text-dark-slate-400">
-                      {new Date(e.erstelltAm).toLocaleDateString("de-DE")}
+                      {formatBerlinDate(e.erstelltAm)}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">

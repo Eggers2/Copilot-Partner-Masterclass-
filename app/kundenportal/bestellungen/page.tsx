@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Package, ChevronRight, Users, CalendarDays, CheckCircle2 } from "lucide-react";
 import { requireCustomerSession } from "@/lib/auth/customer";
 import { prisma } from "@/lib/prisma";
+import { formatBerlinDate } from "@/lib/datetime";
 import { PACKAGES } from "@/lib/packages";
 import { getConnectDayContext } from "@/lib/events/connectDay";
 
@@ -18,11 +19,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 function formatDate(d: Date): string {
-  return new Intl.DateTimeFormat("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(d);
+  return formatBerlinDate(d);
 }
 
 export default async function KundeBestellungenPage() {

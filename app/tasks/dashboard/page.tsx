@@ -1,6 +1,7 @@
 import { requireTasksAuth } from "@/lib/tasks-auth";
 import { getTaskStats } from "@/lib/db/tasks";
 import { prisma } from "@/lib/prisma";
+import { formatCalendar } from "@/lib/datetime";
 import type { Task, TaskTagAssignment, TaskTag, TaskColumn } from "@prisma/client";
 import {
   CheckCircle2,
@@ -182,10 +183,7 @@ export default async function DashboardPage() {
                             : "text-green-600"
                         }`}
                       >
-                        {dl.toLocaleDateString("de-DE", {
-                          day: "2-digit",
-                          month: "2-digit",
-                        })}
+                        {formatCalendar(dl, { day: "2-digit", month: "2-digit" })}
                       </span>
                     )}
                     {daysLeft !== null && (

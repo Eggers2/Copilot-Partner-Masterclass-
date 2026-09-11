@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { LeadStatus } from "@prisma/client";
 import { Clock, ArrowRight } from "lucide-react";
 import { LeadStatusBadge } from "./LeadStatusBadge";
+import { formatBerlinDate } from "@/lib/datetime";
 
 interface FollowUpLead {
   id: string;
@@ -77,7 +78,7 @@ export function FollowUpWidget({
                   <span
                     className={`text-xs font-medium ${isOverdue ? "text-red-600" : "text-dark-slate-500"}`}
                   >
-                    {followUp.toLocaleDateString("de-DE")}
+                    {formatBerlinDate(followUp)}
                   </span>
                 )}
               </div>

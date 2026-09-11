@@ -8,6 +8,7 @@ import {
   type FirstCallDraft,
 } from "./FirstCallModal";
 import { FirstCallBadge } from "./FirstCallBadge";
+import { formatCalendarDate } from "@/lib/datetime";
 import { analyzeFirstCallTranscriptAction } from "@/app/admin/actions";
 
 interface FirstCallSectionProps {
@@ -159,7 +160,7 @@ export function FirstCallSection({ leadId, existingScore }: FirstCallSectionProp
               <div>
                 <span className="text-dark-slate-400">Follow-up:</span>{" "}
                 <span className="font-medium text-dark-slate-800">
-                  {new Date(existingScore.followUpDate).toLocaleDateString("de-DE")}
+                  {formatCalendarDate(existingScore.followUpDate)}
                 </span>
               </div>
             )}

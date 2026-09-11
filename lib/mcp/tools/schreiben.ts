@@ -2,7 +2,7 @@ import { z } from "zod";
 import { ActivityType, LeadSource, LeadStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { addActivity, updateLead } from "@/lib/db/leads";
-import { parseBerlinDate } from "@/lib/datetime";
+import { berlinDayToUtc, berlinInputToUtc, formatBerlinDateTime } from "@/lib/datetime";
 import { SCOPE_WRITE } from "../config";
 import { defineTool, ToolError } from "./types";
 import { activityOut, leadFull } from "./format";
@@ -28,23 +28,27 @@ async function requireLead(id: string) {
 }
 
 /**
+ * Deutet die Eingabe als deutsche Ortszeit und gibt den UTC-Zeitpunkt zurück,
+ * der in der Datenbank landet.
+ *
  * Akzeptiert "YYYY-MM-DD" (wird auf 12:00 Berlin gesetzt), "YYYY-MM-DDTHH:mm"
  * (Berlin-Ortszeit) oder einen vollständigen ISO-Zeitstempel mit Offset.
+ *
+ * Ein expliziter Offset wird respektiert, ist aber nicht mehr nötig: die
+ * Oberfläche rechnet den gespeicherten UTC-Wert für die Anzeige nach
+ * Europe/Berlin zurück. Wer hier "+00:00" anhängt, um die Anzeige zu
+ * korrigieren, verschiebt den Termin jetzt tatsächlich um zwei Stunden.
  */
-function parseFollowUp(value: string): Date {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return parseBerlinDate(`${value}T12:00`);
-  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) return parseBerlinDate(value);
+export function parseFollowUp(value: string): Date {
+  try {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return berlinDayToUtc(value);
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(value)) return berlinInputToUtc(value);
+  } catch {
+    throw new ToolError(`Ungültiges Datum: ${value}`);
+  }
   const d = new Date(value);
   if (isNaN(d.getTime())) throw new ToolError(`Ungültiges Datum: ${value}`);
   return d;
-}
-
-function formatBerlin(d: Date): string {
-  return new Intl.DateTimeFormat("de-DE", {
-    timeZone: "Europe/Berlin",
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(d);
 }
 
 export const leadStatusSetzen = defineTool({
@@ -87,7 +91,10 @@ export const leadFollowupSetzen = defineTool({
   scope: SCOPE_WRITE,
   description:
     "Setzt oder entfernt das Follow-up-Datum eines Leads und protokolliert dies als FOLLOW_UP-Aktivität. " +
-    "Datum als YYYY-MM-DD (dann 12:00 Uhr Berlin), YYYY-MM-DDTHH:mm (Berlin-Zeit) oder ISO mit Offset.",
+    "Datum als YYYY-MM-DD (dann 12:00 Uhr Berlin), YYYY-MM-DDTHH:mm (Berlin-Zeit) oder ISO mit Offset. " +
+    "Zeiten ohne Offset gelten als deutsche Ortszeit und werden in UTC gespeichert; das Admin zeigt sie " +
+    "wieder in deutscher Ortszeit an. Also die Uhrzeit angeben, die der Nutzer sieht und meint, " +
+    "und keinen Offset zur Korrektur anhängen.",
   schema: z.object({
     id: leadIdSchema,
     followUpAt: z.string().optional().describe("Neues Follow-up-Datum. Weglassen und entfernen=true setzen, um es zu löschen."),
@@ -111,8 +118,8 @@ export const leadFollowupSetzen = defineTool({
     const activity = await addActivity(id, {
       type: "FOLLOW_UP",
       content: notiz
-        ? `${notiz} – Follow-up gesetzt auf ${formatBerlin(date)}`
-        : `Follow-up gesetzt auf ${formatBerlin(date)}`,
+        ? `${notiz} – Follow-up gesetzt auf ${formatBerlinDateTime(date)}`
+        : `Follow-up gesetzt auf ${formatBerlinDateTime(date)}`,
       oldValue: lead.followUpAt?.toISOString() ?? null,
       newValue: date.toISOString(),
     });

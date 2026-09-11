@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatBerlinDate, formatBerlinDateTime } from "@/lib/datetime";
 import { useRouter } from "next/navigation";
 import type { RegistrationStatus, LeadStatus } from "@prisma/client";
 import { Check, X, Download, CheckSquare } from "lucide-react";
@@ -82,7 +83,7 @@ export function RegistrationTable({
       r.lead.email,
       r.lead.company ?? "",
       REGISTRATION_STATUS_CONFIG[r.status].label,
-      new Date(r.registeredAt).toLocaleString("de-DE"),
+      formatBerlinDateTime(r.registeredAt, ""),
     ]);
 
     const csvContent = [
@@ -220,7 +221,7 @@ export function RegistrationTable({
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-dark-slate-400">
-                      {new Date(reg.registeredAt).toLocaleDateString("de-DE")}
+                      {formatBerlinDate(reg.registeredAt)}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-1">

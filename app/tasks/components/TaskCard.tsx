@@ -1,4 +1,5 @@
 "use client";
+import { formatCalendar } from "@/lib/datetime";
 
 import { Task } from "./KanbanBoard";
 import { Calendar, StickyNote, MoreHorizontal } from "lucide-react";
@@ -115,10 +116,7 @@ export default function TaskCard({
             >
               <Calendar className="w-3 h-3" />
               <span className={isDoneColumn ? "line-through" : ""}>
-                {new Date(task.deadline).toLocaleDateString("de-DE", {
-                  day: "2-digit",
-                  month: "2-digit",
-                })}
+                {formatCalendar(task.deadline, { day: "2-digit", month: "2-digit" })}
               </span>
               {dlStatus === "overdue" && !isDoneColumn && (
                 <span className="bg-red-100 text-red-600 text-[10px] px-1 rounded">
