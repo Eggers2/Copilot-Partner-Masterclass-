@@ -14,6 +14,11 @@ import {
   clearOtpPendingCookie,
 } from "@/lib/auth/customer";
 import { dispatchTeamsGuestInvites } from "@/lib/teams/dispatchTeamsGuest";
+import {
+  dispatchAblefyEnrollments,
+  dispatchAblefyRevocations,
+} from "@/lib/ablefy/dispatchEnrollment";
+import { findeDoppelteMail, planAblefySlots } from "@/lib/ablefy/slots";
 import { geocodeAddress } from "@/lib/geocode";
 
 interface TeilnehmerInput {
@@ -108,6 +113,15 @@ export async function updateKundeBestellungAction(
     return { error: "Ungültiges Land." };
   }
 
+  // Jede Adresse darf nur einen Platz belegen: sonst bekäme dieselbe Person
+  // zwei Kurszugänge und zwei Teams-Einladungen.
+  const doppelteMail = findeDoppelteMail(input.teilnehmer.map((t) => t.email));
+  if (doppelteMail) {
+    return {
+      error: `Die E-Mail ${doppelteMail} ist mehrfach eingetragen. Bitte pro Platz eine eigene Adresse verwenden.`,
+    };
+  }
+
   const newEmail = input.email.trim().toLowerCase();
   const slotCount = current.userAnzahl;
   const newStrasse = input.strasse.trim();
@@ -153,6 +167,9 @@ export async function updateKundeBestellungAction(
     }
   }
 
+  // Ablefy-Bestellungen, die durch dieses Speichern ihre Zeile verlieren.
+  let ablefyEntzuege: { orderId: string | null; orderToken: string | null; email: string }[] = [];
+
   await prisma.$transaction(async (tx) => {
     await tx.bestellung.update({
       where: { id: bestellungId },
@@ -187,11 +204,31 @@ export async function updateKundeBestellungAction(
 
     const existingTeilnehmer = await tx.bestellungTeilnehmer.findMany({
       where: { bestellungId },
-      select: { position: true, email: true },
+      select: {
+        position: true,
+        email: true,
+        ablefyState: true,
+        ablefyOrderId: true,
+        ablefyOrderToken: true,
+        ablefyEmail: true,
+        ablefyEingebuchtAm: true,
+        ablefyVersuchAm: true,
+        ablefyFehler: true,
+      },
     });
     const existingEmailByPosition = new Map(
       existingTeilnehmer.map((e) => [e.position, e.email])
     );
+
+    // Ablefy-Zugänge folgen der E-Mail, nicht der Position (siehe
+    // lib/ablefy/slots.ts); ersetzte Adressen verlieren dabei ihre Bestellung.
+    const neueMails = Array.from({ length: slotCount }, (_, i) =>
+      (input.teilnehmer.find((x) => x.position === i)?.email ?? "")
+        .trim()
+        .toLowerCase()
+    );
+    const ablefyPlan = planAblefySlots(existingTeilnehmer, neueMails);
+    ablefyEntzuege = ablefyPlan.entzuege;
 
     for (let i = 0; i < slotCount; i++) {
       const t = input.teilnehmer.find((x) => x.position === i) ?? {
@@ -205,6 +242,8 @@ export async function updateKundeBestellungAction(
       const emailChanged =
         previousEmail !== undefined && previousEmail !== newTeilnehmerEmail;
 
+      const ablefyDaten = ablefyPlan.datenFuer(newTeilnehmerEmail);
+
       await tx.bestellungTeilnehmer.upsert({
         where: {
           bestellungId_position: { bestellungId, position: i },
@@ -215,6 +254,7 @@ export async function updateKundeBestellungAction(
           vorname: t.vorname.trim(),
           nachname: t.nachname.trim(),
           email: newTeilnehmerEmail,
+          ...ablefyDaten,
         },
         update: {
           vorname: t.vorname.trim(),
@@ -223,6 +263,9 @@ export async function updateKundeBestellungAction(
           // E-Mail-Wechsel setzt den Einladungsstatus zurück, damit der
           // n8n-Webhook die neue Adresse erneut als Teams-Gast einlädt.
           ...(emailChanged ? { teamsEingeladenAm: null } : {}),
+          // Ablefy-Zustand wandert mit der E-Mail mit, damit eine bereits
+          // eingebuchte Adresse nicht ein zweites Mal gebucht wird.
+          ...ablefyDaten,
         },
       });
     }
@@ -250,6 +293,10 @@ export async function updateKundeBestellungAction(
       bestellNr: bestellung.bestellNr,
     });
   }
+
+  // Kurszugang bei Ablefy: ersetzte Adressen entziehen, eingetragene einbuchen.
+  dispatchAblefyRevocations(ablefyEntzuege);
+  await dispatchAblefyEnrollments({ bestellungId });
 
   if (newEmail !== session.email) {
     await setCustomerSession(newEmail);

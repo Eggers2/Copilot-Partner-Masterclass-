@@ -45,6 +45,11 @@ import {
 import { readFile, readdir } from "fs/promises";
 import path from "path";
 import { dispatchTeamsGuestInvites } from "@/lib/teams/dispatchTeamsGuest";
+import {
+  dispatchAblefyEnrollments,
+  dispatchAblefyRevocations,
+} from "@/lib/ablefy/dispatchEnrollment";
+import { findeDoppelteMail, planAblefySlots } from "@/lib/ablefy/slots";
 import { inviteGuestToTeam, isGraphConfigured } from "@/lib/teams/graph";
 import {
   setTeamsAufnahmeModus,
@@ -883,6 +888,15 @@ export async function updateBestellungAction(
     return { error: "Dieses Zahlungsmodell ist für das gewählte Paket nicht verfügbar." };
   }
 
+  // Jede Adresse darf nur einen Platz belegen: sonst bekäme dieselbe Person
+  // zwei Kurszugänge und zwei Teams-Einladungen.
+  const doppelteMail = findeDoppelteMail(input.teilnehmer.map((t) => t.email));
+  if (doppelteMail) {
+    return {
+      error: `Die E-Mail ${doppelteMail} ist mehrfach eingetragen. Bitte pro Platz eine eigene Adresse verwenden.`,
+    };
+  }
+
   const adnChannel: AdnChannel = input.adnChannel ?? "NONE";
   // Plätze lassen sich unabhängig vom Paket nach oben erweitern oder nach
   // unten reduzieren – mindestens bleibt ein Platz bestehen. Der Preis
@@ -937,6 +951,10 @@ export async function updateBestellungAction(
     newPlz !== current.plz.trim() ||
     newOrt !== current.ort.trim();
 
+  // Ablefy-Bestellungen, die durch dieses Speichern ihre Zeile verlieren.
+  // Wird in der Transaktion befüllt und danach abgearbeitet.
+  let ablefyEntzuege: { orderId: string | null; orderToken: string | null; email: string }[] = [];
+
   await prisma.$transaction(async (tx) => {
     await tx.bestellung.update({
       where: { id },
@@ -979,7 +997,18 @@ export async function updateBestellungAction(
 
     const existingTeilnehmer = await tx.bestellungTeilnehmer.findMany({
       where: { bestellungId: id },
-      select: { position: true, email: true, teamsEingeladenAm: true },
+      select: {
+        position: true,
+        email: true,
+        teamsEingeladenAm: true,
+        ablefyState: true,
+        ablefyOrderId: true,
+        ablefyOrderToken: true,
+        ablefyEmail: true,
+        ablefyEingebuchtAm: true,
+        ablefyVersuchAm: true,
+        ablefyFehler: true,
+      },
     });
     const existingEmailByPosition = new Map(
       existingTeilnehmer.map((e) => [e.position, e.email])
@@ -992,6 +1021,17 @@ export async function updateBestellungAction(
     for (const e of existingTeilnehmer) {
       if (e.email) previousInviteByEmail.set(e.email, e.teamsEingeladenAm);
     }
+
+    // Ablefy-Zugänge folgen der E-Mail, nicht der Position (siehe
+    // lib/ablefy/slots.ts). Der Plan sagt zugleich, welche Bestellungen durch
+    // das Speichern herrenlos werden – entfernte Plätze und ersetzte Adressen.
+    const neueMails = Array.from({ length: effectiveSlotCount }, (_, i) =>
+      (input.teilnehmer.find((x) => x.position === i)?.email ?? "")
+        .trim()
+        .toLowerCase()
+    );
+    const ablefyPlan = planAblefySlots(existingTeilnehmer, neueMails);
+    ablefyEntzuege = ablefyPlan.entzuege;
 
     await tx.bestellungTeilnehmer.deleteMany({
       where: { bestellungId: id, position: { gte: effectiveSlotCount } },
@@ -1012,6 +1052,8 @@ export async function updateBestellungAction(
         ? previousInviteByEmail.get(newTeilnehmerEmail) ?? null
         : null;
 
+      const ablefyDaten = ablefyPlan.datenFuer(newTeilnehmerEmail);
+
       await tx.bestellungTeilnehmer.upsert({
         where: {
           bestellungId_position: { bestellungId: id, position: i },
@@ -1023,6 +1065,7 @@ export async function updateBestellungAction(
           nachname: t.nachname.trim(),
           email: newTeilnehmerEmail,
           teamsEingeladenAm: preservedInvite,
+          ...ablefyDaten,
         },
         update: {
           vorname: t.vorname.trim(),
@@ -1032,6 +1075,10 @@ export async function updateBestellungAction(
           // E-Mail in der Bestellung bereits eingeladen war, sonst zurücksetzen
           // damit der n8n-Webhook die neue Adresse als Teams-Gast einlädt.
           ...(emailChanged ? { teamsEingeladenAm: preservedInvite } : {}),
+          // Ablefy-Zustand wandert mit der E-Mail mit: eine bereits eingebuchte
+          // Adresse behält ihre Bestellung auch nach einer Re-Indexierung, eine
+          // neue Adresse startet auf OFFEN und wird gleich unten eingebucht.
+          ...ablefyDaten,
         },
       });
     }
@@ -1059,6 +1106,11 @@ export async function updateBestellungAction(
       bestellNr: bestellung.bestellNr,
     });
   }
+
+  // Kurszugang bei Ablefy: entfernte oder ersetzte Adressen entziehen, alle
+  // eingetragenen Adressen einbuchen. Beides läuft nach der Response.
+  dispatchAblefyRevocations(ablefyEntzuege);
+  await dispatchAblefyEnrollments({ bestellungId: id });
 
   // Bei Adressänderung sofort neu geocoden, damit der Marker direkt am
   // richtigen Ort steht. Best-effort: Fehler nicht propagieren.
