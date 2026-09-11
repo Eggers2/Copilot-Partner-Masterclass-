@@ -389,21 +389,53 @@ model Bestellung {
   @@map("bestellungen")
 }
 
+// Stand des Ablefy-Kurszugangs eines Teilnehmerplatzes.
+//   OFFEN         noch nicht eingebucht (neuer Platz oder Adresse geändert)
+//   IN_ARBEIT     Einbuchung läuft (Claim gegen doppelte Bestellungen)
+//   PROVISIONIERT Zugang angelegt, Bestell-ID liegt vor
+//   FEHLER        Ablefy hat abgelehnt oder war nicht erreichbar → ablefyFehler
+//   STORNIERT     Zugang bestätigt entzogen
+enum AblefyState {
+  OFFEN
+  IN_ARBEIT
+  PROVISIONIERT
+  FEHLER
+  STORNIERT
+}
+
 model BestellungTeilnehmer {
-  id                Int               @id @default(autoincrement())
-  bestellungId      Int               @map("bestellung_id")
-  bestellung        Bestellung        @relation(fields: [bestellungId], references: [id], onDelete: Cascade)
-  position          Int
-  vorname           String            @default("")
-  nachname          String            @default("")
-  email             String            @default("")
-  teamsEingeladenAm DateTime?         @map("teams_eingeladen_am")
+  id                 Int               @id @default(autoincrement())
+  bestellungId       Int               @map("bestellung_id")
+  bestellung         Bestellung        @relation(fields: [bestellungId], references: [id], onDelete: Cascade)
+  position           Int
+  vorname            String            @default("")
+  nachname           String            @default("")
+  email              String            @default("")
+  teamsEingeladenAm  DateTime?         @map("teams_eingeladen_am")
+  // ── Ablefy-Kurszugang (siehe lib/ablefy/client.ts) ────────────────────────
+  // Beim Speichern der Teilnehmerliste wird jede eingetragene E-Mail als
+  // kostenlose Ablefy-Bestellung auf den Kurs gebucht; Ablefy versendet die
+  // Zugangsmail selbst.
+  ablefyState        AblefyState       @default(OFFEN) @map("ablefy_state")
+  // Bestell-ID und -Token aus der Ablefy-Antwort. Beides ist unersetzlich:
+  // Ablefy hat keine Such- oder Listenroute für Bestellungen, und der Storno
+  // verlangt den Token, nicht die ID.
+  ablefyOrderId      String?           @unique @map("ablefy_order_id")
+  ablefyOrderToken   String?           @map("ablefy_order_token")
+  // Die Adresse, die tatsächlich eingebucht wurde. Weicht sie von `email` ab,
+  // wurde der Platz umbenannt und muss neu eingebucht werden.
+  ablefyEmail        String?           @map("ablefy_email")
+  ablefyEingebuchtAm DateTime?         @map("ablefy_eingebucht_am")
+  // Zeitpunkt des letzten Einbuchungsversuchs; trägt zugleich den Claim für
+  // IN_ARBEIT, damit paralleles Speichern keine zweite Bestellung erzeugt.
+  ablefyVersuchAm    DateTime?         @map("ablefy_versuch_am")
+  ablefyFehler       String?           @map("ablefy_fehler")
   // Zuletzt in der Stand-Abfrage gemeldete Rolle (wird je Antwort aktualisiert).
-  rolle             TeilnehmerRolle?
-  erstelltAm        DateTime          @default(now()) @map("erstellt_am")
-  aktualisiertAm    DateTime          @updatedAt @map("aktualisiert_am")
-  eventTeilnahmen   EventTeilnehmer[]
-  umfrageAntworten  UmfrageAntwort[]
+  rolle              TeilnehmerRolle?
+  erstelltAm         DateTime          @default(now()) @map("erstellt_am")
+  aktualisiertAm     DateTime          @updatedAt @map("aktualisiert_am")
+  eventTeilnahmen    EventTeilnehmer[]
+  umfrageAntworten   UmfrageAntwort[]
 
   @@unique([bestellungId, position])
   @@index([bestellungId])
