@@ -11,6 +11,7 @@ import {
   CalendarDays,
   ClipboardList,
   Plug,
+  Clock,
 } from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
 import { logoutAction } from "./actions";
@@ -58,6 +59,7 @@ export default async function AdminLayout({
                 <NavLink href="/admin/newsletter" icon={Mail} label="Newsletter" />
                 <NavLink href="/admin/emails" icon={Send} label="E-Mails" />
                 <NavLink href="/admin/mcp" icon={Plug} label="Claude" />
+                <NavLink href="/admin/zeitzonen" icon={Clock} label="Zeitzonen" />
               </nav>
             </div>
             <form action={logoutAction}>
