@@ -3,7 +3,7 @@ import { LeadSource, LeadStatus, RegistrationStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getKpiStats, getLeads } from "@/lib/db/leads";
 import { getShopKpis } from "@/lib/db/bestellungen";
-import { berlinDateString, parseBerlinDate } from "@/lib/datetime";
+import { berlinDateString, berlinInputToUtc } from "@/lib/datetime";
 import { DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT, SCOPE_READ } from "../config";
 import { defineTool, ToolError } from "./types";
 import { activityOut, bestellungSummary, leadFull, leadSummary } from "./format";
@@ -149,7 +149,7 @@ export const leadsFaellig = defineTool({
   }),
   async handler({ bis, status, limit }) {
     const tag = bis ?? berlinDateString(new Date());
-    const stichtag = parseBerlinDate(`${tag}T23:59`);
+    const stichtag = berlinInputToUtc(`${tag}T23:59`);
     const leads = await prisma.lead.findMany({
       where: {
         followUpAt: { not: null, lte: stichtag },

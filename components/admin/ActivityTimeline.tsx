@@ -1,4 +1,5 @@
 import type { ActivityType } from "@prisma/client";
+import { formatBerlinDateTime } from "@/lib/datetime";
 import {
   FileText,
   Mail,
@@ -88,13 +89,7 @@ export function ActivityTimeline({
                     {ACTIVITY_LABELS[activity.type]}
                   </span>
                   <span className="text-xs text-dark-slate-400">
-                    {new Date(activity.createdAt).toLocaleString("de-DE", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {formatBerlinDateTime(activity.createdAt)}
                   </span>
                 </div>
                 <p className="text-sm text-dark-slate-700">

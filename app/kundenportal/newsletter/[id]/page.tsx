@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { requireCustomerSession } from "@/lib/auth/customer";
+import { formatBerlin } from "@/lib/datetime";
 import { getNewsletter, readContent } from "@/lib/db/newsletters";
 import { renderNewsletterHtml } from "@/lib/newsletter/render";
 
@@ -47,11 +48,7 @@ export default async function KundenportalNewsletterDetailPage({
         {nl.gesendetAm && (
           <p className="text-xs text-gray mt-1">
             Versandt am{" "}
-            {new Date(nl.gesendetAm).toLocaleDateString("de-DE", {
-              day: "2-digit",
-              month: "long",
-              year: "numeric",
-            })}
+            {formatBerlin(nl.gesendetAm, { day: "2-digit", month: "long", year: "numeric" })}
           </p>
         )}
       </div>

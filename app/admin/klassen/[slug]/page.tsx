@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft, Lock, Unlock } from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { formatBerlinDate } from "@/lib/datetime";
 import { setKlasseStatusAction } from "@/app/admin/actions";
 import { KlasseForm } from "../klasse-form";
 import { KLASSE_STATUS_CONFIG } from "@/lib/constants/lead-config";
@@ -354,7 +355,7 @@ export default async function KlasseDetailPage({
                     {w.title}
                   </Link>
                   <span className="text-xs text-dark-slate-500">
-                    {new Date(w.scheduledAt).toLocaleDateString("de-DE")} · {w.status}
+                    {formatBerlinDate(w.scheduledAt)} · {w.status}
                   </span>
                 </li>
               ))}

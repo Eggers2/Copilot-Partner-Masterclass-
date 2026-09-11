@@ -3,6 +3,7 @@
 import { useState, useActionState } from "react";
 import { X, Save } from "lucide-react";
 import { updateWebinarAction } from "@/app/admin/actions";
+import { utcToBerlinInput } from "@/lib/datetime";
 
 interface EditWebinarFormProps {
   webinar: {
@@ -22,9 +23,8 @@ export function EditWebinarForm({ webinar, onClose }: EditWebinarFormProps) {
     null
   );
 
-  // Format datetime for input
-  const scheduledDate = new Date(webinar.scheduledAt);
-  const defaultDateTime = `${scheduledDate.getFullYear()}-${String(scheduledDate.getMonth() + 1).padStart(2, "0")}-${String(scheduledDate.getDate()).padStart(2, "0")}T${String(scheduledDate.getHours()).padStart(2, "0")}:${String(scheduledDate.getMinutes()).padStart(2, "0")}`;
+  // Vorbelegung in Berliner Ortszeit, passend zum Schreibpfad des Formulars.
+  const defaultDateTime = utcToBerlinInput(webinar.scheduledAt);
 
   if (state?.success) {
     onClose();

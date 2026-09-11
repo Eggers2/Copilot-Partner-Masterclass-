@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { formatBerlinDate, formatCalendarDate } from "@/lib/datetime";
 import Link from "next/link";
 import { GraduationCap, Lock, Plus } from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
@@ -80,11 +81,11 @@ export default async function KlassenPage() {
               <div className="space-y-1 text-sm text-dark-slate-600">
                 <p>
                   <span className="text-dark-slate-400">Kickoff:</span>{" "}
-                  {k.kickoffDate.toLocaleDateString("de-DE")}
+                  {formatCalendarDate(k.kickoffDate)}
                 </p>
                 <p>
                   <span className="text-dark-slate-400">Programm:</span>{" "}
-                  {k.startDate.toLocaleDateString("de-DE")} – {k.endDate.toLocaleDateString("de-DE")}
+                  {formatCalendarDate(k.startDate)} – {formatCalendarDate(k.endDate)}
                 </p>
                 <p>
                   <span className="text-dark-slate-400">Belegung:</span>{" "}
@@ -97,7 +98,7 @@ export default async function KlassenPage() {
                   <span className="text-dark-slate-400">Nächster Termin:</span>{" "}
                   {k.naechsterTermin ? (
                     <>
-                      {k.naechsterTermin.datum.toLocaleDateString("de-DE")}
+                      {formatBerlinDate(k.naechsterTermin.datum)}
                       {k.naechsterTermin.thema ? ` – ${k.naechsterTermin.thema}` : ""}
                     </>
                   ) : (

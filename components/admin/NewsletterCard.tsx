@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatBerlinDate } from "@/lib/datetime";
 import type { NewsletterStatus } from "@prisma/client";
 import { Calendar, Mail } from "lucide-react";
 import { NewsletterStatusBadge } from "./NewsletterStatusBadge";
@@ -25,16 +26,8 @@ export function NewsletterCard({
   erstelltAm,
 }: NewsletterCardProps) {
   const dateLabel = gesendetAm
-    ? `Versandt am ${new Date(gesendetAm).toLocaleDateString("de-DE", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      })}`
-    : `Erstellt am ${new Date(erstelltAm).toLocaleDateString("de-DE", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      })}`;
+    ? `Versandt am ${formatBerlinDate(gesendetAm)}`
+    : `Erstellt am ${formatBerlinDate(erstelltAm)}`;
 
   return (
     <Link

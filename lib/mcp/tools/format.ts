@@ -1,8 +1,14 @@
 import type { Lead, LeadActivity, Bestellung } from "@prisma/client";
+import { formatBerlinDateTime } from "@/lib/datetime";
 
 /**
  * Kompakte Darstellungen für Tool-Antworten. Tracking-Felder (UTM, Referrer,
  * Koordinaten) werden nur auf ausdrücklichen Wunsch ausgegeben.
+ *
+ * Zeitstempel gehen doppelt raus: `*At` als ISO-8601 in UTC für Vergleiche und
+ * Sortierung, `*Lokal` als deutsche Ortszeit für Texte gegenüber dem Nutzer.
+ * Das ist der Grund, hier nicht selbst zu rechnen – wer den UTC-Wert in einen
+ * Bestätigungstext schreibt, nennt eine Uhrzeit, die das Admin nicht anzeigt.
  */
 
 export function leadSummary(
@@ -24,6 +30,7 @@ export function leadSummary(
     score: lead.score,
     firstCallScore: lead.firstCallScore?.totalScore ?? null,
     followUpAt: lead.followUpAt?.toISOString() ?? null,
+    followUpLokal: lead.followUpAt ? formatBerlinDateTime(lead.followUpAt) : null,
     klasse: lead.klasse?.name ?? null,
     aktivitaeten: lead._count?.activities ?? undefined,
     letzteAktivitaet: lead.activities?.[0]?.createdAt.toISOString() ?? null,
@@ -50,6 +57,7 @@ export function leadFull(lead: Lead, mitTracking: boolean) {
     umsatzEuro: lead.status === "WON" ? lead.revenue / 100 : null,
     notizen: lead.notes,
     followUpAt: lead.followUpAt?.toISOString() ?? null,
+    followUpLokal: lead.followUpAt ? formatBerlinDateTime(lead.followUpAt) : null,
     adnChannel: lead.adnChannel,
     webinarRegistriert: lead.webinarRegistered,
     erstelltAm: lead.createdAt.toISOString(),
@@ -79,6 +87,7 @@ export function activityOut(a: LeadActivity) {
     alterWert: a.oldValue,
     neuerWert: a.newValue,
     am: a.createdAt.toISOString(),
+    amLokal: formatBerlinDateTime(a.createdAt),
   };
 }
 
