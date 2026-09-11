@@ -3,6 +3,7 @@ import type {
   NewsletterNewsItem,
   NewsletterEventItem,
 } from "./types";
+import { formatBerlin } from "@/lib/datetime";
 
 function esc(value: string | undefined | null): string {
   if (value == null) return "";
@@ -320,7 +321,7 @@ export function renderNewsletterHtml(
   content: NewsletterContent,
   opts: RenderOptions
 ): string {
-  const dateLabel = (opts.gesendetAm ?? new Date()).toLocaleDateString("de-DE", {
+  const dateLabel = formatBerlin(opts.gesendetAm ?? new Date(), {
     day: "numeric",
     month: "long",
     year: "numeric",

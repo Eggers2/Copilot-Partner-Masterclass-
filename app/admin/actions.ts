@@ -9,7 +9,7 @@ import {
   safeAdminRedirectPath,
 } from "@/lib/auth";
 import { requestOtpCode, resolveAppBaseUrl } from "@/lib/auth/customer";
-import { parseBerlinDate } from "@/lib/datetime";
+import { berlinInputToUtc, calendarDateToUtc } from "@/lib/datetime";
 import {
   updateLead,
   addActivity,
@@ -163,7 +163,7 @@ export async function updateLeadAction(
     notes: (formData.get("notes") as string) || null,
     score: parseInt(formData.get("score") as string) || 0,
     revenue: newStatus === "WON" ? revenueCents : undefined,
-    followUpAt: followUpAtRaw ? new Date(followUpAtRaw) : null,
+    followUpAt: followUpAtRaw ? berlinInputToUtc(followUpAtRaw) : null,
     ...(adnChannel ? { adnChannel } : {}),
     klasseId,
     ...(addressChanged ? { latitude: null, longitude: null } : {}),
@@ -248,7 +248,7 @@ export async function saveFirstCallScoreAction(
     recommendedPackage: (formData.get("recommendedPackage") as string) || null,
     objections: (formData.get("objections") as string) || null,
     nextStep: (formData.get("nextStep") as string) || null,
-    followUpDate: followUpDateRaw ? new Date(followUpDateRaw) : null,
+    followUpDate: followUpDateRaw ? calendarDateToUtc(followUpDateRaw) : null,
     contactSource: (formData.get("contactSource") as string) || null,
   });
 
@@ -393,7 +393,7 @@ export async function createWebinarAction(
   try {
     await createWebinar({
       title: title.trim(),
-      scheduledAt: parseBerlinDate(scheduledAtRaw),
+      scheduledAt: berlinInputToUtc(scheduledAtRaw),
       streamyardLink: (formData.get("streamyardLink") as string) || null,
       description: (formData.get("description") as string) || null,
     });
@@ -448,7 +448,7 @@ export async function updateWebinarAction(
   try {
     await updateWebinar(id, {
       title: title.trim(),
-      scheduledAt: parseBerlinDate(scheduledAtRaw),
+      scheduledAt: berlinInputToUtc(scheduledAtRaw),
       streamyardLink: (formData.get("streamyardLink") as string) || null,
       description: (formData.get("description") as string) || null,
     });
@@ -1222,7 +1222,7 @@ export async function createLeadAction(
       source: (sourceRaw as LeadSource) || "OTHER",
       notes: ((formData.get("notes") as string) || "").trim() || null,
       score: parseInt((formData.get("score") as string) || "0") || 0,
-      followUpAt: followUpAtRaw ? new Date(followUpAtRaw) : null,
+      followUpAt: followUpAtRaw ? berlinInputToUtc(followUpAtRaw) : null,
       adnChannel,
       klasseId,
     },
@@ -1299,9 +1299,9 @@ export async function createKlasseAction(
       data: {
         name,
         slug: slugRaw,
-        kickoffDate: new Date(kickoffDateRaw),
-        startDate: new Date(startDateRaw),
-        endDate: new Date(endDateRaw),
+        kickoffDate: calendarDateToUtc(kickoffDateRaw),
+        startDate: calendarDateToUtc(startDateRaw),
+        endDate: calendarDateToUtc(endDateRaw),
         capacity,
         status: statusRaw as KlasseStatus,
         teilnehmerSperre,
@@ -1352,9 +1352,9 @@ export async function updateKlasseAction(
     where: { id },
     data: {
       name,
-      kickoffDate: new Date(kickoffDateRaw),
-      startDate: new Date(startDateRaw),
-      endDate: new Date(endDateRaw),
+      kickoffDate: calendarDateToUtc(kickoffDateRaw),
+      startDate: calendarDateToUtc(startDateRaw),
+      endDate: calendarDateToUtc(endDateRaw),
       capacity,
       status: statusRaw as KlasseStatus,
       teilnehmerSperre,
@@ -1484,7 +1484,7 @@ export async function createTerminAction(
   const ferienRaw = formData.get("ferien");
   await createTermin({
     klasseId,
-    datum: parseBerlinDate(datumRaw),
+    datum: berlinInputToUtc(datumRaw),
     thema: ((formData.get("thema") as string) || "").trim() || null,
     notizen: ((formData.get("notizen") as string) || "").trim() || null,
     status: isTerminStatus(statusRaw) ? statusRaw : "GEPLANT",
@@ -1516,7 +1516,7 @@ export async function updateTerminAction(
   const statusRaw = formData.get("status");
   const ferienRaw = formData.get("ferien");
   await updateTermin(id, {
-    datum: parseBerlinDate(datumRaw),
+    datum: berlinInputToUtc(datumRaw),
     thema: ((formData.get("thema") as string) || "").trim() || null,
     notizen: ((formData.get("notizen") as string) || "").trim() || null,
     ...(isTerminStatus(statusRaw) ? { status: statusRaw } : {}),

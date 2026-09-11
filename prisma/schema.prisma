@@ -157,34 +157,34 @@ enum EventInvoiceStatus {
 }
 
 model Klasse {
-  id                String       @id @default(cuid())
-  name              String
-  slug              String       @unique
-  kickoffDate       DateTime     @map("kickoff_date")
-  startDate         DateTime     @map("start_date")
-  endDate           DateTime     @map("end_date")
-  capacity          Int?
-  status            KlasseStatus @default(PLANNED)
-  teilnehmerSperre  Boolean      @default(false) @map("teilnehmer_sperre")
-  description       String?
+  id               String         @id @default(cuid())
+  name             String
+  slug             String         @unique
+  kickoffDate      DateTime       @map("kickoff_date")
+  startDate        DateTime       @map("start_date")
+  endDate          DateTime       @map("end_date")
+  capacity         Int?
+  status           KlasseStatus   @default(PLANNED)
+  teilnehmerSperre Boolean        @default(false) @map("teilnehmer_sperre")
+  description      String?
   // GUID der M365-Gruppe (= Teams-Team-ID) dieser Klasse. Steuert im Native-Modus,
   // in welches Teams-Team die Gäste dieser Klasse aufgenommen werden. NULL = kein
   // Team hinterlegt → die Aufnahme wird übersprungen (siehe lib/teams/dispatchTeamsGuest.ts).
-  teamsGroupId      String?      @map("teams_group_id")
+  teamsGroupId     String?        @map("teams_group_id")
   // Regel zur automatischen Terminerzeugung (n-ter Wochentag im Monat).
   // Array von Mustern: [{ week: 1-4 | -1 (=letzter), weekday: 1-7 (ISO, 1=Mo),
   // time: "HH:mm" }]. Siehe lib/termine/regel.ts.
-  terminRegel       Json?        @map("termin_regel")
+  terminRegel      Json?          @map("termin_regel")
   // Curriculum-Stand bei Kickoff, Freitext z.B. "M1-M4" (Störgröße für den
   // Kohortenvergleich der Stand-Abfrage).
-  curriculumStand   String?      @map("curriculum_stand")
-  webinars          Webinar[]
-  bestellungen      Bestellung[]
-  leads             Lead[]
-  termine           KlasseTermin[]
-  umfrageRunden     UmfrageRunde[]
-  createdAt         DateTime     @default(now()) @map("created_at")
-  updatedAt         DateTime     @updatedAt @map("updated_at")
+  curriculumStand  String?        @map("curriculum_stand")
+  webinars         Webinar[]
+  bestellungen     Bestellung[]
+  leads            Lead[]
+  termine          KlasseTermin[]
+  umfrageRunden    UmfrageRunde[]
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
 
   @@map("klassen")
 }
@@ -193,34 +193,34 @@ model Klasse {
 // welchem Termin behandelt wurde bzw. geplant ist – getrennt vom Webinar-Modell,
 // das öffentliche Online-Events mit Anmeldungen abbildet.
 model KlasseTermin {
-  id        String       @id @default(cuid())
-  klasseId  String       @map("klasse_id")
-  klasse    Klasse       @relation(fields: [klasseId], references: [id], onDelete: Cascade)
-  datum     DateTime
-  thema     String?
-  notizen   String?
-  status    TerminStatus @default(GEPLANT)
+  id                      String              @id @default(cuid())
+  klasseId                String              @map("klasse_id")
+  klasse                  Klasse              @relation(fields: [klasseId], references: [id], onDelete: Cascade)
+  datum                   DateTime
+  thema                   String?
+  notizen                 String?
+  status                  TerminStatus        @default(GEPLANT)
   // Termin liegt im Ferienfenster oder Jahreswechsel: wirkt auf die Erinnerung
   // der Stand-Abfrage und die Deutung von Anwesenheit/ausbleibenden Antworten.
-  ferien    Boolean      @default(false)
+  ferien                  Boolean             @default(false)
   // Links für schnellen Zugriff: SharePoint-Aufzeichnung und Teams-Meeting.
-  videoUrl            String?   @map("video_url")
-  teamsLink           String?   @map("teams_link")
+  videoUrl                String?             @map("video_url")
+  teamsLink               String?             @map("teams_link")
   // Transkript-Upload nach dem Termin + KI-Ausgaben:
   // zusammenfassung = kompakte Spiegelstrichliste (Admin-Überblick),
   // protokoll = ausführliches Meetingprotokoll (Versand an Teilnehmer).
-  transkript          String?
-  transkriptDateiname String?   @map("transkript_dateiname")
-  zusammenfassung     String?
-  protokoll           String?
-  protokollGesendetAm DateTime? @map("protokoll_gesendet_am")
+  transkript              String?
+  transkriptDateiname     String?             @map("transkript_dateiname")
+  zusammenfassung         String?
+  protokoll               String?
+  protokollGesendetAm     DateTime?           @map("protokoll_gesendet_am")
   // Anwesenheitsbericht (MS-Teams-Export) nach dem Termin: Metadaten hier,
   // die einzelnen Teilnehmer-Zeilen in TerminAnwesenheit.
-  anwesenheitDateiname    String?   @map("anwesenheit_dateiname")
-  anwesenheitImportiertAm DateTime? @map("anwesenheit_importiert_am")
+  anwesenheitDateiname    String?             @map("anwesenheit_dateiname")
+  anwesenheitImportiertAm DateTime?           @map("anwesenheit_importiert_am")
   anwesenheiten           TerminAnwesenheit[]
-  createdAt DateTime     @default(now()) @map("created_at")
-  updatedAt DateTime     @updatedAt @map("updated_at")
+  createdAt               DateTime            @default(now()) @map("created_at")
+  updatedAt               DateTime            @updatedAt @map("updated_at")
 
   @@index([klasseId])
   @@map("klasse_termine")
@@ -303,17 +303,17 @@ model LeadActivity {
 }
 
 model Webinar {
-  id              String               @id @default(cuid())
-  title           String
-  scheduledAt     DateTime             @map("scheduled_at")
-  streamyardLink  String?              @map("streamyard_link")
-  status          WebinarStatus        @default(PLANNED)
-  description     String?
-  klasseId        String?              @map("klasse_id")
-  klasse          Klasse?              @relation(fields: [klasseId], references: [id])
-  createdAt       DateTime             @default(now()) @map("created_at")
-  updatedAt       DateTime             @updatedAt @map("updated_at")
-  registrations   WebinarRegistration[]
+  id             String                @id @default(cuid())
+  title          String
+  scheduledAt    DateTime              @map("scheduled_at")
+  streamyardLink String?               @map("streamyard_link")
+  status         WebinarStatus         @default(PLANNED)
+  description    String?
+  klasseId       String?               @map("klasse_id")
+  klasse         Klasse?               @relation(fields: [klasseId], references: [id])
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+  registrations  WebinarRegistration[]
 
   @@map("webinars")
 }
@@ -322,7 +322,7 @@ model WebinarRegistration {
   id           String             @id @default(cuid())
   webinarId    String             @map("webinar_id")
   webinar      Webinar            @relation(fields: [webinarId], references: [id])
-  leadId       String             @db.Uuid @map("lead_id")
+  leadId       String             @map("lead_id") @db.Uuid
   lead         Lead               @relation(fields: [leadId], references: [id])
   status       RegistrationStatus @default(REGISTERED)
   registeredAt DateTime           @default(now()) @map("registered_at")
@@ -336,28 +336,28 @@ model WebinarRegistration {
 }
 
 model Bestellung {
-  id                   Int      @id @default(autoincrement())
-  bestellNr            String   @unique @map("bestell_nr")
+  id                   Int                    @id @default(autoincrement())
+  bestellNr            String                 @unique @map("bestell_nr")
   paket                String
-  userAnzahl           Int      @map("user_anzahl")
+  userAnzahl           Int                    @map("user_anzahl")
   zahlungsmodell       String
-  preisNetto           Decimal  @db.Decimal(10, 2) @map("preis_netto")
-  listPreisNetto       Decimal? @db.Decimal(10, 2) @map("list_preis_netto")
+  preisNetto           Decimal                @map("preis_netto") @db.Decimal(10, 2)
+  listPreisNetto       Decimal?               @map("list_preis_netto") @db.Decimal(10, 2)
   // Manuell im Admin vereinbarter Sonderpreis (netto). Ist er gesetzt, ersetzt
   // er Listenpreis und ADN-Anpassung: preisNetto, mwstBetrag und preisBrutto
   // werden daraus berechnet. NULL = regulaerer Preis aus Paket/Zahlungsmodell.
-  sonderpreisNetto     Decimal? @db.Decimal(10, 2) @map("sonderpreis_netto")
-  mwstSatz             Decimal  @db.Decimal(4, 2) @map("mwst_satz")
-  mwstBetrag           Decimal  @db.Decimal(10, 2) @map("mwst_betrag")
-  reverseCharge        Boolean  @default(false) @map("reverse_charge")
-  reverseChargeHinweis String?  @map("reverse_charge_hinweis")
-  preisBrutto          Decimal  @db.Decimal(10, 2) @map("preis_brutto")
+  sonderpreisNetto     Decimal?               @map("sonderpreis_netto") @db.Decimal(10, 2)
+  mwstSatz             Decimal                @map("mwst_satz") @db.Decimal(4, 2)
+  mwstBetrag           Decimal                @map("mwst_betrag") @db.Decimal(10, 2)
+  reverseCharge        Boolean                @default(false) @map("reverse_charge")
+  reverseChargeHinweis String?                @map("reverse_charge_hinweis")
+  preisBrutto          Decimal                @map("preis_brutto") @db.Decimal(10, 2)
   firma                String
   strasse              String
   plz                  String
   ort                  String
-  land                 String   @default("DE")
-  ustId                String?  @map("ust_id")
+  land                 String                 @default("DE")
+  ustId                String?                @map("ust_id")
   vorname              String
   nachname             String
   email                String
@@ -365,23 +365,23 @@ model Bestellung {
   position             String?
   website              String?
   anmerkungen          String?
-  showOnMap            Boolean  @default(true) @map("show_on_map")
+  showOnMap            Boolean                @default(true) @map("show_on_map")
   latitude             Float?
   longitude            Float?
-  status               String   @default("neu")
-  adnChannel           AdnChannel @default(NONE) @map("adn_channel")
+  status               String                 @default("neu")
+  adnChannel           AdnChannel             @default(NONE) @map("adn_channel")
   // Interne Bestellung (ke solutions, Secom IT, NextVideo): wird vom
   // Umfrage-Versand UND jeder Auswertung ausgeschlossen.
-  intern               Boolean  @default(false)
+  intern               Boolean                @default(false)
   // Größenklasse der Firma (Mitarbeiter), Störgröße für den Kohortenvergleich.
   groessenklasse       Groessenklasse?
-  klasseId             String   @map("klasse_id")
-  klasse               Klasse   @relation(fields: [klasseId], references: [id])
+  klasseId             String                 @map("klasse_id")
+  klasse               Klasse                 @relation(fields: [klasseId], references: [id])
   // sevDesk-Kontakt-Cache: gesetzt, sobald für diese Bestellung einmal ein
   // Kontakt in sevDesk gefunden/angelegt wurde (siehe lib/sevdesk.ts).
-  sevdeskContactId     String?  @map("sevdesk_contact_id")
-  erstelltAm           DateTime @default(now()) @map("erstellt_am")
-  aktualisiertAm       DateTime @updatedAt @map("aktualisiert_am")
+  sevdeskContactId     String?                @map("sevdesk_contact_id")
+  erstelltAm           DateTime               @default(now()) @map("erstellt_am")
+  aktualisiertAm       DateTime               @updatedAt @map("aktualisiert_am")
   teilnehmer           BestellungTeilnehmer[]
   eventRegistrations   EventRegistration[]
   eventWaitlist        EventWaitlist[]
@@ -390,20 +390,20 @@ model Bestellung {
 }
 
 model BestellungTeilnehmer {
-  id           Int        @id @default(autoincrement())
-  bestellungId Int        @map("bestellung_id")
-  bestellung   Bestellung @relation(fields: [bestellungId], references: [id], onDelete: Cascade)
-  position     Int
-  vorname      String     @default("")
-  nachname     String     @default("")
-  email        String     @default("")
-  teamsEingeladenAm DateTime? @map("teams_eingeladen_am")
+  id                Int               @id @default(autoincrement())
+  bestellungId      Int               @map("bestellung_id")
+  bestellung        Bestellung        @relation(fields: [bestellungId], references: [id], onDelete: Cascade)
+  position          Int
+  vorname           String            @default("")
+  nachname          String            @default("")
+  email             String            @default("")
+  teamsEingeladenAm DateTime?         @map("teams_eingeladen_am")
   // Zuletzt in der Stand-Abfrage gemeldete Rolle (wird je Antwort aktualisiert).
-  rolle        TeilnehmerRolle?
-  erstelltAm   DateTime   @default(now()) @map("erstellt_am")
-  aktualisiertAm DateTime @updatedAt @map("aktualisiert_am")
-  eventTeilnahmen EventTeilnehmer[]
-  umfrageAntworten UmfrageAntwort[]
+  rolle             TeilnehmerRolle?
+  erstelltAm        DateTime          @default(now()) @map("erstellt_am")
+  aktualisiertAm    DateTime          @updatedAt @map("aktualisiert_am")
+  eventTeilnahmen   EventTeilnehmer[]
+  umfrageAntworten  UmfrageAntwort[]
 
   @@unique([bestellungId, position])
   @@index([bestellungId])
@@ -418,28 +418,28 @@ model BestellungTeilnehmer {
 // verschobenen Sessions). "Runde endet" = Status ABGESCHLOSSEN, gesetzt beim
 // Anlegen der Folgerunde. Tokens sind nur gültig, solange status = OFFEN.
 model UmfrageRunde {
-  id          String             @id @default(cuid())
-  klasseId    String             @map("klasse_id")
-  klasse      Klasse             @relation(fields: [klasseId], references: [id], onDelete: Cascade)
-  nummer      Int // 1-basiert je Klasse; Kohortenvergleich läuft über diese Nummer
-  status      UmfrageRundeStatus @default(OFFEN)
+  id                     String                  @id @default(cuid())
+  klasseId               String                  @map("klasse_id")
+  klasse                 Klasse                  @relation(fields: [klasseId], references: [id], onDelete: Cascade)
+  nummer                 Int // 1-basiert je Klasse; Kohortenvergleich läuft über diese Nummer
+  status                 UmfrageRundeStatus      @default(OFFEN)
   // Datum des Runden-Starts (der Werktag, an dem die Runde entstand)
-  stichtag    DateTime
+  stichtag               DateTime
   // Kalendertage seit Klasse.startDate am Stichtag (Europe/Berlin)
-  programmtag Int
-  jahreszeit  Jahreszeit         @default(NORMAL)
+  programmtag            Int
+  jahreszeit             Jahreszeit              @default(NORMAL)
   // Inhalt der rotierenden Frage: "Hast du [Inhalt] in den letzten 30 Tagen
   // bei einem echten Kunden angewendet?" Editierbar bis zum Versand.
-  rotierenderInhalt String       @map("rotierender_inhalt")
+  rotierenderInhalt      String                  @map("rotierender_inhalt")
   // Versand-Claims (Muster protokollGesendetAm / Newsletter-Claiming)
-  versandAm              DateTime? @map("versand_am")
-  erinnerungAm           DateTime? @map("erinnerung_am")
-  lieferrisikoGeprueftAm DateTime? @map("lieferrisiko_geprueft_am")
-  abgeschlossenAm        DateTime? @map("abgeschlossen_am")
-  erstelltAm             DateTime  @default(now()) @map("erstellt_am")
-  aktualisiertAm         DateTime  @updatedAt @map("aktualisiert_am")
-  antworten      UmfrageAntwort[]
-  anonymFeedback UmfrageAnonymFeedback[]
+  versandAm              DateTime?               @map("versand_am")
+  erinnerungAm           DateTime?               @map("erinnerung_am")
+  lieferrisikoGeprueftAm DateTime?               @map("lieferrisiko_geprueft_am")
+  abgeschlossenAm        DateTime?               @map("abgeschlossen_am")
+  erstelltAm             DateTime                @default(now()) @map("erstellt_am")
+  aktualisiertAm         DateTime                @updatedAt @map("aktualisiert_am")
+  antworten              UmfrageAntwort[]
+  anonymFeedback         UmfrageAnonymFeedback[]
 
   @@unique([klasseId, nummer])
   @@index([status])
@@ -449,33 +449,33 @@ model UmfrageRunde {
 // Eine Antwort je Platz je Runde (Upsert, letzter Schreibvorgang gewinnt --
 // egal ob über den persönlichen Link oder den Klassen-QR-Link).
 model UmfrageAntwort {
-  id           String               @id @default(cuid())
-  rundeId      String               @map("runde_id")
-  runde        UmfrageRunde         @relation(fields: [rundeId], references: [id], onDelete: Cascade)
-  teilnehmerId Int                  @map("teilnehmer_id")
-  teilnehmer   BestellungTeilnehmer @relation(fields: [teilnehmerId], references: [id], onDelete: Cascade)
+  id                     String               @id @default(cuid())
+  rundeId                String               @map("runde_id")
+  runde                  UmfrageRunde         @relation(fields: [rundeId], references: [id], onDelete: Cascade)
+  teilnehmerId           Int                  @map("teilnehmer_id")
+  teilnehmer             BestellungTeilnehmer @relation(fields: [teilnehmerId], references: [id], onDelete: Cascade)
   // Snapshot zum Antwortzeitpunkt (Muster EventTeilnehmer): Rückschritte
   // werden namentlich gelistet, auch wenn der Platz später umbenannt wird.
-  vorname  String
-  nachname String
-  email    String
+  vorname                String
+  nachname               String
+  email                  String
   // Rollenfrage (wird zusätzlich auf BestellungTeilnehmer.rolle persistiert)
-  rolle TeilnehmerRolle
+  rolle                  TeilnehmerRolle
   // Kernfrage: genau EINES der beiden Felder ist gesetzt (SQL-CHECK):
   // stufe 0-9 (Roadmap-Leiter) ODER techStufe 0-4 (Technik-Leiter bei TECHNIK)
-  stufe     Int?
-  techStufe Int? @map("tech_stufe")
+  stufe                  Int?
+  techStufe              Int?                 @map("tech_stufe")
   // Blocker 1-8, Mehrfachauswahl + bedingte Folgefragen
-  blocker      Int[]
-  blockerStufe Int?    @map("blocker_stufe") // nur wenn 1 (Zeit) dabei: Stufe 1-9
-  blockerSuche String? @map("blocker_suche") // nur wenn 7 (Material) dabei: Freitext
+  blocker                Int[]
+  blockerStufe           Int?                 @map("blocker_stufe") // nur wenn 1 (Zeit) dabei: Stufe 1-9
+  blockerSuche           String?              @map("blocker_suche") // nur wenn 7 (Material) dabei: Freitext
   // Rotierende Programmfrage
-  rotierend RotierendeAntwort
-  kanal     UmfrageKanal @default(EMAIL)
+  rotierend              RotierendeAntwort
+  kanal                  UmfrageKanal         @default(EMAIL)
   // Einmal-Flag: Rückschritt-Benachrichtigung an den Betreiber wurde gesendet
-  rueckschrittGemeldetAm DateTime? @map("rueckschritt_gemeldet_am")
-  erstelltAm     DateTime @default(now()) @map("erstellt_am")
-  aktualisiertAm DateTime @updatedAt @map("aktualisiert_am")
+  rueckschrittGemeldetAm DateTime?            @map("rueckschritt_gemeldet_am")
+  erstelltAm             DateTime             @default(now()) @map("erstellt_am")
+  aktualisiertAm         DateTime             @updatedAt @map("aktualisiert_am")
 
   @@unique([rundeId, teilnehmerId])
   @@index([rundeId])
@@ -505,64 +505,64 @@ model UmfrageAnonymFeedback {
 // lib/events/connectDay.ts) – so ist Überbuchung auch bei parallelen
 // Anmeldungen ausgeschlossen.
 model Event {
-  id                   String      @id @default(cuid())
-  slug                 String      @unique
-  name                 String
-  ort                  String?
-  startAt              DateTime    @map("start_at")
-  endAt                DateTime    @map("end_at")
+  id                    String              @id @default(cuid())
+  slug                  String              @unique
+  name                  String
+  ort                   String?
+  startAt               DateTime            @map("start_at")
+  endAt                 DateTime            @map("end_at")
   // Ab wann die Anmeldung im Kundenportal möglich ist (NULL = sofort).
-  anmeldestart         DateTime?
-  anmeldeschluss       DateTime
+  anmeldestart          DateTime?
+  anmeldeschluss        DateTime
   // Admin-Schalter: öffnet die Anmeldung VOR dem Anmeldestart (Testmodus).
-  manuellFreigeschaltet Boolean    @default(false) @map("manuell_freigeschaltet")
-  capacity             Int         @default(100)
-  seatsTaken           Int         @default(0) @map("seats_taken")
-  maxProBestellung     Int         @default(3) @map("max_pro_bestellung")
-  preisNettoProPerson  Decimal     @db.Decimal(10, 2) @map("preis_netto_pro_person")
-  status               EventStatus @default(DRAFT)
+  manuellFreigeschaltet Boolean             @default(false) @map("manuell_freigeschaltet")
+  capacity              Int                 @default(100)
+  seatsTaken            Int                 @default(0) @map("seats_taken")
+  maxProBestellung      Int                 @default(3) @map("max_pro_bestellung")
+  preisNettoProPerson   Decimal             @map("preis_netto_pro_person") @db.Decimal(10, 2)
+  status                EventStatus         @default(DRAFT)
   // Nur Bestellungen dieser Klassen dürfen sich anmelden (z.B. ["klasse-1","klasse-2"]).
-  erlaubteKlassenSlugs String[]    @map("erlaubte_klassen_slugs")
-  beschreibung         String?
-  erstelltAm           DateTime    @default(now()) @map("erstellt_am")
-  aktualisiertAm       DateTime    @updatedAt @map("aktualisiert_am")
-  registrations        EventRegistration[]
-  waitlist             EventWaitlist[]
+  erlaubteKlassenSlugs  String[]            @map("erlaubte_klassen_slugs")
+  beschreibung          String?
+  erstelltAm            DateTime            @default(now()) @map("erstellt_am")
+  aktualisiertAm        DateTime            @updatedAt @map("aktualisiert_am")
+  registrations         EventRegistration[]
+  waitlist              EventWaitlist[]
 
   @@map("events")
 }
 
 model EventRegistration {
-  id             String                  @id @default(cuid())
-  eventId        String                  @map("event_id")
-  event          Event                   @relation(fields: [eventId], references: [id])
-  bestellungId   Int                     @map("bestellung_id")
-  bestellung     Bestellung              @relation(fields: [bestellungId], references: [id])
-  status         EventRegistrationStatus @default(CONFIRMED)
-  personen       Int
+  id               String                  @id @default(cuid())
+  eventId          String                  @map("event_id")
+  event            Event                   @relation(fields: [eventId], references: [id])
+  bestellungId     Int                     @map("bestellung_id")
+  bestellung       Bestellung              @relation(fields: [bestellungId], references: [id])
+  status           EventRegistrationStatus @default(CONFIRMED)
+  personen         Int
   // Preis-Snapshot zum Anmeldezeitpunkt (Preisänderungen am Event wirken
   // nicht rückwirkend auf bereits erstellte Rechnungen).
-  preisNetto     Decimal                 @db.Decimal(10, 2) @map("preis_netto")
-  mwstSatz       Decimal                 @db.Decimal(4, 2) @map("mwst_satz")
-  mwstBetrag     Decimal                 @db.Decimal(10, 2) @map("mwst_betrag")
-  preisBrutto    Decimal                 @db.Decimal(10, 2) @map("preis_brutto")
-  reverseCharge  Boolean                 @default(false) @map("reverse_charge")
+  preisNetto       Decimal                 @map("preis_netto") @db.Decimal(10, 2)
+  mwstSatz         Decimal                 @map("mwst_satz") @db.Decimal(4, 2)
+  mwstBetrag       Decimal                 @map("mwst_betrag") @db.Decimal(10, 2)
+  preisBrutto      Decimal                 @map("preis_brutto") @db.Decimal(10, 2)
+  reverseCharge    Boolean                 @default(false) @map("reverse_charge")
   // sevDesk-Rechnung (automatisch nach der Anmeldung; Retry im Admin)
-  invoiceStatus    EventInvoiceStatus @default(PENDING) @map("invoice_status")
-  sevdeskContactId String?            @map("sevdesk_contact_id")
-  sevdeskInvoiceId String?            @map("sevdesk_invoice_id")
-  sevdeskInvoiceNr String?            @map("sevdesk_invoice_nr")
-  invoiceError     String?            @map("invoice_error")
-  invoiceSentAt    DateTime?          @map("invoice_sent_at")
+  invoiceStatus    EventInvoiceStatus      @default(PENDING) @map("invoice_status")
+  sevdeskContactId String?                 @map("sevdesk_contact_id")
+  sevdeskInvoiceId String?                 @map("sevdesk_invoice_id")
+  sevdeskInvoiceNr String?                 @map("sevdesk_invoice_nr")
+  invoiceError     String?                 @map("invoice_error")
+  invoiceSentAt    DateTime?               @map("invoice_sent_at")
   // Zahlungseingang – wird manuell im Admin abgehakt; erst dann gilt der
   // Platz als verbindlich bestätigt.
-  bezahltAm        DateTime?          @map("bezahlt_am")
-  angemeldetVon  String                  @map("angemeldet_von")
-  stornoAm       DateTime?               @map("storno_am")
-  stornoNotiz    String?                 @map("storno_notiz")
-  erstelltAm     DateTime                @default(now()) @map("erstellt_am")
-  aktualisiertAm DateTime                @updatedAt @map("aktualisiert_am")
-  teilnehmer     EventTeilnehmer[]
+  bezahltAm        DateTime?               @map("bezahlt_am")
+  angemeldetVon    String                  @map("angemeldet_von")
+  stornoAm         DateTime?               @map("storno_am")
+  stornoNotiz      String?                 @map("storno_notiz")
+  erstelltAm       DateTime                @default(now()) @map("erstellt_am")
+  aktualisiertAm   DateTime                @updatedAt @map("aktualisiert_am")
+  teilnehmer       EventTeilnehmer[]
 
   // Eine Bestellung kann MEHRERE bestätigte Anmeldungen haben (Nachmeldung
   // weiterer Personen, jede mit eigener Rechnung). Das Firmen-Kontingent
@@ -691,8 +691,8 @@ model TaskUser {
 }
 
 model TaskColumn {
-  id       Int    @id @default(autoincrement())
-  name     String @db.VarChar(100)
+  id       Int     @id @default(autoincrement())
+  name     String  @db.VarChar(100)
   position Int
   color    String? @db.VarChar(7)
   tasks    Task[]
@@ -701,41 +701,41 @@ model TaskColumn {
 }
 
 model Task {
-  id          Int       @id @default(autoincrement())
-  title       String    @db.VarChar(255)
+  id          Int                 @id @default(autoincrement())
+  title       String              @db.VarChar(255)
   description String?
-  columnId    Int       @map("column_id")
-  column      TaskColumn @relation(fields: [columnId], references: [id])
+  columnId    Int                 @map("column_id")
+  column      TaskColumn          @relation(fields: [columnId], references: [id])
   position    Int
-  workstream  String?   @db.VarChar(50)
-  responsible String?   @db.VarChar(30)
-  priority    String?   @db.VarChar(20)
-  deadline    DateTime? @db.Date
+  workstream  String?             @db.VarChar(50)
+  responsible String?             @db.VarChar(30)
+  priority    String?             @db.VarChar(20)
+  deadline    DateTime?           @db.Date
   notes       String?
-  weekLabel   String?   @map("week_label") @db.VarChar(100)
-  createdBy   Int?      @map("created_by")
-  creator     TaskUser? @relation(fields: [createdBy], references: [id])
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+  weekLabel   String?             @map("week_label") @db.VarChar(100)
+  createdBy   Int?                @map("created_by")
+  creator     TaskUser?           @relation(fields: [createdBy], references: [id])
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @default(now()) @updatedAt @map("updated_at")
   tags        TaskTagAssignment[]
 
   @@map("tasks")
 }
 
 model TaskTag {
-  id       Int    @id @default(autoincrement())
-  name     String @db.VarChar(50)
-  color    String @db.VarChar(7)
-  category String? @db.VarChar(30)
+  id       Int                 @id @default(autoincrement())
+  name     String              @db.VarChar(50)
+  color    String              @db.VarChar(7)
+  category String?             @db.VarChar(30)
   tasks    TaskTagAssignment[]
 
   @@map("task_tags")
 }
 
 model TaskRisk {
-  id         Int    @id @default(autoincrement())
-  risk       String @db.VarChar(255)
-  priority   String @db.VarChar(20) // 'Hoch', 'Mittel', 'Niedrig'
+  id         Int      @id @default(autoincrement())
+  risk       String   @db.VarChar(255)
+  priority   String   @db.VarChar(20) // 'Hoch', 'Mittel', 'Niedrig'
   mitigation String
   position   Int
   createdAt  DateTime @default(now()) @map("created_at")
@@ -745,9 +745,9 @@ model TaskRisk {
 }
 
 model TaskTagAssignment {
-  taskId Int @map("task_id")
-  task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  tagId  Int  @map("tag_id")
+  taskId Int     @map("task_id")
+  task   Task    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tagId  Int     @map("tag_id")
   tag    TaskTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([taskId, tagId])
@@ -759,20 +759,20 @@ model TaskTagAssignment {
 // ==========================================
 
 model FirstCallScore {
-  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  leadId             String    @unique @db.Uuid @map("lead_id")
-  lead               Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  leadId String @unique @map("lead_id") @db.Uuid
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   // Scorecard-Kriterien (je 1–5 Punkte)
-  copilotDemand      Int       @default(1) @map("copilot_demand")
-  currentOffer       Int       @default(1) @map("current_offer")
-  teamCapacity       Int       @default(1) @map("team_capacity")
-  decisionMaker      Int       @default(1) @map("decision_maker")
-  budgetReadiness    Int       @default(1) @map("budget_readiness")
-  urgency            Int       @default(1)
-  mindset            Int       @default(1)
-  msPartnerStatus    Int       @default(1) @map("ms_partner_status")
-  totalScore         Int       @default(8) @map("total_score")
+  copilotDemand   Int @default(1) @map("copilot_demand")
+  currentOffer    Int @default(1) @map("current_offer")
+  teamCapacity    Int @default(1) @map("team_capacity")
+  decisionMaker   Int @default(1) @map("decision_maker")
+  budgetReadiness Int @default(1) @map("budget_readiness")
+  urgency         Int @default(1)
+  mindset         Int @default(1)
+  msPartnerStatus Int @default(1) @map("ms_partner_status")
+  totalScore      Int @default(8) @map("total_score")
 
   // Gesprächsnotizen
   description        String?
@@ -791,8 +791,8 @@ model FirstCallScore {
   analyzedAt         DateTime? @map("analyzed_at")
 
   // Zeitstempel
-  calledAt           DateTime  @default(now()) @map("called_at")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
+  calledAt  DateTime @default(now()) @map("called_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("first_call_scores")
 }
@@ -849,18 +849,18 @@ model AppSetting {
 // im Audit-Log (mcp_audit_logs), Verbindungen lassen sich unter /admin/mcp
 // jederzeit trennen.
 model McpClient {
-  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  clientId     String        @unique @map("client_id")
-  name         String?
-  redirectUris String[]      @map("redirect_uris")
+  id                      String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clientId                String        @unique @map("client_id")
+  name                    String?
+  redirectUris            String[]      @map("redirect_uris")
   // "none" = Public Client (Claude, PKCE Pflicht). "client_secret_post" /
   // "client_secret_basic" = vertraulicher Client (Copilot Studio, M365 Copilot),
   // der sich am Token-Endpunkt zusätzlich mit dem Secret ausweist.
-  tokenEndpointAuthMethod String  @default("none") @map("token_endpoint_auth_method")
-  clientSecretHash        String? @map("client_secret_hash")
-  createdAt    DateTime      @default(now()) @map("created_at")
-  authCodes    McpAuthCode[]
-  tokens       McpToken[]
+  tokenEndpointAuthMethod String        @default("none") @map("token_endpoint_auth_method")
+  clientSecretHash        String?       @map("client_secret_hash")
+  createdAt               DateTime      @default(now()) @map("created_at")
+  authCodes               McpAuthCode[]
+  tokens                  McpToken[]
 
   @@map("mcp_clients")
 }
@@ -868,7 +868,7 @@ model McpClient {
 model McpAuthCode {
   id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   codeHash      String    @unique @map("code_hash")
-  clientId      String    @db.Uuid @map("client_id")
+  clientId      String    @map("client_id") @db.Uuid
   client        McpClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
   redirectUri   String    @map("redirect_uri")
   // NULL nur bei vertraulichen Clients ohne PKCE (das Secret ersetzt den Schutz).
@@ -883,7 +883,7 @@ model McpAuthCode {
 
 model McpToken {
   id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  clientId         String        @db.Uuid @map("client_id")
+  clientId         String        @map("client_id") @db.Uuid
   client           McpClient     @relation(fields: [clientId], references: [id], onDelete: Cascade)
   accessTokenHash  String        @unique @map("access_token_hash")
   refreshTokenHash String        @unique @map("refresh_token_hash")
@@ -901,7 +901,7 @@ model McpToken {
 
 model McpAuditLog {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tokenId    String?   @db.Uuid @map("token_id")
+  tokenId    String?   @map("token_id") @db.Uuid
   token      McpToken? @relation(fields: [tokenId], references: [id], onDelete: SetNull)
   tool       String
   args       Json?
@@ -912,4 +912,21 @@ model McpAuditLog {
 
   @@index([createdAt])
   @@map("mcp_audit_logs")
+}
+
+// Sicherung der Zeitzonen-Umstellung von Lead.followUpAt (Migration
+// 20260911120000_zeitzonen_konvention_followup). Haelt je Lead den alten und
+// den neuen Wert. Zwei Aufgaben:
+//   1. Idempotenz – schon migrierte Leads werden uebersprungen, ein zweiter
+//      Lauf verschiebt nichts ein zweites Mal.
+//   2. Rueckweg – die alten Werte lassen sich daraus wiederherstellen.
+// Steht bewusst im Schema, damit ein spaeteres `prisma db push` die Tabelle
+// nicht als unbekannt verwirft.
+model ZeitzonenMigrationFollowUp {
+  leadId     String   @id @map("lead_id") @db.Uuid
+  altWert    DateTime @map("alt_wert")
+  neuWert    DateTime @map("neu_wert")
+  migriertAm DateTime @default(now()) @map("migriert_am")
+
+  @@map("zeitzonen_migration_followup")
 }

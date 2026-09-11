@@ -33,6 +33,7 @@ function toBerlinLocalInput(date: Date): string {
 }
 
 export const dynamic = "force-dynamic";
+import { formatBerlin } from "@/lib/datetime";
 
 export default async function AdminConnectDayPage() {
   const authed = await isAuthenticated();
@@ -111,9 +112,7 @@ export default async function AdminConnectDayPage() {
         </h1>
         <p className="text-dark-slate-500 text-sm mt-1">
           10./11.12.2026 · {event.ort} · Anmeldeschluss{" "}
-          {new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(
-            event.anmeldeschluss
-          )}{" "}
+          {formatBerlin(event.anmeldeschluss, { dateStyle: "medium" })}{" "}
           · Status: {event.status}
         </p>
       </div>

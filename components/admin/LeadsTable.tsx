@@ -7,6 +7,7 @@ import { Search, Download, ChevronUp, ChevronDown, Plus } from "lucide-react";
 import type { LeadStatus, LeadSource, AdnChannel } from "@prisma/client";
 import { LeadStatusBadge } from "./LeadStatusBadge";
 import { FirstCallBadge } from "./FirstCallBadge";
+import { formatBerlinDate, formatBerlinDateTime } from "@/lib/datetime";
 import {
   LEAD_STATUS_CONFIG,
   LEAD_SOURCE_CONFIG,
@@ -160,9 +161,9 @@ export function LeadsTable({ leads }: LeadsTableProps) {
       lead.klasseName ?? "",
       String(lead.score ?? ""),
       lead.notes ?? "",
-      new Date(lead.createdAt).toLocaleString("de-DE"),
-      lead.lastActivityAt ? new Date(lead.lastActivityAt).toLocaleString("de-DE") : "",
-      lead.followUpAt ? new Date(lead.followUpAt).toLocaleString("de-DE") : "",
+      formatBerlinDateTime(lead.createdAt, ""),
+      formatBerlinDateTime(lead.lastActivityAt, ""),
+      formatBerlinDateTime(lead.followUpAt, ""),
     ]);
 
     const csvContent = [
@@ -392,23 +393,13 @@ export function LeadsTable({ leads }: LeadsTableProps) {
                     {lead.klasseName ?? "—"}
                   </td>
                   <td className="px-6 py-4 text-sm text-dark-slate-400">
-                    {new Date(lead.createdAt).toLocaleDateString("de-DE")}
+                    {formatBerlinDate(lead.createdAt)}
                   </td>
                   <td className="px-6 py-4 text-sm text-dark-slate-400">
-                    {lead.lastActivityAt
-                      ? new Date(lead.lastActivityAt).toLocaleDateString("de-DE")
-                      : "–"}
+                    {formatBerlinDate(lead.lastActivityAt, "–")}
                   </td>
                   <td className="px-6 py-4 text-sm text-dark-slate-400">
-                    {lead.followUpAt
-                      ? new Date(lead.followUpAt).toLocaleString("de-DE", {
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                      : "–"}
+                    {formatBerlinDateTime(lead.followUpAt, "–")}
                   </td>
                 </tr>
               ))

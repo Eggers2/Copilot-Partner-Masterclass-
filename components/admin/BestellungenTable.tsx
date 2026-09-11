@@ -1,4 +1,5 @@
 "use client";
+import { formatBerlinDateTime } from "@/lib/datetime";
 
 import { useState, useMemo, useTransition } from "react";
 import Link from "next/link";
@@ -265,7 +266,7 @@ export function BestellungenTable({
       b.telefon ?? "",
       b.anmerkungen ?? "",
       b.status,
-      new Date(b.erstelltAm).toLocaleString("de-DE"),
+      formatBerlinDateTime(b.erstelltAm, ""),
     ]);
 
     const csvContent = [
@@ -315,13 +316,13 @@ export function BestellungenTable({
         b.paket,
         b.status,
         ADN_CHANNEL_CONFIG[b.adnChannel].label,
-        new Date(b.erstelltAm).toLocaleString("de-DE"),
+        formatBerlinDateTime(b.erstelltAm, ""),
         String(t.position),
         t.vorname,
         t.nachname,
         t.email,
         t.teamsEingeladenAm
-          ? new Date(t.teamsEingeladenAm).toLocaleString("de-DE")
+          ? formatBerlinDateTime(t.teamsEingeladenAm, "")
           : "",
       ])
     );
@@ -634,13 +635,7 @@ export function BestellungenTable({
                       </button>
                     </td>
                     <td className="px-4 py-4 text-sm text-dark-slate-400">
-                      {new Date(b.erstelltAm).toLocaleString("de-DE", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {formatBerlinDateTime(b.erstelltAm)}
                     </td>
                     <td className="px-4 py-4">
                       {deleteConfirm === b.id ? (
