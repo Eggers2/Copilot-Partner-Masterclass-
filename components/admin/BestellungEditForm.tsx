@@ -9,7 +9,9 @@ import {
   PACKAGES,
   calculateMwst,
   getEffektivPreisNetto,
+  getIamcpRabattBetrag,
   getInvoicedPreisNetto,
+  IAMCP_RABATT_PROZENT,
   getPreisNetto,
   getZahlungsmodelle,
   isInternalPaketKey,
@@ -60,6 +62,8 @@ interface BestellungData {
   status: string;
   teilnehmer: (Teilnehmer & AblefyStand)[];
   adnChannel: AdnChannel;
+  /** IAMCP-Aktion: 5% Rabatt auf den an ADN fakturierten Betrag */
+  iamcpAktion: boolean;
   klasseId: string;
   intern: boolean;
   groessenklasse: Groessenklasse | null;
@@ -197,6 +201,7 @@ export function BestellungEditForm({
   const [anmerkungen, setAnmerkungen] = useState(bestellung.anmerkungen ?? "");
   const [status, setStatus] = useState(bestellung.status);
   const [adnChannel, setAdnChannel] = useState<AdnChannel>(bestellung.adnChannel);
+  const [iamcpAktion, setIamcpAktion] = useState<boolean>(bestellung.iamcpAktion);
   const [klasseId, setKlasseId] = useState<string>(bestellung.klasseId);
   const [intern, setIntern] = useState<boolean>(bestellung.intern);
   const [groessenklasse, setGroessenklasse] = useState<Groessenklasse | "">(
@@ -211,8 +216,9 @@ export function BestellungEditForm({
     ? getZahlungsmodelle(paket)
     : ["jahresabo", "monatlich"];
 
-  // Preisvorschau: zeigt vor dem Speichern, was Paket, ADN-Kanal, Land und ein
-  // eventueller Sonderpreis ergeben. Die Server-Action rechnet identisch.
+  // Preisvorschau: zeigt vor dem Speichern, was Paket, ADN-Kanal, IAMCP-Aktion,
+  // Land und ein eventueller Sonderpreis ergeben. Die Server-Action rechnet
+  // identisch.
   const sonderpreisParsed = parseSonderpreisNetto(sonderpreis);
   const preisVorschau = (() => {
     if (!isPaketKey(paket) || !erlaubteZahlungsmodelle.includes(zahlungsmodell as Zahlungsmodell)) {
@@ -221,14 +227,22 @@ export function BestellungEditForm({
     const zm = zahlungsmodell as Zahlungsmodell;
     const listPreisNetto = getPreisNetto(paket, zm);
     const regulaerNetto = getInvoicedPreisNetto(paket, zm, adnChannel);
+    const iamcpRabatt = getIamcpRabattBetrag(paket, zm, adnChannel, iamcpAktion);
     if (sonderpreisParsed.error) {
-      return { listPreisNetto, regulaerNetto, error: sonderpreisParsed.error };
+      return { listPreisNetto, regulaerNetto, iamcpRabatt, error: sonderpreisParsed.error };
     }
-    const netto = getEffektivPreisNetto(paket, zm, adnChannel, sonderpreisParsed.value);
+    const netto = getEffektivPreisNetto(
+      paket,
+      zm,
+      adnChannel,
+      sonderpreisParsed.value,
+      iamcpAktion
+    );
     const mwst = calculateMwst(land, ustId || undefined, netto);
     return {
       listPreisNetto,
       regulaerNetto,
+      iamcpRabatt,
       netto,
       mwstSatz: mwst.mwstSatz,
       mwstBetrag: mwst.mwstBetrag,
@@ -353,6 +367,7 @@ export function BestellungEditForm({
         status,
         teilnehmer: visibleTeilnehmer,
         adnChannel,
+        iamcpAktion,
         klasseId,
         intern,
         groessenklasse: groessenklasse || null,
@@ -492,6 +507,24 @@ export function BestellungEditForm({
             </span>
           </span>
         </label>
+        <label className="mt-4 flex items-start gap-3 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={iamcpAktion}
+            onChange={(e) => setIamcpAktion(e.target.checked)}
+            disabled={isPending}
+            className="mt-0.5 w-4 h-4 accent-[#030386] cursor-pointer"
+          />
+          <span>
+            <span className="block text-sm font-medium text-dark-slate-700">
+              IAMCP Aktion ({IAMCP_RABATT_PROZENT}% Rabatt)
+            </span>
+            <span className="block text-xs text-dark-slate-500 mt-0.5">
+              {IAMCP_RABATT_PROZENT}% Rabatt auf den an ADN fakturierten Betrag, gerechnet
+              nach der ADN-Kanal-Anpassung. Ein Sonderpreis ersetzt den Rabatt.
+            </span>
+          </span>
+        </label>
         {/* Sonderpreis: manuell vereinbarter Netto-Betrag für diese Bestellung */}
         <div className="mt-6 rounded-xl border border-dark-slate-100 bg-dark-slate-50 p-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -543,6 +576,22 @@ export function BestellungEditForm({
                       {formatEuro(preisVorschau.regulaerNetto)} €
                     </dd>
                   </div>
+                  {preisVorschau.iamcpRabatt > 0 && (
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-dark-slate-500">
+                        IAMCP-Aktion {IAMCP_RABATT_PROZENT} %
+                      </dt>
+                      <dd
+                        className={
+                          preisVorschau.aktiv
+                            ? "text-dark-slate-400 line-through"
+                            : "text-dark-slate-700"
+                        }
+                      >
+                        -{formatEuro(preisVorschau.iamcpRabatt)} €
+                      </dd>
+                    </div>
+                  )}
                   <div className="flex justify-between gap-4">
                     <dt className="text-dark-slate-500">
                       Netto {preisVorschau.aktiv ? "(Sonderpreis)" : "(fakturiert)"}
@@ -575,9 +624,9 @@ export function BestellungEditForm({
           </div>
           <p className="text-xs text-dark-slate-500 mt-3">
             Leer lassen bedeutet regulärer Preis aus Paket, Zahlungsmodell, Land,
-            USt-IdNr. und ADN-Kanal. Ein Sonderpreis ersetzt diesen Betrag
-            vollständig, MwSt und Brutto rechnen sich daraus neu. Der Betrag geht
-            in die Umsatzsumme der Shop-Übersicht ein.
+            USt-IdNr., ADN-Kanal und IAMCP-Aktion. Ein Sonderpreis ersetzt diesen
+            Betrag vollständig, MwSt und Brutto rechnen sich daraus neu. Der Betrag
+            geht in die Umsatzsumme der Shop-Übersicht ein.
           </p>
         </div>
       </section>

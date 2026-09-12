@@ -105,6 +105,7 @@ export function bestellungSummary(b: Bestellung & { klasse?: { name: string } | 
     preisNettoEuro: Number(b.preisNetto),
     sonderpreis: b.sonderpreisNetto != null,
     adnChannel: b.adnChannel,
+    iamcpAktion: b.iamcpAktion,
     intern: b.intern,
     klasse: b.klasse?.name ?? null,
     erstelltAm: b.erstelltAm.toISOString(),

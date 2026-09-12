@@ -76,37 +76,66 @@ export function getPreisNetto(paket: PaketKey, zahlungsmodell: Zahlungsmodell): 
 }
 
 /**
+ * Rabatt der IAMCP-Aktion in Prozent. Wird auf den an ADN fakturierten Betrag
+ * gerechnet, also nach der ADN-Kanal-Anpassung.
+ */
+export const IAMCP_RABATT_PROZENT = 5;
+
+/**
  * Berechnet den Betrag, der dem Rechnungsempfänger fakturiert wird.
  *  - NONE / ADN_50 → voller Listenpreis (bei ADN_50 zahlt ADN intern 50%, wir berechnen 100%)
  *  - ADN_15        → 85% des Listenpreises (ADN fakturiert die übrigen 15% an den Endkunden weiter)
+ *
+ * Die IAMCP-Aktion zieht anschließend 5% vom so ermittelten Betrag ab, bei
+ * ADN 85/15 also kumulativ auf die 85% (9.900 € → 8.415 € → 7.994,25 €).
  */
 export function getInvoicedPreisNetto(
   paket: PaketKey,
   zahlungsmodell: Zahlungsmodell,
-  adnChannel: AdnChannelKey
+  adnChannel: AdnChannelKey,
+  iamcpAktion: boolean = false
 ): number {
   const list = getPreisNetto(paket, zahlungsmodell);
-  if (adnChannel === "ADN_15") return Math.round(list * 0.85 * 100) / 100;
-  return list;
+  const nachAdn = adnChannel === "ADN_15" ? list * 0.85 : list;
+  const nachIamcp = iamcpAktion ? nachAdn * (1 - IAMCP_RABATT_PROZENT / 100) : nachAdn;
+  return Math.round(nachIamcp * 100) / 100;
+}
+
+/**
+ * Rabattbetrag der IAMCP-Aktion (netto) für die Anzeige in Formular und Admin.
+ * Ohne aktive Aktion sind das 0 €.
+ */
+export function getIamcpRabattBetrag(
+  paket: PaketKey,
+  zahlungsmodell: Zahlungsmodell,
+  adnChannel: AdnChannelKey,
+  iamcpAktion: boolean
+): number {
+  if (!iamcpAktion) return 0;
+  const ohne = getInvoicedPreisNetto(paket, zahlungsmodell, adnChannel, false);
+  const mit = getInvoicedPreisNetto(paket, zahlungsmodell, adnChannel, true);
+  return Math.round((ohne - mit) * 100) / 100;
 }
 
 /**
  * Fakturierter Netto-Betrag inklusive eines manuell vereinbarten Sonderpreises.
  *
- * Ein gesetzter Sonderpreis ersetzt den Listenpreis und die ADN-Anpassung
- * vollstaendig, weil er der mit dem Kunden ausgehandelte Endbetrag ist.
+ * Ein gesetzter Sonderpreis ersetzt Listenpreis, ADN-Anpassung und
+ * IAMCP-Rabatt vollstaendig, weil er der mit dem Kunden ausgehandelte
+ * Endbetrag ist.
  * Ohne Sonderpreis gilt die regulaere Preislogik.
  */
 export function getEffektivPreisNetto(
   paket: PaketKey,
   zahlungsmodell: Zahlungsmodell,
   adnChannel: AdnChannelKey,
-  sonderpreisNetto?: number | null
+  sonderpreisNetto?: number | null,
+  iamcpAktion: boolean = false
 ): number {
   if (sonderpreisNetto != null) {
     return Math.round(sonderpreisNetto * 100) / 100;
   }
-  return getInvoicedPreisNetto(paket, zahlungsmodell, adnChannel);
+  return getInvoicedPreisNetto(paket, zahlungsmodell, adnChannel, iamcpAktion);
 }
 
 /** Obergrenze fuer einen manuell eingetragenen Sonderpreis (netto). */

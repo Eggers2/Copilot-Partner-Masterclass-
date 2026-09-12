@@ -20,6 +20,8 @@ export interface BestellungWebhookInput {
   reverseCharge: boolean;
   reverseChargeHinweis: string;
   adnChannel: "NONE" | "ADN_50" | "ADN_15";
+  /** IAMCP-Aktion aktiv: 5% Rabatt auf den an ADN fakturierten Betrag. */
+  iamcpAktion?: boolean;
   klasse: BestellungWebhookKlasse | null;
   firma: string;
   strasse: string;
@@ -59,6 +61,7 @@ export function fireBestellungWebhook(data: BestellungWebhookInput): void {
       reverse_charge: data.reverseCharge,
       reverse_charge_hinweis: data.reverseChargeHinweis,
       adn_channel: data.adnChannel,
+      iamcp_aktion: data.iamcpAktion ?? false,
       waehrung: "EUR",
     },
     klasse: data.klasse,

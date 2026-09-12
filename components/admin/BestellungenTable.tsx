@@ -45,6 +45,8 @@ interface Bestellung {
   status: string;
   erstelltAm: string;
   adnChannel: AdnChannel;
+  /** IAMCP-Aktion: 5% Rabatt auf den an ADN fakturierten Betrag */
+  iamcpAktion: boolean;
   klasseName: string | null;
   intern: boolean;
   belegt: number;
@@ -234,6 +236,7 @@ export function BestellungenTable({
       "MwSt",
       "Brutto",
       "ADN-Kanal",
+      "IAMCP-Aktion",
       "Klasse",
       "Firma",
       "Land",
@@ -257,6 +260,7 @@ export function BestellungenTable({
       b.mwstBetrag,
       b.preisBrutto,
       ADN_CHANNEL_CONFIG[b.adnChannel].label,
+      b.iamcpAktion ? "Ja" : "Nein",
       b.klasseName ?? "",
       b.firma,
       b.land,
@@ -560,6 +564,14 @@ export function BestellungenTable({
                             }}
                           >
                             {ADN_CHANNEL_CONFIG[b.adnChannel].short}
+                          </span>
+                        )}
+                        {b.iamcpAktion && (
+                          <span
+                            className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700"
+                            title="IAMCP-Aktion: 5% Rabatt auf den an ADN fakturierten Betrag"
+                          >
+                            IAMCP -5%
                           </span>
                         )}
                       </div>
