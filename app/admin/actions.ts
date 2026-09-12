@@ -9,7 +9,7 @@ import {
   safeAdminRedirectPath,
 } from "@/lib/auth";
 import { requestOtpCode, resolveAppBaseUrl } from "@/lib/auth/customer";
-import { parseBerlinDate } from "@/lib/datetime";
+import { berlinInputToUtc, calendarDateToUtc } from "@/lib/datetime";
 import {
   updateLead,
   addActivity,
@@ -45,6 +45,11 @@ import {
 import { readFile, readdir } from "fs/promises";
 import path from "path";
 import { dispatchTeamsGuestInvites } from "@/lib/teams/dispatchTeamsGuest";
+import {
+  dispatchAblefyEnrollments,
+  dispatchAblefyRevocations,
+} from "@/lib/ablefy/dispatchEnrollment";
+import { findeDoppelteMail, planAblefySlots } from "@/lib/ablefy/slots";
 import { inviteGuestToTeam, isGraphConfigured } from "@/lib/teams/graph";
 import {
   setTeamsAufnahmeModus,
@@ -163,7 +168,7 @@ export async function updateLeadAction(
     notes: (formData.get("notes") as string) || null,
     score: parseInt(formData.get("score") as string) || 0,
     revenue: newStatus === "WON" ? revenueCents : undefined,
-    followUpAt: followUpAtRaw ? new Date(followUpAtRaw) : null,
+    followUpAt: followUpAtRaw ? berlinInputToUtc(followUpAtRaw) : null,
     ...(adnChannel ? { adnChannel } : {}),
     klasseId,
     ...(addressChanged ? { latitude: null, longitude: null } : {}),
@@ -248,7 +253,7 @@ export async function saveFirstCallScoreAction(
     recommendedPackage: (formData.get("recommendedPackage") as string) || null,
     objections: (formData.get("objections") as string) || null,
     nextStep: (formData.get("nextStep") as string) || null,
-    followUpDate: followUpDateRaw ? new Date(followUpDateRaw) : null,
+    followUpDate: followUpDateRaw ? calendarDateToUtc(followUpDateRaw) : null,
     contactSource: (formData.get("contactSource") as string) || null,
   });
 
@@ -393,7 +398,7 @@ export async function createWebinarAction(
   try {
     await createWebinar({
       title: title.trim(),
-      scheduledAt: parseBerlinDate(scheduledAtRaw),
+      scheduledAt: berlinInputToUtc(scheduledAtRaw),
       streamyardLink: (formData.get("streamyardLink") as string) || null,
       description: (formData.get("description") as string) || null,
     });
@@ -448,7 +453,7 @@ export async function updateWebinarAction(
   try {
     await updateWebinar(id, {
       title: title.trim(),
-      scheduledAt: parseBerlinDate(scheduledAtRaw),
+      scheduledAt: berlinInputToUtc(scheduledAtRaw),
       streamyardLink: (formData.get("streamyardLink") as string) || null,
       description: (formData.get("description") as string) || null,
     });
@@ -886,6 +891,15 @@ export async function updateBestellungAction(
     return { error: "Dieses Zahlungsmodell ist für das gewählte Paket nicht verfügbar." };
   }
 
+  // Jede Adresse darf nur einen Platz belegen: sonst bekäme dieselbe Person
+  // zwei Kurszugänge und zwei Teams-Einladungen.
+  const doppelteMail = findeDoppelteMail(input.teilnehmer.map((t) => t.email));
+  if (doppelteMail) {
+    return {
+      error: `Die E-Mail ${doppelteMail} ist mehrfach eingetragen. Bitte pro Platz eine eigene Adresse verwenden.`,
+    };
+  }
+
   const adnChannel: AdnChannel = input.adnChannel ?? "NONE";
   // IAMCP-Aktion nur im ADN-Kanal: ohne ADN-Kanal gibt es keinen Betrag, auf
   // den der Rabatt sich beziehen könnte.
@@ -945,6 +959,10 @@ export async function updateBestellungAction(
     newPlz !== current.plz.trim() ||
     newOrt !== current.ort.trim();
 
+  // Ablefy-Bestellungen, die durch dieses Speichern ihre Zeile verlieren.
+  // Wird in der Transaktion befüllt und danach abgearbeitet.
+  let ablefyEntzuege: { orderId: string | null; orderToken: string | null; email: string }[] = [];
+
   await prisma.$transaction(async (tx) => {
     await tx.bestellung.update({
       where: { id },
@@ -988,7 +1006,18 @@ export async function updateBestellungAction(
 
     const existingTeilnehmer = await tx.bestellungTeilnehmer.findMany({
       where: { bestellungId: id },
-      select: { position: true, email: true, teamsEingeladenAm: true },
+      select: {
+        position: true,
+        email: true,
+        teamsEingeladenAm: true,
+        ablefyState: true,
+        ablefyOrderId: true,
+        ablefyOrderToken: true,
+        ablefyEmail: true,
+        ablefyEingebuchtAm: true,
+        ablefyVersuchAm: true,
+        ablefyFehler: true,
+      },
     });
     const existingEmailByPosition = new Map(
       existingTeilnehmer.map((e) => [e.position, e.email])
@@ -1001,6 +1030,17 @@ export async function updateBestellungAction(
     for (const e of existingTeilnehmer) {
       if (e.email) previousInviteByEmail.set(e.email, e.teamsEingeladenAm);
     }
+
+    // Ablefy-Zugänge folgen der E-Mail, nicht der Position (siehe
+    // lib/ablefy/slots.ts). Der Plan sagt zugleich, welche Bestellungen durch
+    // das Speichern herrenlos werden – entfernte Plätze und ersetzte Adressen.
+    const neueMails = Array.from({ length: effectiveSlotCount }, (_, i) =>
+      (input.teilnehmer.find((x) => x.position === i)?.email ?? "")
+        .trim()
+        .toLowerCase()
+    );
+    const ablefyPlan = planAblefySlots(existingTeilnehmer, neueMails);
+    ablefyEntzuege = ablefyPlan.entzuege;
 
     await tx.bestellungTeilnehmer.deleteMany({
       where: { bestellungId: id, position: { gte: effectiveSlotCount } },
@@ -1021,6 +1061,8 @@ export async function updateBestellungAction(
         ? previousInviteByEmail.get(newTeilnehmerEmail) ?? null
         : null;
 
+      const ablefyDaten = ablefyPlan.datenFuer(newTeilnehmerEmail);
+
       await tx.bestellungTeilnehmer.upsert({
         where: {
           bestellungId_position: { bestellungId: id, position: i },
@@ -1032,6 +1074,7 @@ export async function updateBestellungAction(
           nachname: t.nachname.trim(),
           email: newTeilnehmerEmail,
           teamsEingeladenAm: preservedInvite,
+          ...ablefyDaten,
         },
         update: {
           vorname: t.vorname.trim(),
@@ -1041,6 +1084,10 @@ export async function updateBestellungAction(
           // E-Mail in der Bestellung bereits eingeladen war, sonst zurücksetzen
           // damit der n8n-Webhook die neue Adresse als Teams-Gast einlädt.
           ...(emailChanged ? { teamsEingeladenAm: preservedInvite } : {}),
+          // Ablefy-Zustand wandert mit der E-Mail mit: eine bereits eingebuchte
+          // Adresse behält ihre Bestellung auch nach einer Re-Indexierung, eine
+          // neue Adresse startet auf OFFEN und wird gleich unten eingebucht.
+          ...ablefyDaten,
         },
       });
     }
@@ -1068,6 +1115,11 @@ export async function updateBestellungAction(
       bestellNr: bestellung.bestellNr,
     });
   }
+
+  // Kurszugang bei Ablefy: entfernte oder ersetzte Adressen entziehen, alle
+  // eingetragenen Adressen einbuchen. Beides läuft nach der Response.
+  dispatchAblefyRevocations(ablefyEntzuege);
+  await dispatchAblefyEnrollments({ bestellungId: id });
 
   // Bei Adressänderung sofort neu geocoden, damit der Marker direkt am
   // richtigen Ort steht. Best-effort: Fehler nicht propagieren.
@@ -1231,7 +1283,7 @@ export async function createLeadAction(
       source: (sourceRaw as LeadSource) || "OTHER",
       notes: ((formData.get("notes") as string) || "").trim() || null,
       score: parseInt((formData.get("score") as string) || "0") || 0,
-      followUpAt: followUpAtRaw ? new Date(followUpAtRaw) : null,
+      followUpAt: followUpAtRaw ? berlinInputToUtc(followUpAtRaw) : null,
       adnChannel,
       klasseId,
     },
@@ -1308,9 +1360,9 @@ export async function createKlasseAction(
       data: {
         name,
         slug: slugRaw,
-        kickoffDate: new Date(kickoffDateRaw),
-        startDate: new Date(startDateRaw),
-        endDate: new Date(endDateRaw),
+        kickoffDate: calendarDateToUtc(kickoffDateRaw),
+        startDate: calendarDateToUtc(startDateRaw),
+        endDate: calendarDateToUtc(endDateRaw),
         capacity,
         status: statusRaw as KlasseStatus,
         teilnehmerSperre,
@@ -1361,9 +1413,9 @@ export async function updateKlasseAction(
     where: { id },
     data: {
       name,
-      kickoffDate: new Date(kickoffDateRaw),
-      startDate: new Date(startDateRaw),
-      endDate: new Date(endDateRaw),
+      kickoffDate: calendarDateToUtc(kickoffDateRaw),
+      startDate: calendarDateToUtc(startDateRaw),
+      endDate: calendarDateToUtc(endDateRaw),
       capacity,
       status: statusRaw as KlasseStatus,
       teilnehmerSperre,
@@ -1493,7 +1545,7 @@ export async function createTerminAction(
   const ferienRaw = formData.get("ferien");
   await createTermin({
     klasseId,
-    datum: parseBerlinDate(datumRaw),
+    datum: berlinInputToUtc(datumRaw),
     thema: ((formData.get("thema") as string) || "").trim() || null,
     notizen: ((formData.get("notizen") as string) || "").trim() || null,
     status: isTerminStatus(statusRaw) ? statusRaw : "GEPLANT",
@@ -1525,7 +1577,7 @@ export async function updateTerminAction(
   const statusRaw = formData.get("status");
   const ferienRaw = formData.get("ferien");
   await updateTermin(id, {
-    datum: parseBerlinDate(datumRaw),
+    datum: berlinInputToUtc(datumRaw),
     thema: ((formData.get("thema") as string) || "").trim() || null,
     notizen: ((formData.get("notizen") as string) || "").trim() || null,
     ...(isTerminStatus(statusRaw) ? { status: statusRaw } : {}),

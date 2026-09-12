@@ -1,4 +1,5 @@
 "use client";
+import { formatCalendarDate } from "@/lib/datetime";
 
 import { useState, useMemo } from "react";
 import { CheckCircle, AlertCircle } from "lucide-react";
@@ -379,11 +380,11 @@ export function AdnOrderForm({ klassen }: { klassen: KlasseOption[] }) {
                 >
                   <h3 className="font-bold text-slate mb-1">{k.name}</h3>
                   <p className="text-xs text-gray">
-                    Kickoff: {new Date(k.kickoffDate).toLocaleDateString("de-DE")}
+                    Kickoff: {formatCalendarDate(k.kickoffDate)}
                   </p>
                   <p className="text-xs text-gray">
-                    {new Date(k.startDate).toLocaleDateString("de-DE")} –{" "}
-                    {new Date(k.endDate).toLocaleDateString("de-DE")}
+                    {formatCalendarDate(k.startDate)} –{" "}
+                    {formatCalendarDate(k.endDate)}
                   </p>
                 </button>
               );

@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle, AlertCircle, Users, Plus, Minus } from "lucide-react";
-import type { AdnChannel, Groessenklasse } from "@prisma/client";
+import type { AblefyState, AdnChannel, Groessenklasse } from "@prisma/client";
 import { updateBestellungAction } from "@/app/admin/actions";
 import {
   PACKAGES,
@@ -26,6 +26,13 @@ interface Teilnehmer {
   vorname: string;
   nachname: string;
   email: string;
+}
+
+/** Gespeicherter Ablefy-Stand eines Platzes (nur Anzeige, siehe lib/ablefy). */
+interface AblefyStand {
+  ablefyState: AblefyState;
+  ablefyEmail: string | null;
+  ablefyFehler: string | null;
 }
 
 interface KlasseChoice {
@@ -53,7 +60,7 @@ interface BestellungData {
   position: string | null;
   anmerkungen: string | null;
   status: string;
-  teilnehmer: Teilnehmer[];
+  teilnehmer: (Teilnehmer & AblefyStand)[];
   adnChannel: AdnChannel;
   /** IAMCP-Aktion: 5% Rabatt auf den an ADN fakturierten Betrag */
   iamcpAktion: boolean;
@@ -99,6 +106,60 @@ function padTeilnehmer(list: Teilnehmer[], size: number): Teilnehmer[] {
   return result;
 }
 
+/**
+ * Zeigt je Platz an, ob die Adresse bei Ablefy im Kurs ist. Der Stand kommt aus
+ * der DB und gilt für die dort eingebuchte Adresse: sobald die E-Mail im
+ * Formular abweicht, ist der Platz "offen" und wird beim Speichern eingebucht.
+ */
+function AblefyBadge({
+  email,
+  stand,
+}: {
+  email: string;
+  stand: AblefyStand | undefined;
+}) {
+  const trimmed = email.trim().toLowerCase();
+  if (!trimmed) return null;
+
+  const eingebucht =
+    stand?.ablefyState === "PROVISIONIERT" && stand.ablefyEmail === trimmed;
+  const fehler =
+    stand?.ablefyState === "FEHLER"
+      ? (stand.ablefyFehler ?? "Die Einbuchung bei Ablefy ist fehlgeschlagen.")
+      : null;
+
+  if (eingebucht) {
+    return (
+      <span
+        title={stand?.ablefyFehler ?? "Zugang bei Ablefy angelegt"}
+        className="inline-flex items-center gap-1 text-[11px] text-green-700"
+      >
+        <CheckCircle className="w-3 h-3" />
+        Kurs: eingebucht
+        {stand?.ablefyFehler ? " (mit Hinweis)" : ""}
+      </span>
+    );
+  }
+
+  if (fehler) {
+    return (
+      <span
+        title={fehler}
+        className="inline-flex items-center gap-1 text-[11px] text-red-600"
+      >
+        <AlertCircle className="w-3 h-3" />
+        Kurs: Einbuchung fehlgeschlagen
+      </span>
+    );
+  }
+
+  return (
+    <span className="text-[11px] text-dark-slate-400">
+      Kurs: wird beim Speichern eingebucht
+    </span>
+  );
+}
+
 export function BestellungEditForm({
   bestellung,
   klassen,
@@ -111,6 +172,17 @@ export function BestellungEditForm({
   const [feedback, setFeedback] = useState<
     { type: "success" | "error"; message: string } | null
   >(null);
+
+  // Der Ablefy-Stand hängt an der eingebuchten Adresse, nicht an der Position:
+  // beim Entfernen einer leeren Zeile rücken alle folgenden Plätze nach oben.
+  const ablefyByEmail = useMemo(() => {
+    const map = new Map<string, AblefyStand>();
+    for (const t of bestellung.teilnehmer) {
+      const key = (t.ablefyEmail ?? t.email).trim().toLowerCase();
+      if (key) map.set(key, t);
+    }
+    return map;
+  }, [bestellung.teilnehmer]);
 
   const [paket, setPaket] = useState(bestellung.paket);
   const [zahlungsmodell, setZahlungsmodell] = useState(bestellung.zahlungsmodell);
@@ -722,6 +794,8 @@ export function BestellungEditForm({
           Aktuell {slotCount === 1 ? "ist 1 Platz" : `sind ${slotCount} Plätze`}{" "}
           angelegt. Die Anzahl lässt sich über die Buttons unten anpassen –
           unabhängig von Paket und Preis und mindestens bis auf einen Platz.
+          Jede eingetragene E-Mail wird beim Speichern bei Ablefy in den Kurs
+          eingebucht, die Zugangsmail verschickt Ablefy selbst.
         </p>
         <div className="space-y-3">
           {visibleTeilnehmer.map((t) => {
@@ -771,6 +845,12 @@ export function BestellungEditForm({
                     disabled={isPending}
                     className={inputClass}
                   />
+                  <div className="mt-1">
+                    <AblefyBadge
+                      email={t.email}
+                      stand={ablefyByEmail.get(t.email.trim().toLowerCase())}
+                    />
+                  </div>
                 </div>
                 <div className="flex md:justify-center md:pb-1">
                   {canRemove ? (

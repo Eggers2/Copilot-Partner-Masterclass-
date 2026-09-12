@@ -97,6 +97,9 @@ export default async function BestellungDetailPage({
             vorname: t.vorname,
             nachname: t.nachname,
             email: t.email,
+            ablefyState: t.ablefyState,
+            ablefyEmail: t.ablefyEmail,
+            ablefyFehler: t.ablefyFehler,
           })),
         }}
       />

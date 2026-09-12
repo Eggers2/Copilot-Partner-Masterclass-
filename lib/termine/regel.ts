@@ -1,4 +1,4 @@
-import { parseBerlinDate } from "@/lib/datetime";
+import { berlinInputToUtc } from "@/lib/datetime";
 
 /**
  * Ein Muster der Termin-Regel: n-ter Wochentag im Monat zu einer Uhrzeit.
@@ -106,7 +106,7 @@ export function computeNextTermine(
       const day = dayForMuster(year, month0, m);
       if (day == null) continue;
       const local = `${year}-${pad(month0 + 1)}-${pad(day)}T${m.time}`;
-      const dt = parseBerlinDate(local);
+      const dt = berlinInputToUtc(local);
       if (dt.getTime() > fromTime && !existingTimes.has(dt.getTime())) {
         candidates.push(dt);
       }
