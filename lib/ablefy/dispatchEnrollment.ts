@@ -39,10 +39,20 @@ interface Kandidat {
 export async function dispatchAblefyEnrollments(input: {
   bestellungId: number;
 }): Promise<void> {
-  if (!isAblefyConfigured() && !isAblefyDryRun()) return;
+  // Ohne Zugangsdaten passiert nichts. Das muss im Log stehen: sonst sieht es
+  // im Admin so aus, als wäre die Einbuchung nur noch nicht durchgelaufen,
+  // während in Wahrheit nie ein Call versucht wurde.
+  if (!isAblefyConfigured() && !isAblefyDryRun()) {
+    console.warn(
+      "[Ablefy] Keine Zugangsdaten gesetzt (ABLEFY_API_KEY und ABLEFY_API_SECRET) – " +
+        `die Teilnehmer von Bestellung ${input.bestellungId} werden nicht in den Kurs eingebucht.`
+    );
+    return;
+  }
 
   const productId = getAblefyProductId();
   if (!productId) {
+    // Gleicher Fall wie oben: ohne Kurs-ID gibt es nichts einzubuchen.
     console.error(
       "[Ablefy] Keine ABLEFY_PRODUCT_ID gesetzt – es wird niemand in den Kurs eingebucht."
     );
@@ -247,7 +257,12 @@ async function revokeOne(
 export function dispatchAblefyRevocations(targets: RevokeTarget[]): void {
   const offen = targets.filter((t) => t.orderId || t.orderToken);
   if (offen.length === 0) return;
-  if (!isAblefyConfigured() && !isAblefyDryRun()) return;
+  if (!isAblefyConfigured() && !isAblefyDryRun()) {
+    console.warn(
+      `[Ablefy] Keine Zugangsdaten gesetzt – ${offen.length} Kurszugang/-zugänge bleiben bestehen.`
+    );
+    return;
+  }
 
   after(async () => {
     for (const target of offen) {
