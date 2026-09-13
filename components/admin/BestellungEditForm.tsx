@@ -61,6 +61,8 @@ interface BestellungData {
   anmerkungen: string | null;
   status: string;
   teilnehmer: (Teilnehmer & AblefyStand)[];
+  /** Sind Ablefy-Zugangsdaten gesetzt? Sonst wird niemand eingebucht. */
+  ablefyAktiv: boolean;
   adnChannel: AdnChannel;
   /** IAMCP-Aktion: 5% Rabatt auf den an ADN fakturierten Betrag */
   iamcpAktion: boolean;
@@ -114,9 +116,11 @@ function padTeilnehmer(list: Teilnehmer[], size: number): Teilnehmer[] {
 function AblefyBadge({
   email,
   stand,
+  aktiv,
 }: {
   email: string;
   stand: AblefyStand | undefined;
+  aktiv: boolean;
 }) {
   const trimmed = email.trim().toLowerCase();
   if (!trimmed) return null;
@@ -149,6 +153,18 @@ function AblefyBadge({
       >
         <AlertCircle className="w-3 h-3" />
         Kurs: Einbuchung fehlgeschlagen
+      </span>
+    );
+  }
+
+  if (!aktiv) {
+    return (
+      <span
+        title="Es sind keine Ablefy-Zugangsdaten hinterlegt (ABLEFY_API_KEY, ABLEFY_API_SECRET, ABLEFY_PRODUCT_ID)."
+        className="inline-flex items-center gap-1 text-[11px] text-amber-700"
+      >
+        <AlertCircle className="w-3 h-3" />
+        Kurs: Ablefy ist nicht konfiguriert
       </span>
     );
   }
@@ -794,8 +810,9 @@ export function BestellungEditForm({
           Aktuell {slotCount === 1 ? "ist 1 Platz" : `sind ${slotCount} Plätze`}{" "}
           angelegt. Die Anzahl lässt sich über die Buttons unten anpassen –
           unabhängig von Paket und Preis und mindestens bis auf einen Platz.
-          Jede eingetragene E-Mail wird beim Speichern bei Ablefy in den Kurs
-          eingebucht, die Zugangsmail verschickt Ablefy selbst.
+          {bestellung.ablefyAktiv
+            ? "Jede eingetragene E-Mail wird beim Speichern bei Ablefy in den Kurs eingebucht, die Zugangsmail verschickt Ablefy selbst."
+            : "Ablefy ist auf diesem Server nicht konfiguriert, es wird niemand in den Kurs eingebucht. Sobald die Zugangsdaten hinterlegt sind, holt der nächste Speichervorgang das für alle eingetragenen Adressen nach."}
         </p>
         <div className="space-y-3">
           {visibleTeilnehmer.map((t) => {
@@ -849,6 +866,7 @@ export function BestellungEditForm({
                     <AblefyBadge
                       email={t.email}
                       stand={ablefyByEmail.get(t.email.trim().toLowerCase())}
+                      aktiv={bestellung.ablefyAktiv}
                     />
                   </div>
                 </div>

@@ -1,4 +1,5 @@
 import { redirect, notFound } from "next/navigation";
+import { isAblefyConfigured, isAblefyDryRun } from "@/lib/ablefy/client";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
@@ -92,6 +93,9 @@ export default async function BestellungDetailPage({
           intern: bestellung.intern,
           groessenklasse: bestellung.groessenklasse,
           sonderpreisNetto: bestellung.sonderpreisNetto?.toString() ?? null,
+          // Ohne Zugangsdaten bucht der Server niemanden ein. Das gehört ins
+          // Formular, sonst verspricht der Hinweis dort etwas, das nicht passiert.
+          ablefyAktiv: isAblefyConfigured() || isAblefyDryRun(),
           teilnehmer: bestellung.teilnehmer.map((t) => ({
             position: t.position,
             vorname: t.vorname,
