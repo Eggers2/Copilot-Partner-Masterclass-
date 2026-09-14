@@ -14,13 +14,22 @@ import {
  * Bucht Teilnehmerplätze als kostenlose Ablefy-Bestellung auf den Kurs.
  *
  * Aufgerufen nach jedem Speichern einer Teilnehmerliste (Admin und
- * Kundenportal). Gebucht wird jeder Platz, der eine E-Mail trägt und noch nicht
- * mit genau dieser Adresse eingebucht ist – neue Plätze also ebenso wie
- * umbenannte. Ablefy verschickt die Zugangsmail selbst.
+ * Kundenportal), aber ausschließlich für die Adressen, die dabei neu in die
+ * Bestellung gekommen sind: eine leere Zeile wurde befüllt, oder ein Platz
+ * wurde auf eine andere Person umgeschrieben (siehe lib/ablefy/slots.ts).
+ * Ablefy verschickt die Zugangsmail selbst.
  *
- * Die Arbeit läuft in `after()`, das Speichern wartet nicht darauf. Ein
- * Fehlschlag bleibt als AblefyState.FEHLER am Platz stehen und wird beim
- * nächsten Speichern automatisch erneut versucht.
+ * Bewusst NICHT der Auslöser ist der gespeicherte Ablefy-Zustand. Teilnehmer
+ * aus der Zeit vor der Anbindung sind von Hand im Kurs und haben trotzdem
+ * keinen Zustand am Platz; würde daraus eine Einbuchung folgen, bekäme bei
+ * jeder Namensänderung die ganze Liste neue Bestellungen.
+ *
+ * Aus demselben Grund gibt es keinen automatischen Retry nach einem
+ * Fehlschlag: bei einem Timeout kann die Bestellung trotzdem entstanden sein.
+ * Ein fehlgeschlagener Platz bleibt sichtbar auf FEHLER stehen und wird im
+ * Admin einzeln erneut angestoßen (retryAblefyEnrollment).
+ *
+ * Die Arbeit läuft in `after()`, das Speichern wartet nicht darauf.
  */
 
 /** Ein IN_ARBEIT-Claim, der älter ist, gilt als verwaist (Deploy, Crash). */
@@ -38,7 +47,14 @@ interface Kandidat {
 
 export async function dispatchAblefyEnrollments(input: {
   bestellungId: number;
+  /** Nur diese Adressen werden eingebucht (die Neuzugänge des Speichervorgangs). */
+  emails: string[];
 }): Promise<void> {
+  const gesucht = new Set(
+    input.emails.map((e) => e.trim().toLowerCase()).filter(Boolean)
+  );
+  if (gesucht.size === 0) return;
+
   // Ohne Zugangsdaten passiert nichts. Das muss im Log stehen: sonst sieht es
   // im Admin so aus, als wäre die Einbuchung nur noch nicht durchgelaufen,
   // während in Wahrheit nie ein Call versucht wurde.
@@ -60,7 +76,7 @@ export async function dispatchAblefyEnrollments(input: {
   }
 
   const teilnehmer = await prisma.bestellungTeilnehmer.findMany({
-    where: { bestellungId: input.bestellungId, NOT: { email: "" } },
+    where: { bestellungId: input.bestellungId, email: { in: Array.from(gesucht) } },
     select: {
       id: true,
       vorname: true,
@@ -75,11 +91,11 @@ export async function dispatchAblefyEnrollments(input: {
   });
 
   const staleBefore = Date.now() - CLAIM_STALE_MS;
-  // Fällig ist ein Platz, der noch nie eingebucht wurde, dessen Einbuchung
-  // fehlschlug, oder dessen E-Mail sich seit der Einbuchung geändert hat. Ein
-  // frischer IN_ARBEIT-Claim bedeutet, dass gerade ein anderer Lauf daran
-  // arbeitet – Ablefy hat keine Idempotenz, ein zweiter POST erzeugt eine
-  // zweite Bestellung.
+  // Die Auswahl ist schon getroffen; hier bleiben nur noch die beiden Fälle
+  // übrig, in denen ein Call trotzdem eine Dublette wäre: die Adresse ist
+  // bereits auf diesen Kurs gebucht, oder ein anderer Lauf ist gerade dran
+  // (Ablefy hat keine Idempotenz, ein zweiter POST erzeugt eine zweite
+  // Bestellung).
   const kandidaten: Kandidat[] = teilnehmer.filter((t) => {
     if (
       t.ablefyState === "IN_ARBEIT" &&
@@ -107,6 +123,93 @@ export async function dispatchAblefyEnrollments(input: {
       }
     }
   });
+}
+
+/**
+ * Bucht einen einzelnen Platz von Hand ein, angestoßen aus dem Admin.
+ *
+ * Der Weg für Plätze, die der automatische Lauf bewusst nicht anfasst: ein
+ * Versuch, der an einem Timeout hängen geblieben ist, oder ein Teilnehmer aus
+ * der Zeit vor der Anbindung, der doch noch einen Zugang bekommen soll. Läuft
+ * synchron, damit der Admin das Ergebnis direkt sieht.
+ */
+export async function retryAblefyEnrollment(
+  teilnehmerId: number
+): Promise<{ ok: boolean; message: string }> {
+  if (!isAblefyConfigured() && !isAblefyDryRun()) {
+    return {
+      ok: false,
+      message:
+        "Ablefy ist auf diesem Server nicht konfiguriert (ABLEFY_API_KEY, ABLEFY_API_SECRET).",
+    };
+  }
+
+  const productId = getAblefyProductId();
+  if (!productId) {
+    return { ok: false, message: "Es ist keine ABLEFY_PRODUCT_ID gesetzt." };
+  }
+
+  const t = await prisma.bestellungTeilnehmer.findUnique({
+    where: { id: teilnehmerId },
+    select: {
+      id: true,
+      vorname: true,
+      nachname: true,
+      email: true,
+      ablefyState: true,
+      ablefyOrderId: true,
+      ablefyOrderToken: true,
+      ablefyEmail: true,
+      ablefyVersuchAm: true,
+    },
+  });
+
+  if (!t || !t.email) {
+    return { ok: false, message: "Der Teilnehmerplatz hat keine E-Mail-Adresse." };
+  }
+  if (t.ablefyState === "PROVISIONIERT" && t.ablefyEmail === t.email) {
+    return {
+      ok: true,
+      message: `${t.email} ist bereits im Kurs (Bestellung ${t.ablefyOrderId}).`,
+    };
+  }
+
+  const staleBefore = Date.now() - CLAIM_STALE_MS;
+  if (
+    t.ablefyState === "IN_ARBEIT" &&
+    t.ablefyVersuchAm &&
+    t.ablefyVersuchAm.getTime() > staleBefore
+  ) {
+    return {
+      ok: false,
+      message:
+        "Für diese Adresse läuft gerade ein Einbuchungsversuch. Bitte einen Moment warten und die Seite neu laden.",
+    };
+  }
+
+  try {
+    await enrollOne(t, productId, staleBefore);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    await markError(t.id, message).catch(() => {});
+    return { ok: false, message };
+  }
+
+  const danach = await prisma.bestellungTeilnehmer.findUnique({
+    where: { id: teilnehmerId },
+    select: { ablefyState: true, ablefyOrderId: true, ablefyFehler: true },
+  });
+
+  if (danach?.ablefyState === "PROVISIONIERT") {
+    return {
+      ok: true,
+      message: `${t.email} wurde in den Kurs eingebucht (Bestellung ${danach.ablefyOrderId}).`,
+    };
+  }
+  return {
+    ok: false,
+    message: danach?.ablefyFehler ?? "Die Einbuchung ist fehlgeschlagen.",
+  };
 }
 
 async function enrollOne(

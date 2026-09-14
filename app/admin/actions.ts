@@ -48,6 +48,7 @@ import { dispatchTeamsGuestInvites } from "@/lib/teams/dispatchTeamsGuest";
 import {
   dispatchAblefyEnrollments,
   dispatchAblefyRevocations,
+  retryAblefyEnrollment,
 } from "@/lib/ablefy/dispatchEnrollment";
 import { findeDoppelteMail, planAblefySlots } from "@/lib/ablefy/slots";
 import { inviteGuestToTeam, isGraphConfigured } from "@/lib/teams/graph";
@@ -962,6 +963,10 @@ export async function updateBestellungAction(
   // Ablefy-Bestellungen, die durch dieses Speichern ihre Zeile verlieren.
   // Wird in der Transaktion befüllt und danach abgearbeitet.
   let ablefyEntzuege: { orderId: string | null; orderToken: string | null; email: string }[] = [];
+  // Adressen, die durch dieses Speichern neu in die Bestellung kommen. Nur sie
+  // werden eingebucht; bestehende Zeilen bleiben unberührt, auch wenn ihre
+  // Teilnehmer seinerzeit von Hand in den Kurs eingetragen wurden.
+  let ablefyNeuzugaenge: string[] = [];
 
   await prisma.$transaction(async (tx) => {
     await tx.bestellung.update({
@@ -1041,6 +1046,7 @@ export async function updateBestellungAction(
     );
     const ablefyPlan = planAblefySlots(existingTeilnehmer, neueMails);
     ablefyEntzuege = ablefyPlan.entzuege;
+    ablefyNeuzugaenge = ablefyPlan.neuzugaenge;
 
     await tx.bestellungTeilnehmer.deleteMany({
       where: { bestellungId: id, position: { gte: effectiveSlotCount } },
@@ -1119,7 +1125,7 @@ export async function updateBestellungAction(
   // Kurszugang bei Ablefy: entfernte oder ersetzte Adressen entziehen, alle
   // eingetragenen Adressen einbuchen. Beides läuft nach der Response.
   dispatchAblefyRevocations(ablefyEntzuege);
-  await dispatchAblefyEnrollments({ bestellungId: id });
+  await dispatchAblefyEnrollments({ bestellungId: id, emails: ablefyNeuzugaenge });
 
   // Bei Adressänderung sofort neu geocoden, damit der Marker direkt am
   // richtigen Ort steht. Best-effort: Fehler nicht propagieren.
@@ -2076,4 +2082,30 @@ export async function deleteUmfrageRundeAction(
   await prisma.umfrageRunde.delete({ where: { id: rundeId } });
   revalidatePath(`/admin/klassen/${runde.klasse.slug}`);
   return { success: true };
+}
+
+/**
+ * Bucht einen einzelnen Teilnehmerplatz von Hand in den Ablefy-Kurs ein.
+ *
+ * Das Speichern der Teilnehmerliste bucht nur neu hinzugekommene Adressen, und
+ * nach einem Fehlschlag gibt es bewusst keinen automatischen zweiten Versuch
+ * (bei einem Timeout kann die Bestellung trotzdem entstanden sein). Für beide
+ * Fälle ist das hier der Weg: der Admin entscheidet, wann ein Call losgeht.
+ */
+export async function retryAblefyEnrollmentAction(
+  teilnehmerId: number
+): Promise<{ success?: boolean; message: string }> {
+  await requireAuth();
+
+  const teilnehmer = await prisma.bestellungTeilnehmer.findUnique({
+    where: { id: teilnehmerId },
+    select: { bestellungId: true },
+  });
+  if (!teilnehmer) return { message: "Teilnehmerplatz nicht gefunden." };
+
+  const result = await retryAblefyEnrollment(teilnehmerId);
+  revalidatePath(`/admin/shop/${teilnehmer.bestellungId}`);
+  return result.ok
+    ? { success: true, message: result.message }
+    : { message: result.message };
 }

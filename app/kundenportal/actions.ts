@@ -169,6 +169,10 @@ export async function updateKundeBestellungAction(
 
   // Ablefy-Bestellungen, die durch dieses Speichern ihre Zeile verlieren.
   let ablefyEntzuege: { orderId: string | null; orderToken: string | null; email: string }[] = [];
+  // Adressen, die durch dieses Speichern neu in die Bestellung kommen. Nur sie
+  // werden eingebucht; bestehende Zeilen bleiben unberührt, auch wenn ihre
+  // Teilnehmer seinerzeit von Hand in den Kurs eingetragen wurden.
+  let ablefyNeuzugaenge: string[] = [];
 
   await prisma.$transaction(async (tx) => {
     await tx.bestellung.update({
@@ -229,6 +233,7 @@ export async function updateKundeBestellungAction(
     );
     const ablefyPlan = planAblefySlots(existingTeilnehmer, neueMails);
     ablefyEntzuege = ablefyPlan.entzuege;
+    ablefyNeuzugaenge = ablefyPlan.neuzugaenge;
 
     for (let i = 0; i < slotCount; i++) {
       const t = input.teilnehmer.find((x) => x.position === i) ?? {
@@ -296,7 +301,7 @@ export async function updateKundeBestellungAction(
 
   // Kurszugang bei Ablefy: ersetzte Adressen entziehen, eingetragene einbuchen.
   dispatchAblefyRevocations(ablefyEntzuege);
-  await dispatchAblefyEnrollments({ bestellungId });
+  await dispatchAblefyEnrollments({ bestellungId, emails: ablefyNeuzugaenge });
 
   if (newEmail !== session.email) {
     await setCustomerSession(newEmail);

@@ -97,6 +97,7 @@ export default async function BestellungDetailPage({
           // Formular, sonst verspricht der Hinweis dort etwas, das nicht passiert.
           ablefyAktiv: isAblefyConfigured() || isAblefyDryRun(),
           teilnehmer: bestellung.teilnehmer.map((t) => ({
+            id: t.id,
             position: t.position,
             vorname: t.vorname,
             nachname: t.nachname,
