@@ -4,7 +4,10 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle, AlertCircle, Users, Plus, Minus } from "lucide-react";
 import type { AblefyState, AdnChannel, Groessenklasse } from "@prisma/client";
-import { updateBestellungAction } from "@/app/admin/actions";
+import {
+  retryAblefyEnrollmentAction,
+  updateBestellungAction,
+} from "@/app/admin/actions";
 import {
   PACKAGES,
   calculateMwst,
@@ -28,8 +31,10 @@ interface Teilnehmer {
   email: string;
 }
 
-/** Gespeicherter Ablefy-Stand eines Platzes (nur Anzeige, siehe lib/ablefy). */
+/** Gespeicherter Ablefy-Stand eines Platzes (siehe lib/ablefy). */
 interface AblefyStand {
+  /** DB-ID des Platzes, nötig für die manuelle Einbuchung. */
+  id: number;
   ablefyState: AblefyState;
   ablefyEmail: string | null;
   ablefyFehler: string | null;
@@ -109,9 +114,17 @@ function padTeilnehmer(list: Teilnehmer[], size: number): Teilnehmer[] {
 }
 
 /**
- * Zeigt je Platz an, ob die Adresse bei Ablefy im Kurs ist. Der Stand kommt aus
- * der DB und gilt für die dort eingebuchte Adresse: sobald die E-Mail im
- * Formular abweicht, ist der Platz "offen" und wird beim Speichern eingebucht.
+ * Zeigt je Platz den Ablefy-Stand und erlaubt, einen Platz einzeln einzubuchen.
+ *
+ * Die drei Zustände, die der Admin auseinanderhalten muss:
+ *  - `stand` fehlt: die Adresse steht noch nicht gespeichert in der Liste, sie
+ *    wird also beim Speichern eingebucht.
+ *  - `stand` da, aber kein Zugang: der Platz stand schon vorher in der Liste.
+ *    Das Speichern rührt ihn nicht an, weil solche Teilnehmer oft längst von
+ *    Hand im Kurs sind. Wer doch einen Zugang braucht, bekommt ihn über den
+ *    Button.
+ *  - Fehlgeschlagener Versuch: ebenfalls nur über den Button, denn nach einem
+ *    Timeout kann die Bestellung trotzdem entstanden sein.
  */
 function AblefyBadge({
   email,
@@ -122,6 +135,10 @@ function AblefyBadge({
   stand: AblefyStand | undefined;
   aktiv: boolean;
 }) {
+  const [isPending, startTransition] = useTransition();
+  const [result, setResult] = useState<{ ok: boolean; message: string } | null>(
+    null
+  );
   const trimmed = email.trim().toLowerCase();
   if (!trimmed) return null;
 
@@ -131,6 +148,34 @@ function AblefyBadge({
     stand?.ablefyState === "FEHLER"
       ? (stand.ablefyFehler ?? "Die Einbuchung bei Ablefy ist fehlgeschlagen.")
       : null;
+
+  const einbuchen = (frage: string) => {
+    if (!stand || !window.confirm(frage)) return;
+    setResult(null);
+    startTransition(async () => {
+      const antwort = await retryAblefyEnrollmentAction(stand.id);
+      setResult({ ok: Boolean(antwort.success), message: antwort.message });
+    });
+  };
+
+  const button = (label: string, frage: string) => (
+    <button
+      type="button"
+      onClick={() => einbuchen(frage)}
+      disabled={isPending || !aktiv}
+      className="text-[11px] font-medium text-[#030386] underline underline-offset-2 hover:no-underline disabled:opacity-50 disabled:no-underline"
+    >
+      {isPending ? "läuft…" : label}
+    </button>
+  );
+
+  const meldung = result ? (
+    <span
+      className={`text-[11px] ${result.ok ? "text-green-700" : "text-red-600"}`}
+    >
+      {result.message}
+    </span>
+  ) : null;
 
   if (eingebucht) {
     return (
@@ -145,18 +190,6 @@ function AblefyBadge({
     );
   }
 
-  if (fehler) {
-    return (
-      <span
-        title={fehler}
-        className="inline-flex items-center gap-1 text-[11px] text-red-600"
-      >
-        <AlertCircle className="w-3 h-3" />
-        Kurs: Einbuchung fehlgeschlagen
-      </span>
-    );
-  }
-
   if (!aktiv) {
     return (
       <span
@@ -165,6 +198,44 @@ function AblefyBadge({
       >
         <AlertCircle className="w-3 h-3" />
         Kurs: Ablefy ist nicht konfiguriert
+      </span>
+    );
+  }
+
+  if (fehler) {
+    return (
+      <span className="inline-flex flex-wrap items-center gap-2">
+        <span
+          title={fehler}
+          className="inline-flex items-center gap-1 text-[11px] text-red-600"
+        >
+          <AlertCircle className="w-3 h-3" />
+          Kurs: Einbuchung fehlgeschlagen
+        </span>
+        {button(
+          "Erneut versuchen",
+          "Einbuchung erneut versuchen? Falls der vorige Versuch bei Ablefy doch angekommen ist, entsteht dabei eine zweite Bestellung."
+        )}
+        {meldung}
+      </span>
+    );
+  }
+
+  // Der Platz stand schon vor dem Öffnen in der Liste und trägt keinen Zugang.
+  if (stand) {
+    return (
+      <span className="inline-flex flex-wrap items-center gap-2">
+        <span
+          title="Dieser Platz wurde nicht über das System eingebucht. Das Speichern ändert daran nichts, eingebucht werden nur neu eingetragene oder geänderte Adressen."
+          className="text-[11px] text-dark-slate-400"
+        >
+          Kurs: kein Eintrag
+        </span>
+        {button(
+          "Jetzt einbuchen",
+          "Diese Adresse jetzt bei Ablefy in den Kurs einbuchen? Hat die Person dort bereits einen Zugang, entsteht eine zweite Bestellung."
+        )}
+        {meldung}
       </span>
     );
   }
@@ -194,8 +265,12 @@ export function BestellungEditForm({
   const ablefyByEmail = useMemo(() => {
     const map = new Map<string, AblefyStand>();
     for (const t of bestellung.teilnehmer) {
-      const key = (t.ablefyEmail ?? t.email).trim().toLowerCase();
-      if (key) map.set(key, t);
+      // Ein Platz, dessen Adresse gewechselt hat, ist über die eingebuchte
+      // Adresse auffindbar; sonst zählt die Adresse der Zeile.
+      for (const key of [t.ablefyEmail, t.email]) {
+        const normalisiert = key?.trim().toLowerCase();
+        if (normalisiert && !map.has(normalisiert)) map.set(normalisiert, t);
+      }
     }
     return map;
   }, [bestellung.teilnehmer]);
@@ -811,7 +886,7 @@ export function BestellungEditForm({
           angelegt. Die Anzahl lässt sich über die Buttons unten anpassen –
           unabhängig von Paket und Preis und mindestens bis auf einen Platz.
           {bestellung.ablefyAktiv
-            ? "Jede eingetragene E-Mail wird beim Speichern bei Ablefy in den Kurs eingebucht, die Zugangsmail verschickt Ablefy selbst."
+            ? "Neu eingetragene und geänderte E-Mails werden beim Speichern bei Ablefy in den Kurs eingebucht, die Zugangsmail verschickt Ablefy selbst. Unveränderte Zeilen bleiben unberührt."
             : "Ablefy ist auf diesem Server nicht konfiguriert, es wird niemand in den Kurs eingebucht. Sobald die Zugangsdaten hinterlegt sind, holt der nächste Speichervorgang das für alle eingetragenen Adressen nach."}
         </p>
         <div className="space-y-3">

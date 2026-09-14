@@ -44,6 +44,12 @@ const LEER: AblefySlotData = {
  * zweites Mal eingebucht – Ablefy hat keine Idempotenz, jeder POST erzeugt eine
  * neue Bestellung.
  *
+ * Aus demselben Grund ist allein der Vergleich der beiden Listen der Auslöser
+ * einer Einbuchung, nicht der gespeicherte Ablefy-Zustand: gebucht wird, welche
+ * Adresse neu hinzukommt (leere Zeile befüllt oder Platz auf eine andere Person
+ * umgeschrieben). Alle übrigen Zeilen bleiben unberührt, auch wenn an ihnen
+ * keine Bestellung hängt.
+ *
  * @param bestand   Teilnehmerplätze, wie sie vor dem Speichern in der DB stehen
  * @param neueMails Die E-Mails nach dem Speichern (leere Einträge erlaubt)
  */
@@ -53,6 +59,8 @@ export function planAblefySlots(
 ): {
   /** Ablefy-Felder, die für diese E-Mail geschrieben werden sollen. */
   datenFuer: (email: string) => AblefySlotData;
+  /** Adressen, die vorher in keiner Zeile standen: nur die werden eingebucht. */
+  neuzugaenge: string[];
   /** Zugänge, die nach dem Speichern zu keiner Zeile mehr gehören. */
   entzuege: AblefyRevokeTarget[];
 } {
@@ -73,7 +81,16 @@ export function planAblefySlots(
     });
   }
 
+  // Alle Adressen, die vor dem Speichern in der Bestellung standen, unabhängig
+  // davon, ob sie je über dieses System eingebucht wurden. Für Bestellungen aus
+  // der Zeit vor der Ablefy-Anbindung sind die Teilnehmer längst von Hand im
+  // Kurs: sie hier als "noch nicht eingebucht" zu behandeln, hieße sie bei
+  // jeder Namensänderung an einem anderen Platz erneut zu buchen.
+  const vorher = new Set(bestand.map((slot) => slot.email).filter(Boolean));
+
   const behalten = new Set(neueMails.filter(Boolean));
+  const neuzugaenge = Array.from(behalten).filter((email) => !vorher.has(email));
+
   const entzuege: AblefyRevokeTarget[] = [];
   for (const [email, daten] of bekannt) {
     if (behalten.has(email)) continue;
@@ -88,6 +105,7 @@ export function planAblefySlots(
   return {
     datenFuer: (email: string) =>
       (email ? bekannt.get(email) : undefined) ?? { ...LEER },
+    neuzugaenge,
     entzuege,
   };
 }
