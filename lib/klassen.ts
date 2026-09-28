@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
+import { cache } from "react";
 import type { Klasse } from "@prisma/client";
+import type { KlasseRow } from "@/lib/landing/klassen";
 
 export class NoOpenKlasseError extends Error {
   constructor() {
@@ -102,57 +104,34 @@ export async function listKlassenMitBelegung() {
 }
 
 /**
- * Kennzahlen der aktuell zur Bewerbung offenen Klasse – für den Platz-Zähler
- * auf der Landing Page. "belegt" = Anzahl Bestellungen dieser Klasse, also
- * dieselbe Zahl, die der Admin unter Klassen/Bestellungen als Belegung zeigt.
+ * Alle Klassen mit Belegung für die Startseite (Zeitleiste, offene Klasse,
+ * Schema). "belegt" = Anzahl Bestellungen der Klasse, also dieselbe Zahl, die
+ * der Admin unter Klassen/Bestellungen als Belegung zeigt. Welche Klasse als
+ * offen gilt, entscheidet buildLandingKlassen() nach derselben Regel wie
+ * getNextOpenKlasse().
  *
- * Gezählt wird die Klasse, in die neue Bestellungen laufen: die erste offene
- * Klasse (status OPEN, nach Kickoff sortiert) mit freier Kapazität – dieselbe
- * Auswahl wie in getNextOpenKlasse(). Sind alle offenen Klassen voll, zählt die
- * jüngste; "25 von 25 vergeben" ist auf der Startseite die wichtigste Aussage.
- * So bleibt der Zähler korrekt, auch wenn ausgebuchte Altklassen noch auf OPEN
- * stehen.
+ * Liefert null, wenn die DB nicht erreichbar ist. Die Startseite ist der
+ * Railway-Healthcheck und darf daran nie scheitern.
  *
- * Fällt auf die übergebenen Werte zurück, wenn keine offene Klasse existiert
- * oder die DB nicht erreichbar ist. Die Startseite ist der Railway-Healthcheck
- * und darf an einer Kennzahl nie scheitern.
+ * Mit React cache(), damit generateMetadata() und die Seite pro Request nur
+ * einmal abfragen.
  */
-export async function getOffeneKlasseBelegung(fallback: {
-  capacity: number;
-  belegt: number;
-}): Promise<{ capacity: number; belegt: number }> {
+export const getLandingKlassenRows = cache(async (): Promise<KlasseRow[] | null> => {
   try {
-    const offene = await prisma.klasse.findMany({
-      where: { status: "OPEN" },
-      orderBy: { kickoffDate: "asc" },
-      select: { id: true, capacity: true },
-    });
-    if (offene.length === 0) return fallback;
-
-    const counts = await prisma.bestellung.groupBy({
-      by: ["klasseId"],
-      where: { klasseId: { in: offene.map((k) => k.id) } },
-      _count: { id: true },
-    });
+    const [klassen, counts] = await Promise.all([
+      prisma.klasse.findMany({
+        orderBy: { kickoffDate: "asc" },
+        select: { id: true, name: true, kickoffDate: true, status: true, capacity: true },
+      }),
+      prisma.bestellung.groupBy({ by: ["klasseId"], _count: { id: true } }),
+    ]);
     const countMap = new Map(counts.map((c) => [c.klasseId, c._count.id]));
-    const belegungVon = (k: { id: string }) => countMap.get(k.id) ?? 0;
-
-    const klasse =
-      offene.find((k) => k.capacity == null || belegungVon(k) < k.capacity) ??
-      offene[offene.length - 1];
-
-    return {
-      capacity: klasse.capacity ?? fallback.capacity,
-      belegt: belegungVon(klasse),
-    };
+    return klassen.map((k) => ({ ...k, belegt: countMap.get(k.id) ?? 0 }));
   } catch (error) {
-    console.error(
-      "[landing] Belegung der offenen Klasse nicht ermittelbar – nutze Fallback:",
-      error
-    );
-    return fallback;
+    console.error("[landing] Klassen nicht ermittelbar, nutze Fallback:", error);
+    return null;
   }
-}
+});
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
