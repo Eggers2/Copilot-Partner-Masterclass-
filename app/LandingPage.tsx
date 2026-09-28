@@ -224,7 +224,6 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
               <a href="#ablauf" className="text-white/70 hover:text-white text-sm font-medium transition-colors">Ablauf</a>
               <a href="#trainer" className="text-white/70 hover:text-white text-sm font-medium transition-colors">Trainer</a>
               <a href="#faq" className="text-white/70 hover:text-white text-sm font-medium transition-colors">FAQ</a>
-              <a href="/webinare" className="text-white/70 hover:text-white text-sm font-medium transition-colors">Info-Webinar</a>
               <button onClick={scrollToWaitlist} className="btn-primary !py-2.5 !px-5 !text-sm">
                 Platz in {offen.name} sichern
               </button>
@@ -248,7 +247,6 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
               <a href="#ablauf" className="text-white/70 hover:text-white text-sm font-medium py-2">Ablauf</a>
               <a href="#trainer" className="text-white/70 hover:text-white text-sm font-medium py-2">Trainer</a>
               <a href="#faq" className="text-white/70 hover:text-white text-sm font-medium py-2">FAQ</a>
-              <a href="/webinare" className="text-white/70 hover:text-white text-sm font-medium py-2">Info-Webinar</a>
               <button onClick={() => { scrollToWaitlist(); setMobileMenuOpen(false); }} className="btn-primary !py-2.5 !text-sm mt-2">
                 Platz in {offen.name} sichern
               </button>
@@ -307,9 +305,6 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
             <button onClick={scrollToWaitlist} className="btn-primary text-base">
               Jetzt für {offen.name} bewerben <ArrowRight className="w-5 h-5" />
             </button>
-            <a href="/webinare" className="btn-ghost text-base">
-              Kostenloses Info-Webinar
-            </a>
           </div>
 
           {/* Eckdaten */}
@@ -1126,7 +1121,6 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
                 <li><a href="#stimmen" className="text-white/50 hover:text-[#00C896] transition-colors">Stimmen aus den Klassen</a></li>
                 <li><a href="#trainer" className="text-white/50 hover:text-[#00C896] transition-colors">Die Trainer</a></li>
                 <li><a href="#faq" className="text-white/50 hover:text-[#00C896] transition-colors">FAQ</a></li>
-                <li><a href="/webinare" className="text-white/50 hover:text-[#00C896] transition-colors">Info-Webinare</a></li>
                 <li><a href="/suche" className="text-white/50 hover:text-[#00C896] transition-colors">Copilot-Partner finden</a></li>
               </ul>
             </div>

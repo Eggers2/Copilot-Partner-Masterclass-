@@ -45,7 +45,6 @@ ${faqs.map((f) => `### ${f.q}\n\n${f.a}`).join("\n\n")}
 ## Seiten
 
 - [Startseite und Bewerbung](${SITE_URL}/): Programm, Stimmen aus den Klassen, Ablauf, Bewerbung
-- [Info-Webinare](${SITE_URL}/webinare): kostenlose Vorstellung des Programms
 - [Copilot-Partner finden](${SITE_URL}/suche): Karte aller zertifizierten Partner
 - [Copilot Connect Day](${SITE_URL}/connect-day): Präsenz-Event der Community
 
