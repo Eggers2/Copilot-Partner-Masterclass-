@@ -1,39 +1,52 @@
+import type { Metadata } from "next";
 import LandingPage from "./LandingPage";
-import { getOffeneKlasseBelegung } from "@/lib/klassen";
+import { getLandingKlassenRows } from "@/lib/klassen";
+import { buildLandingKlassen } from "@/lib/landing/klassen";
+import { buildFaqs, PARTNER_COUNT, MITARBEITER_COUNT } from "@/lib/landing/inhalte";
+import { buildLandingJsonLd } from "@/lib/landing/schema";
 
-// Marketing-Kennzahl – bewusst im Code gehalten, damit die Landing Page
-// konsistent liest, unabhängig von den Werten in der Datenbank.
-// Stand: Klasse 1 & 2 ausgebucht (52 Systemhäuser kumuliert).
-const PARTNER_COUNT = 52;
-
-// Kommunizierte Kapazität der offenen Klasse (Klasse 3, Start vsl. Oktober
-// 2026). Bewusst im Code festgelegt: Die Startseite soll durchgängig "25
-// Plätze" sagen, auch wenn in der Datenbank ein anderer Wert steht. Die
-// Belegung kommt weiterhin live aus der DB (Anzahl Bestellungen der offenen
-// Klasse) – siehe getOffeneKlasseBelegung(). Wird die Zahl hier geändert,
-// gehört sie auch im Admin unter Klassen → Kapazität angepasst, damit die
-// Zuweisung neuer Bestellungen dieselbe Grenze nutzt.
-const KLASSE_3_CAPACITY = 25;
-// Fallback nur für den Fall, dass die DB nicht erreichbar ist: Die ersten
-// 20 Plätze sind vergeben, deshalb ist 20 der konservative Startwert.
-const KLASSE_3_BELEGT_FALLBACK = 20;
-
-// Der Platz-Zähler liest live aus der DB → kein Static Render.
+// Klassen und Belegung kommen live aus der DB → kein Static Render.
+// Welche Klasse als offen gilt, steuert der Admin unter Klassen (Status OPEN).
 export const dynamic = "force-dynamic";
 
+async function loadKlassen() {
+  const rows = await getLandingKlassenRows();
+  return buildLandingKlassen(rows ?? [], new Date());
+}
+
+const TITLE = "Copilot Partner Masterclass für Systemhäuser | NextSkills";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const { offen } = await loadKlassen();
+  const description = `Das 12-monatige Microsoft 365 Copilot Programm für Microsoft-Partner und Systemhäuser im DACH-Raum. Über ${PARTNER_COUNT.replace("+", "")} Systemhäuser sind dabei, ${offen.name} startet im ${offen.startMonat}.`;
+  return {
+    title: TITLE,
+    description,
+    // Canonical nur hier, nicht im Root-Layout: dort würde es jede Unterseite
+    // erben und alle auf die Startseite zeigen lassen.
+    alternates: { canonical: "/" },
+    openGraph: { title: TITLE, description, url: "/" },
+    twitter: { title: TITLE, description },
+  };
+}
+
 export default async function Page() {
-  const { belegt } = await getOffeneKlasseBelegung({
-    capacity: KLASSE_3_CAPACITY,
-    belegt: KLASSE_3_BELEGT_FALLBACK,
-  });
+  const klassen = await loadKlassen();
+  const faqs = buildFaqs(klassen.offen);
+  const jsonLd = buildLandingJsonLd(klassen.offen, faqs);
 
   return (
-    <LandingPage
-      partnerCount={PARTNER_COUNT}
-      klasse3Capacity={KLASSE_3_CAPACITY}
-      // Nie mehr als die kommunizierte Kapazität anzeigen – sonst stünde bei
-      // einer höheren DB-Kapazität z. B. "27 / 25 Plätze vergeben".
-      klasse3Belegt={Math.min(belegt, KLASSE_3_CAPACITY)}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+      />
+      <LandingPage
+        partnerCount={PARTNER_COUNT}
+        mitarbeiterCount={MITARBEITER_COUNT}
+        klassen={klassen}
+        faqs={faqs}
+      />
+    </>
   );
 }

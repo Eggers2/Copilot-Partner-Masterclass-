@@ -1,40 +1,37 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-const BASE_URL = "https://copilot.next-skills.de";
+import { SITE_URL } from "@/lib/site";
 
+const TITLE = "Copilot Partner Masterclass für Systemhäuser | NextSkills";
+const DESCRIPTION =
+  "Das 12-monatige Microsoft 365 Copilot Programm für Microsoft-Partner und Systemhäuser im DACH-Raum. Vom Lizenz-Reseller zum strategischen KI-Berater.";
+
+// Kein canonical hier: Unterseiten würden es erben und alle auf die
+// Startseite zeigen. Canonical setzt jede Seite selbst (siehe app/page.tsx).
 export const metadata: Metadata = {
-  metadataBase: new URL(BASE_URL),
-  title: "Copilot Partner Masterclass | NextSkills",
-  description:
-    "Vom Lizenz-Reseller zum strategischen KI-Berater. Das erste spezialisierte Copilot-Programm für Microsoft-Partner im DACH-Raum.",
-  keywords:
-    "Microsoft Copilot, Partner Masterclass, KI-Berater, Consulting, NextSkills, Systemhaus, AI Adoption, Microsoft Partner, Copilot Adoption, DACH",
-  alternates: {
-    canonical: BASE_URL,
-  },
+  metadataBase: new URL(SITE_URL),
+  title: TITLE,
+  description: DESCRIPTION,
   openGraph: {
-    title: "Copilot Partner Masterclass | NextSkills",
-    description:
-      "Vom Lizenz-Reseller zum strategischen KI-Berater. Das erste spezialisierte Copilot-Programm für Microsoft-Partner im DACH-Raum.",
+    title: TITLE,
+    description: DESCRIPTION,
     type: "website",
-    url: BASE_URL,
-    siteName: "NextSkills",
+    siteName: "Copilot Partner Masterclass",
     locale: "de_DE",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Copilot Partner Masterclass – NextSkills",
+        alt: "Copilot Partner Masterclass von NextSkills",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Copilot Partner Masterclass | NextSkills",
-    description:
-      "Vom Lizenz-Reseller zum strategischen KI-Berater. Das erste spezialisierte Copilot-Programm für Microsoft-Partner im DACH-Raum.",
+    title: TITLE,
+    description: DESCRIPTION,
     images: ["/og-image.png"],
   },
   robots: {

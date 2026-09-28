@@ -16,6 +16,14 @@ import {
 } from "lucide-react";
 import LinkedInInsightTag from "@/components/LinkedInInsightTag";
 import { captureUtmData, getUtmData } from "@/lib/utm-tracker";
+import type { LandingKlasse, LandingKlassen } from "@/lib/landing/klassen";
+import {
+  PROGRAMM_DEFINITION,
+  PROGRAMM_INHALT,
+  STIMME_HIGHLIGHT,
+  STIMMEN,
+  type Faq,
+} from "@/lib/landing/inhalte";
 
 interface FormState {
   status: "idle" | "loading" | "success" | "error";
@@ -23,13 +31,25 @@ interface FormState {
 }
 
 interface LandingPageProps {
-  partnerCount: number;
-  klasse3Capacity: number;
-  klasse3Belegt: number;
+  partnerCount: string;
+  mitarbeiterCount: string;
+  klassen: LandingKlassen;
+  faqs: Faq[];
 }
 
-export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Belegt }: LandingPageProps) {
-  const percent = klasse3Capacity > 0 ? Math.min(100, (klasse3Belegt / klasse3Capacity) * 100) : 0;
+const PHASE_LABEL: Record<LandingKlasse["phase"], string> = {
+  offen: "Bewerbung offen",
+  ausgebucht: "ausgebucht",
+  gestartet: "gerade gestartet",
+  laeuft: "läuft",
+  abgeschlossen: "abgeschlossen",
+};
+
+export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, faqs }: LandingPageProps) {
+  const { offen, zeitleiste, gestartet, geradeGestartet } = klassen;
+  const percent =
+    offen.capacity && offen.capacity > 0 ? Math.min(100, (offen.belegt / offen.capacity) * 100) : 0;
+  const plaetzeText = offen.capacity != null ? `${offen.capacity} Plätze` : "Limitierte Plätze";
 
   const [email, setEmail] = useState("");
   const [formState, setFormState] = useState<FormState>({
@@ -127,37 +147,6 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
     return () => document.removeEventListener("click", handleAnchorClick);
   }, []);
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "Course",
-        "@id": "https://copilot.next-skills.de/#course",
-        name: "Microsoft Copilot Partner Masterclass",
-        description:
-          "Das 12-Monats-Programm für Microsoft Partner: Von der Copilot-Strategie bis zur skalierbaren Adoption. Für Geschäftsführer, Vertrieb und Consultants.",
-        url: "https://copilot.next-skills.de",
-        provider: {
-          "@type": "Organization",
-          name: "NextSkills",
-          url: "https://copilot.next-skills.de",
-        },
-        inLanguage: "de",
-        courseMode: "online",
-        educationalLevel: "Professional",
-      },
-      {
-        "@type": "Organization",
-        "@id": "https://copilot.next-skills.de/#organization",
-        name: "NextSkills",
-        url: "https://copilot.next-skills.de",
-        logo: "https://copilot.next-skills.de/og-image.png",
-        description:
-          "NextSkills ist auf Microsoft Copilot Adoption und Partner-Enablement spezialisiert.",
-      },
-    ],
-  };
-
   /* ── Reusable form renderer ── */
   const renderForm = (maxW: string = "max-w-[480px]") => (
     <div className={`${maxW} mx-auto w-full`}>
@@ -187,7 +176,7 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
               </>
             ) : (
               <>
-                Jetzt einen der {klasse3Capacity} Plätze sichern
+                Platz in {offen.name} sichern
                 <ArrowRight className="w-5 h-5" />
               </>
             )}
@@ -202,7 +191,7 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
         )}
 
         <p className="text-[#6B6B8A] text-xs text-center">
-          Keine Verpflichtung · Persönliche Rückmeldung · Limitierte Plätze
+          Keine Verpflichtung · Persönliche Rückmeldung · {plaetzeText}
         </p>
       </form>
     </div>
@@ -210,11 +199,6 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
 
   return (
     <main className="min-h-screen" style={{ fontFamily: "'Figtree', system-ui, sans-serif" }}>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-
       {/* ═══ 1. NAVBAR ═══ */}
       <nav
         className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
@@ -235,12 +219,14 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
 
             {/* Desktop Nav */}
             <div className="hidden md:flex items-center gap-8">
-              <a href="#solution" className="text-white/70 hover:text-white text-sm font-medium transition-colors">Programm</a>
-              <a href="#included" className="text-white/70 hover:text-white text-sm font-medium transition-colors">Inhalte</a>
+              <a href="#programm" className="text-white/70 hover:text-white text-sm font-medium transition-colors">Programm</a>
+              <a href="#stimmen" className="text-white/70 hover:text-white text-sm font-medium transition-colors">Stimmen</a>
+              <a href="#ablauf" className="text-white/70 hover:text-white text-sm font-medium transition-colors">Ablauf</a>
               <a href="#trainer" className="text-white/70 hover:text-white text-sm font-medium transition-colors">Trainer</a>
               <a href="#faq" className="text-white/70 hover:text-white text-sm font-medium transition-colors">FAQ</a>
+              <a href="/webinare" className="text-white/70 hover:text-white text-sm font-medium transition-colors">Info-Webinar</a>
               <button onClick={scrollToWaitlist} className="btn-primary !py-2.5 !px-5 !text-sm">
-                Jetzt bewerben
+                Platz in {offen.name} sichern
               </button>
             </div>
 
@@ -257,12 +243,14 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
           {/* Mobile Nav */}
           {mobileMenuOpen && (
             <div className="md:hidden pb-4 flex flex-col gap-3">
-              <a href="#solution" className="text-white/70 hover:text-white text-sm font-medium py-2">Programm</a>
-              <a href="#included" className="text-white/70 hover:text-white text-sm font-medium py-2">Inhalte</a>
+              <a href="#programm" className="text-white/70 hover:text-white text-sm font-medium py-2">Programm</a>
+              <a href="#stimmen" className="text-white/70 hover:text-white text-sm font-medium py-2">Stimmen</a>
+              <a href="#ablauf" className="text-white/70 hover:text-white text-sm font-medium py-2">Ablauf</a>
               <a href="#trainer" className="text-white/70 hover:text-white text-sm font-medium py-2">Trainer</a>
               <a href="#faq" className="text-white/70 hover:text-white text-sm font-medium py-2">FAQ</a>
+              <a href="/webinare" className="text-white/70 hover:text-white text-sm font-medium py-2">Info-Webinar</a>
               <button onClick={() => { scrollToWaitlist(); setMobileMenuOpen(false); }} className="btn-primary !py-2.5 !text-sm mt-2">
-                Jetzt bewerben
+                Platz in {offen.name} sichern
               </button>
             </div>
           )}
@@ -270,7 +258,7 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
       </nav>
 
       {/* ═══ 2. HERO ═══ */}
-      <section className="relative overflow-hidden" style={{ background: "#1A1A2E", minHeight: "100svh" }}>
+      <section className="relative overflow-hidden" style={{ background: "#1A1A2E" }}>
         {/* Dot grid overlay */}
         <div
           className="absolute inset-0 opacity-[0.04]"
@@ -282,15 +270,17 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
         {/* Green glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full blur-[120px] opacity-20" style={{ background: "#00C896" }} />
 
-        <div className="relative container-main pt-32 pb-20 flex flex-col items-center text-center" style={{ minHeight: "100svh", justifyContent: "center" }}>
-          {/* Urgency Badge */}
+        <div className="relative container-main pt-36 pb-20 flex flex-col items-center text-center">
+          {/* Status-Badge */}
           <div className="mb-8">
             <span className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full text-sm font-semibold border border-[#00C896]/40 text-[#00C896]" style={{ background: "rgba(0,200,150,.10)" }}>
               <span className="relative flex w-2 h-2">
                 <span className="absolute inline-flex w-full h-full rounded-full opacity-75 animate-ping" style={{ background: "#00C896" }} />
                 <span className="relative inline-flex w-2 h-2 rounded-full" style={{ background: "#00C896" }} />
               </span>
-              Klasse 1 &amp; 2 ausgebucht &middot; Bewerbung Klasse 3 offen
+              {geradeGestartet && geradeGestartet !== offen.name
+                ? <>{geradeGestartet} ist gestartet &middot; Bewerbung für {offen.name} offen</>
+                : <>Bewerbung für {offen.name} offen &middot; Start {offen.startMonat}</>}
             </span>
           </div>
 
@@ -308,220 +298,233 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
           </h1>
 
           {/* Subheadline */}
-          <p className="text-white/60 text-lg md:text-xl max-w-[600px] mb-10 leading-relaxed">
-            Das einzige Copilot-Enablement-Programm für Microsoft-Partner im DACH-Raum. Über 50 Systemhäuser aus Klasse 1 und 2 sind bereits dabei.
+          <p className="text-white/60 text-lg md:text-xl max-w-[680px] mb-10 leading-relaxed">
+            Die Copilot Partner Masterclass ist das 12-monatige <strong className="text-white font-semibold">Microsoft 365 Copilot</strong> Enablement-Programm für <strong className="text-white font-semibold">Systemhäuser und Microsoft-Partner</strong> in Deutschland, Österreich und der Schweiz. Über {partnerCount.replace("+", "")} Systemhäuser aus {gestartet} Klassen sind bereits dabei.
           </p>
 
-          {/* CTA – single primary + text link */}
-          <div className="flex flex-col sm:flex-row items-center gap-5 mb-16">
+          {/* CTA */}
+          <div className="flex flex-col sm:flex-row items-center gap-4 mb-12">
             <button onClick={scrollToWaitlist} className="btn-primary text-base">
-              Jetzt für Klasse 3 bewerben <ArrowRight className="w-5 h-5" />
+              Jetzt für {offen.name} bewerben <ArrowRight className="w-5 h-5" />
             </button>
-            <a href="#solution" className="inline-flex items-center gap-1.5 text-white/50 hover:text-white/80 text-sm font-medium transition-colors">
-              Programm kennenlernen <ChevronDown className="w-4 h-4" />
+            <a href="/webinare" className="btn-ghost text-base">
+              Kostenloses Info-Webinar
             </a>
           </div>
-        </div>
 
-        <div className="flex justify-center pb-8 relative">
-          <ChevronDown className="w-6 h-6 text-white/30 animate-bounce" />
+          {/* Eckdaten */}
+          <dl className="flex flex-wrap justify-center gap-2.5">
+            {[
+              { k: "Start", v: offen.startMonat },
+              { k: "Laufzeit", v: "12 Monate" },
+              { k: "Format", v: "Online in Microsoft Teams" },
+              ...(offen.capacity != null ? [{ k: "Plätze", v: `${offen.capacity} Systemhäuser` }] : []),
+            ].map((f) => (
+              <div key={f.k} className="flex flex-col items-start gap-0.5 px-4 py-2.5 rounded-[10px] text-left border border-white/[0.08]" style={{ background: "rgba(255,255,255,.04)" }}>
+                <dt className="text-[11px] font-semibold tracking-wider uppercase text-white/45">{f.k}</dt>
+                <dd className="text-white text-[15px] font-semibold">{f.v}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </section>
 
       {/* ═══ 2.1 SOCIAL PROOF BAR ═══ */}
-      <section style={{ background: "#1A1A2E" }} className="border-t border-white/10 py-12">
+      <section style={{ background: "#1A1A2E" }} className="border-t border-white/10 py-10">
         <div className="container-main">
-          <div className="flex flex-col md:flex-row flex-wrap items-center justify-center gap-y-8 gap-x-10 md:gap-x-12">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
-              { num: String(partnerCount), label: <>Systemhäuser<br />im Programm<br /><span className="text-white/35 text-[11px]">Klasse 1 &amp; 2</span></> },
-              { num: "250+", label: <>Mitarbeiter<br />in Ausbildung<br /><span className="text-white/35 text-[11px]">über beide Klassen</span></> },
-              { num: "2", label: <>Klassen<br />ausgebucht<br /><span className="text-white/35 text-[11px]">in unter 12 Monaten</span></> },
+              { num: partnerCount, label: <>Systemhäuser<br />im Programm</> },
+              { num: mitarbeiterCount, label: <>Mitarbeitende<br />in Ausbildung</> },
+              { num: String(gestartet), label: <>Klassen gestartet<br />seit Mai 2026</> },
+              { num: "7×", label: <>Microsoft MVP<br />Alexander Eggers</> },
             ].map((item, i) => (
-              <div key={i} className="flex items-center gap-10 md:gap-12">
-                {i > 0 && <span className="hidden md:block w-px h-12 bg-white/10" />}
-                <div className="flex items-center gap-4 text-left">
-                  <span className="text-[#00C896] text-4xl md:text-5xl font-bold leading-none" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>
-                    {item.num}
-                  </span>
-                  <span className="text-white/60 text-sm leading-snug">{item.label}</span>
-                </div>
+              <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4 text-left min-w-0">
+                <span className="text-[#00C896] text-4xl md:text-5xl font-bold leading-none" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>
+                  {item.num}
+                </span>
+                <span className="text-white/60 text-sm leading-snug">{item.label}</span>
               </div>
             ))}
-            <span className="md:ml-2 inline-flex items-center px-4 py-2 rounded-full text-xs font-bold tracking-wider text-[#1A1A2E]" style={{ background: "#00C896" }}>
-              ✦ KLASSE 1 &amp; 2 AUSGEBUCHT ✦
-            </span>
           </div>
         </div>
       </section>
 
-      {/* ═══ 2.5 KLASSEN-STATUS ═══ */}
-      <section style={{ background: "#23233D" }} className="py-[80px]">
+      {/* ═══ 2.5 KLASSEN-ZEITLEISTE ═══ */}
+      <section id="klassen" style={{ background: "#23233D" }} className="py-[80px]">
         <div className="container-main">
-          <div className="text-center mb-12 reveal">
-            <span className="section-label">Aktueller Status</span>
+          <div className="mb-10 reveal max-w-[720px]">
+            <span className="section-label">Klassenübersicht</span>
             <h2
-              className="text-white font-bold mt-3"
-              style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(24px, 3vw, 36px)", letterSpacing: "-0.025em" }}
+              className="text-white font-bold mt-3 mb-3"
+              style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(24px, 3vw, 38px)", letterSpacing: "-0.025em" }}
             >
-              Zwei Klassen ausgebucht. <span className="text-[#00C896]">Jetzt startet Klasse 3.</span>
+              {gestartet === 1 && <>Eine Klasse läuft. </>}
+              {gestartet > 1 && <>{gestartet} Klassen laufen. </>}
+              <span className="text-[#00C896]">{offen.name} startet im {offen.startMonat}.</span>
             </h2>
+            <p className="text-white/60">
+              Jede Klasse läuft 12 Monate und bleibt bewusst klein, damit der Austausch in der Community funktioniert.
+            </p>
           </div>
 
-          <div className="flex flex-col gap-6 max-w-[1100px] mx-auto reveal">
-            {/* Karte 1 – Track-Record (Klasse 1 & 2 ausgebucht) */}
-            <div
-              className="relative rounded-2xl p-8 md:p-10 border border-white/10"
-              style={{ background: "#1A1A2E" }}
-            >
-              <div className="mb-8">
-                <span className="text-white/50 text-xs font-semibold tracking-wider uppercase block mb-4">
-                  Der Track-Record
-                </span>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-white/15 text-white/70" style={{ background: "rgba(255,255,255,.04)" }}>
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    Klasse 01 &middot; Mai 2026 &middot; Ausgebucht
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-white/15 text-white/70" style={{ background: "rgba(255,255,255,.04)" }}>
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    Klasse 02 &middot; Ausgebucht
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-[#00C896]" style={{ background: "rgba(0,200,150,.12)", border: "1px solid rgba(0,200,150,.45)" }}>
-                    <span className="relative flex w-2 h-2">
-                      <span className="absolute inline-flex w-full h-full rounded-full opacity-75 animate-ping" style={{ background: "#00C896" }} />
-                      <span className="relative inline-flex w-2 h-2 rounded-full" style={{ background: "#00C896" }} />
-                    </span>
-                    Klasse 03 &middot; Bewerbung offen
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-[1.1fr_1fr] gap-8 md:gap-10 items-start">
-                {/* Links – Screenshot */}
-                <div>
-                  <div className="rounded-xl overflow-hidden border border-white/10 shadow-2xl" style={{ background: "#0f0f1a" }}>
-                    <img
-                      src="/klasse-1-kickoff.png"
-                      alt="Kick-off der Copilot Partner Masterclass Klasse 1 am 22.05.2026 mit knapp 120 Teilnehmern live in Microsoft Teams"
-                      className="w-full h-auto block"
-                      loading="lazy"
-                    />
-                  </div>
-                  <p className="text-white/40 text-xs mt-3 text-center">
-                    Kick-off Klasse 1 &middot; 22.05.2026 &middot; ~120 Teilnehmer live in Microsoft Teams
-                  </p>
-                </div>
-
-                {/* Rechts – Story */}
-                <div>
-                  <h3
-                    className="text-white font-bold mb-6"
-                    style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(22px, 2.4vw, 30px)", letterSpacing: "-0.02em", lineHeight: 1.15 }}
-                  >
-                    Klasse 1 &amp; 2 sind <span className="text-[#00C896]">ausgebucht.</span>
-                  </h3>
-
-                  <div className="grid grid-cols-3 gap-2 mb-6">
-                    {[
-                      { num: "52", label: "Systemhäuser" },
-                      { num: "250+", label: "Mitarbeiter" },
-                      { num: "2×", label: "ausgebucht" },
-                    ].map((s) => (
-                      <div key={s.label} className="rounded-lg p-3 text-center" style={{ background: "#23233D" }}>
-                        <div className="text-[#00C896] text-xl md:text-2xl font-bold leading-tight" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>
-                          {s.num}
-                        </div>
-                        <div className="text-white/50 text-[11px] leading-snug mt-0.5">{s.label}</div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <blockquote className="border-l-2 border-[#00C896]/50 pl-4 mb-6">
-                    <p className="text-white/75 text-sm md:text-[15px] leading-relaxed italic">
-                      &bdquo;Gestern war es so weit: 31 Systemh&auml;user aus dem DACH-Raum sind in die erste Copilot Partner Masterclass gestartet. Knapp 120 Teilnehmer live im Kick-off, 150 registrierte Mitarbeiter in den kommenden Monaten &ndash; das ist erst der Anfang.&ldquo;
-                    </p>
-                    <footer className="text-white/40 text-xs mt-2">
-                      — Alexander Eggers, Trainer &amp; 7× Microsoft MVP
-                    </footer>
-                  </blockquote>
-
-                  <div>
-                    <div className="text-white/40 text-xs font-semibold tracking-wider uppercase mb-3">
-                      Mit dabei (Auswahl aus Klasse 1 &amp; 2)
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {[
-                        "ACP Holding Deutschland GmbH",
-                        "DATAGROUP Stuttgart GmbH",
-                        "Henrichsen AG",
-                        "Implement-IT GmbH",
-                        "bitfire GmbH",
-                        "Cloudtastic GmbH",
-                        "connecT Systemhaus AG",
-                        "Gme GmbH",
-                        "GOESYS AG",
-                        "GOHAN GmbH – Business Solutions",
-                        "ke solutions",
-                        "Know How! AG",
-                        "noovic GmbH",
-                      ].map((firma) => (
-                        <span
-                          key={firma}
-                          className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium text-white/80 border border-white/10 transition-colors hover:bg-white/10"
-                          style={{ background: "rgba(255,255,255,.05)" }}
-                        >
-                          {firma}
-                        </span>
-                      ))}
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium text-white/40">
-                        … und 39 weitere
-                      </span>
-                    </div>
-
-                    <a
-                      href="/suche"
-                      className="inline-flex items-center gap-1.5 mt-4 text-sm font-semibold text-[#00C896] hover:text-white transition-colors"
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 reveal">
+            {zeitleiste.map((k) => {
+              const istOffen = k.phase === "offen";
+              return (
+                <article
+                  key={k.id}
+                  className={`rounded-[14px] p-5 flex flex-col gap-3.5 border ${istOffen ? "border-[#00C896]/55" : "border-white/10"}`}
+                  style={{ background: "#1A1A2E", boxShadow: istOffen ? "0 0 40px rgba(0,200,150,.14)" : undefined }}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-white font-bold text-xl" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>{k.name}</h3>
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap ${
+                        istOffen
+                          ? "bg-[#00C896] text-[#1A1A2E]"
+                          : k.phase === "gestartet"
+                            ? "text-[#00C896] border border-[#00C896]/40 bg-[#00C896]/15"
+                            : "text-white/75 bg-white/[0.08]"
+                      }`}
                     >
-                      Alle 52 Copilot-Partner auf der Karte finden
-                      <ArrowRight className="w-4 h-4" />
-                    </a>
+                      {PHASE_LABEL[k.phase]}
+                    </span>
                   </div>
-                </div>
+                  <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-[13px]">
+                    <dt className="text-white/45">Start</dt>
+                    <dd className="text-white text-right">{k.startMonat}</dd>
+                    {istOffen ? (
+                      <>
+                        <dt className="text-white/45">Laufzeit</dt>
+                        <dd className="text-white text-right">12 Monate</dd>
+                        {k.capacity != null && (
+                          <>
+                            <dt className="text-white/45">Plätze</dt>
+                            <dd className="text-white text-right">{k.capacity}</dd>
+                          </>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <dt className="text-white/45">Systemhäuser</dt>
+                        <dd className="text-white text-right">{k.belegt}</dd>
+                      </>
+                    )}
+                  </dl>
+                  {istOffen && (
+                    <>
+                      {k.zeigeZaehler ? (
+                        <>
+                          <div className="w-full h-1.5 rounded-full overflow-hidden border border-[#00C896]/30" style={{ background: "rgba(0,200,150,.05)" }}>
+                            <div className="h-full rounded-full" style={{ width: `${percent}%`, background: "#00C896" }} />
+                          </div>
+                          <span className="text-white/60 text-[13px]">{k.belegt} von {k.capacity} Plätzen vergeben</span>
+                        </>
+                      ) : (
+                        <span className="text-white/50 text-[13px]">Frühe Bewerbung &middot; Plätze nach Eingang</span>
+                      )}
+                      <button onClick={scrollToWaitlist} className="btn-primary !py-3 !text-sm mt-auto">
+                        Platz sichern <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 2.6 STIMMEN AUS DEN KLASSEN ═══ */}
+      <section id="stimmen" style={{ background: "#1A1A2E" }} className="py-[88px]">
+        <div className="container-main">
+          <div className="mb-10 reveal max-w-[720px]">
+            <span className="section-label">Aus den Klassen</span>
+            <h2
+              className="text-white font-bold mt-3 mb-3"
+              style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(24px, 3vw, 38px)", letterSpacing: "-0.025em" }}
+            >
+              Was Partner nach den ersten Monaten berichten.
+            </h2>
+            <p className="text-white/60">Stimmen aus den monatlichen Live-Sessions von Klasse 1 und 2.</p>
+          </div>
+
+          {/* Highlight */}
+          <figure
+            className="reveal rounded-[14px] p-7 md:p-8 mb-4 grid md:grid-cols-[auto_1fr] gap-x-9 gap-y-5 items-center border border-[#00C896]/45"
+            style={{ background: "rgba(0,200,150,.06)" }}
+          >
+            <div className="flex items-center gap-4 flex-wrap md:row-span-2">
+              <div className="flex flex-col">
+                <span className="text-[#00C896] font-bold leading-tight" style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(26px, 3vw, 36px)" }}>{STIMME_HIGHLIGHT.vorher}</span>
+                <span className="text-white/50 text-xs">{STIMME_HIGHLIGHT.vorherLabel}</span>
+              </div>
+              <span className="hidden sm:inline text-white/35 text-2xl" aria-hidden="true">→</span>
+              <div className="flex flex-col">
+                <span className="text-[#00C896] font-bold leading-tight" style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(26px, 3vw, 36px)" }}>{STIMME_HIGHLIGHT.nachher}</span>
+                <span className="text-white/50 text-xs">{STIMME_HIGHLIGHT.nachherLabel}</span>
               </div>
             </div>
+            <blockquote className="text-white/90 text-base md:text-[17px] leading-relaxed max-w-[70ch]">
+              &bdquo;{STIMME_HIGHLIGHT.zitat}&ldquo;
+            </blockquote>
+            <figcaption className="text-white/50 text-[13px]">
+              <b className="text-white font-semibold">{STIMME_HIGHLIGHT.name}</b> &middot; {STIMME_HIGHLIGHT.firma} &middot; {STIMME_HIGHLIGHT.klasse} &middot;{" "}
+              <span className="text-white/40">{STIMME_HIGHLIGHT.kontext}</span>
+            </figcaption>
+          </figure>
 
-            {/* Karte 2 – Klasse 3 (Bewerbung offen) */}
-            <div
-              className="relative rounded-2xl p-8 border border-[#00C896]/40"
-              style={{ background: "#1A1A2E", boxShadow: "0 0 40px rgba(0,200,150,.12)" }}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <span className="text-[#00C896] text-xs font-semibold tracking-wider uppercase">
-                  Klasse 03 &middot; Start vsl. Oktober 2026
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {STIMMEN.map((s, i) => (
+              <figure
+                key={s.name}
+                className={`reveal reveal-delay-${(i % 3) + 1} rounded-[14px] p-6 flex flex-col justify-between gap-4 border border-white/10`}
+                style={{ background: "rgba(255,255,255,.03)" }}
+              >
+                <blockquote className="text-white/80 text-[15px] leading-relaxed">&bdquo;{s.zitat}&ldquo;</blockquote>
+                <figcaption className="text-white/50 text-[13px]">
+                  <b className="text-white font-semibold">{s.name}</b> &middot; {s.firma} &middot; {s.klasse}
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+
+          <div className="mt-8">
+            <div className="text-white/40 text-xs font-semibold tracking-wider uppercase mb-3">
+              Mit dabei (Auswahl)
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {[
+                "ACP Holding Deutschland GmbH",
+                "DATAGROUP Stuttgart GmbH",
+                "Henrichsen AG",
+                "Implement-IT GmbH",
+                "bitfire GmbH",
+                "Cloudtastic GmbH",
+                "connecT Systemhaus AG",
+                "Gme GmbH",
+                "GOESYS AG",
+                "GOHAN GmbH – Business Solutions",
+                "ke solutions",
+                "Know How! AG",
+                "noovic GmbH",
+              ].map((firma) => (
+                <span
+                  key={firma}
+                  className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium text-white/80 border border-white/10"
+                  style={{ background: "rgba(255,255,255,.05)" }}
+                >
+                  {firma}
                 </span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-[#1A1A2E]" style={{ background: "#00C896" }}>
-                  Bewerbung offen
-                </span>
-              </div>
-
-              <div className="grid md:grid-cols-[1fr_auto] gap-6 items-center">
-                <div>
-                  <div className="mb-3 flex items-baseline justify-between">
-                    <span className="text-white/80 text-sm font-medium">{klasse3Belegt} / {klasse3Capacity} Plätze vergeben</span>
-                    <span className="text-white/40 text-sm">Start: Oktober 2026</span>
-                  </div>
-                  <div className="w-full h-2 rounded-full overflow-hidden mb-4 border border-[#00C896]/30" style={{ background: "rgba(0,200,150,.05)" }}>
-                    <div className="h-full rounded-full" style={{ width: `${percent}%`, background: "#00C896" }} />
-                  </div>
-                  <p className="text-white/65 text-sm leading-relaxed">
-                    Klasse 1 und 2 waren beide ausgebucht — Klasse 2 sogar schneller als Klasse 1. In Klasse 3 sind bereits {klasse3Belegt} der {klasse3Capacity} Plätze vergeben.
-                  </p>
-                </div>
-
-                <button onClick={scrollToWaitlist} className="btn-primary justify-center whitespace-nowrap">
-                  Jetzt für Klasse 3 bewerben <ArrowRight className="w-5 h-5" />
-                </button>
-              </div>
+              ))}
+              <a
+                href="/suche"
+                className="inline-flex items-center gap-1.5 ml-2 text-sm font-semibold text-[#00C896] hover:text-white transition-colors"
+              >
+                Alle Copilot-Partner auf der Karte finden
+                <ArrowRight className="w-4 h-4" />
+              </a>
             </div>
           </div>
         </div>
@@ -592,12 +595,50 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
                   Die Lösung existiert.
                 </h3>
                 <p className="text-white/70 text-sm leading-relaxed mb-6">
-                  Die Copilot Partner Masterclass schließt genau diese Lücke – strukturiert, praxisnah und in 90 Tagen.
+                  Die Copilot Partner Masterclass schließt genau diese Lücke. Strukturiert, praxisnah und 12 Monate lang begleitet.
                 </p>
               </div>
               <a href="#solution" className="btn-primary !py-3 w-fit text-sm">
                 Mehr erfahren <ArrowRight className="w-4 h-4" />
               </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 4.5 WAS IST DIE MASTERCLASS ═══ */}
+      <section id="programm" style={{ background: "#FFFFFF" }} className="py-[100px]">
+        <div className="container-main">
+          <div className="grid lg:grid-cols-[1.1fr_.9fr] gap-12 lg:gap-14 items-start">
+            <div className="reveal">
+              <span className="section-label">Das Programm</span>
+              <h2 className="section-title">Was ist die Copilot Partner Masterclass?</h2>
+              <p className="text-[#3C3C58] text-lg leading-relaxed mb-4 max-w-[62ch]">{PROGRAMM_DEFINITION}</p>
+              <p className="text-[#6B6B8A] text-base leading-relaxed max-w-[62ch]">{PROGRAMM_INHALT}</p>
+            </div>
+            <div className="reveal reveal-delay-2 rounded-[14px] border border-[#E8E8F0] overflow-hidden">
+              <table className="w-full text-sm border-collapse">
+                <caption className="text-left px-5 py-3.5 text-xs font-bold tracking-wider uppercase text-[#6B6B8A] bg-[#F6F6FA] border-b border-[#E8E8F0]">
+                  Eckdaten auf einen Blick
+                </caption>
+                <tbody>
+                  {[
+                    ["Zielgruppe", "Geschäftsführung, Vertrieb und Consultants von Microsoft-Partnern"],
+                    ["Region", "Deutschland, Österreich, Schweiz"],
+                    ["Laufzeit", "12 Monate"],
+                    ["Nächster Start", `${offen.name}, ${offen.startMonat}`],
+                    ["Format", "On demand + live in Microsoft Teams"],
+                    ["Live-Termine", "2\u00D7 pro Monat"],
+                    ["Trainer", "Alexander Eggers, Michael Greth (beide Microsoft MVP)"],
+                    ["Pakete", "für 3, 6 oder 15 Mitarbeitende"],
+                  ].map(([k, v]) => (
+                    <tr key={k} className="border-b border-[#E8E8F0] last:border-b-0">
+                      <th scope="row" className="text-left align-top font-medium text-[#6B6B8A] px-5 py-3 w-[38%]">{k}</th>
+                      <td className="align-top font-semibold text-[#1A1A2E] px-5 py-3">{v}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -609,12 +650,12 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
           <div className="grid lg:grid-cols-2 gap-16 items-start">
             {/* Left column – text */}
             <div className="reveal">
-              <span className="section-label">Das Programm</span>
+              <span className="section-label">Der Ansatz</span>
               <h2 className="section-title">
                 Das Betriebssystem für Ihr Copilot-Geschäft.
               </h2>
               <p className="text-[#6B6B8A] text-base leading-relaxed mb-8">
-                Die Copilot Partner Masterclass ist kein Kurs – es ist das komplette Toolkit, um Copilot-Beratung als eigenständiges, margenstarkes Geschäftsfeld aufzubauen.
+                Die Copilot Partner Masterclass ist kein Kurs. Sie ist das komplette Toolkit, um Copilot-Beratung als eigenständiges, margenstarkes Geschäftsfeld aufzubauen.
               </p>
 
               {/* Quote block */}
@@ -741,6 +782,40 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
         </div>
       </section>
 
+      {/* ═══ 6.5 ABLAUF BIS ZUM KICK-OFF ═══ */}
+      <section id="ablauf" style={{ background: "#1A1A2E" }} className="py-[100px]">
+        <div className="container-main">
+          <div className="mb-12 reveal max-w-[720px]">
+            <span className="section-label">Ablauf {offen.name}</span>
+            <h2
+              className="text-white font-bold mt-3 mb-3"
+              style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(26px, 3.2vw, 38px)", letterSpacing: "-0.025em" }}
+            >
+              So geht es nach Ihrer Bewerbung weiter.
+            </h2>
+            <p className="text-white/60">Sie tragen sich heute ein und sind zum Start im {offen.startMonat} bereit.</p>
+          </div>
+          <ol className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { when: "ab heute", title: "Bewerbung", text: "E-Mail eintragen. Alexander Eggers oder das Team melden sich innerhalb von 24 Stunden persönlich." },
+              { when: "vor dem Start", title: "Kennenlerngespräch", text: "Ein Gespräch zu Ihrem Systemhaus, Ihren Zielen und dem passenden Paket. Danach ist Ihr Platz reserviert." },
+              { when: "kurz vor dem Kick-off", title: "Onboarding", text: "Zugang zur Teams-Community und zu den ersten Modulen, damit Sie vorbereitet in den Kick-off gehen." },
+              { when: offen.startMonat, title: `Kick-off ${offen.name}`, text: "Gemeinsamer Start live in Microsoft Teams. Danach 12 Monate Programm mit Ihrer Klasse." },
+            ].map((step, i) => (
+              <li
+                key={step.title}
+                className={`reveal reveal-delay-${i + 1} rounded-[14px] p-5 flex flex-col gap-2 border border-white/10`}
+                style={{ background: "#23233D" }}
+              >
+                <span className="text-[#00C896] text-xs font-semibold uppercase tracking-wider">{step.when}</span>
+                <h3 className="text-white font-bold text-lg" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>{step.title}</h3>
+                <p className="text-white/60 text-sm leading-relaxed">{step.text}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
       {/* ═══ 7. TRAINER SECTION ═══ */}
       <section id="trainer" style={{ background: "#EAF9F4" }} className="py-[110px]">
         <div className="container-main">
@@ -748,7 +823,7 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
             {/* Left – Photo + Credentials */}
             <div className="reveal">
               <div className="w-48 h-48 rounded-full overflow-hidden mx-auto lg:mx-0 mb-8">
-                <img src="/trainer-alexander-eggers.png" alt="Alexander Eggers" className="w-full h-full object-cover" />
+                <img src="/trainer-alexander-eggers.png" alt="Alexander Eggers, Microsoft MVP für M365 und M365 Copilot, Trainer der Copilot Partner Masterclass" className="w-full h-full object-cover" />
               </div>
               <div className="text-center lg:text-left mb-8">
                 <h3 className="text-[#1A1A2E] text-xl font-bold" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>Alexander Eggers</h3>
@@ -853,7 +928,7 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
             {/* Right – Photo + Credentials */}
             <div className="reveal reveal-delay-2 lg:order-1">
               <div className="w-48 h-48 rounded-full overflow-hidden mx-auto lg:mx-0 mb-8">
-                <img src="/trainer-michael-greth.png" alt="Michael Greth" className="w-full h-full object-cover" />
+                <img src="/trainer-michael-greth.png" alt="Michael Greth, Microsoft MVP, Co-Trainer der Copilot Partner Masterclass" className="w-full h-full object-cover" />
               </div>
               <div className="text-center lg:text-left mb-8">
                 <h3 className="text-[#1A1A2E] text-xl font-bold" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>Michael Greth</h3>
@@ -940,39 +1015,15 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
         <div className="container-main max-w-[800px]">
           <div className="text-center mb-16 reveal">
             <span className="section-label">Häufige Fragen</span>
-            <h2 className="section-title">Einwände kennen wir. Antworten auch.</h2>
+            <h2 className="section-title">Fragen zur Masterclass und zu {offen.name}</h2>
           </div>
 
           <div className="space-y-4 reveal">
-            {[
-              {
-                q: "Wir haben keine Zeit für ein weiteres Programm.",
-                a: "Die Masterclass ist bewusst neben dem Tagesgeschäft konzipiert. Alle Videos sind on demand abrufbar – zwischen Projekten, abends, im eigenen Tempo. Es gibt keine Pflicht-Termine außer den optionalen Live-Sessions. Nicht handeln kostet mehr Zeit: Kunden, die jetzt zu besser positionierten Wettbewerbern abwandern, müssen erst wieder zurückgewonnen werden.",
-              },
-              {
-                q: "Das ist uns zu teuer.",
-                a: "Ein einziger Copilot-Beratungstag bringt zwischen \u20AC 1.200 und \u20AC 2.500. Das Programm amortisiert sich also nach dem ersten abgerechneten Copilot Adoption Kunden. Die eigentliche Frage ist: Können Sie es sich leisten, es nicht zu tun – während Ihre Kunden aktiv nach Copilot-Beratung fragen?",
-              },
-              {
-                q: "Wir schauen noch, der Markt ist noch nicht reif.",
-                a: "Das Zeitfenster schließt sich in 12–18 Monaten. Wer sich jetzt positioniert, dominiert seinen regionalen Markt. Über 50 Systemhäuser in unseren ersten beiden Klassen haben diesen Moment bereits erkannt – beide Klassen sind ausgebucht. Wer wartet, verkauft weiterhin nur Lizenzen mit sinkenden Margen – und erklärt seinen Kunden, warum der Wettbewerber schon liefern kann.",
-              },
-              {
-                q: "Das können wir auch selbst aufbauen.",
-                a: "Natürlich. Der Eigenaufbau dauert erfahrungsgemäß 6–12 Monate: Curriculum entwickeln, Demo-Umgebungen bauen, Vertriebsmaterialien erstellen, Beratungsansatz testen. In dieser Zeit fragen Ihre Kunden. Jetzt. Heute. Die Masterclass liefert alles fertig – sofort einsetzbar, aus echter Systemhaus-Praxis.",
-              },
-              {
-                q: "Für wen ist das Programm geeignet?",
-                a: "Die Masterclass richtet sich an Geschäftsführer und Vertriebsleiter von Microsoft-Partnern (Systemhäuser) im DACH-Raum, die Copilot-Beratung als eigenständiges Geschäftsfeld aufbauen wollen. Technische Berater, die beim Kunden vor Ort sind, profitieren ebenfalls direkt von den fertigen Frameworks und Templates.",
-              },
-              {
-                q: "Was passiert nach meiner Bewerbung?",
-                a: "Alexander Eggers oder ein Teammitglied meldet sich persönlich innerhalb von 24 Stunden. Direkter Austausch — kein CRM-Prozess.",
-              },
-            ].map((faq, i) => (
+            {faqs.map((faq, i) => (
               <details
                 key={i}
                 className="group bg-white rounded-[10px] overflow-hidden"
+                open={i === 0}
               >
                 <summary className="flex items-center justify-between cursor-pointer px-6 py-5 text-[#1A1A2E] font-semibold text-[15px] list-none [&::-webkit-details-marker]:hidden" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>
                   {faq.q}
@@ -1025,21 +1076,24 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
         <div className="relative container-main text-center">
           <div className="reveal">
             <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium border border-[#00C896]/30 text-[#00C896] mb-8" style={{ background: "rgba(0,200,150,.08)" }}>
-              Bewerbung Klasse 3 &middot; Start vsl. Oktober 2026
+              Bewerbung {offen.name} &middot; Start {offen.startMonat}
             </span>
 
             <h2
               className="text-white font-bold mb-4 max-w-[700px] mx-auto"
               style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", letterSpacing: "-0.025em" }}
             >
-              {klasse3Capacity} Plätze.<br /><span className="text-[#00C896]">Klasse 3 startet im Oktober 2026.</span>
+              {offen.capacity != null && <>{offen.capacity} Plätze.<br /></>}
+              <span className="text-[#00C896]">{offen.name} startet im {offen.startMonat}.</span>
             </h2>
 
             <div className="text-white/50 text-lg max-w-[560px] mx-auto mb-10 leading-relaxed">
-              <p className="text-white/75 font-medium mb-1">Klasse 1 &amp; 2: ausgebucht. Über 50 Systemhäuser sind bereits dabei.</p>
-              <p className="text-[#00C896] font-medium mb-5">Klasse 3: {klasse3Belegt} von {klasse3Capacity} Plätzen bereits vergeben.</p>
-              <p>
-                Sie entscheiden, ob Ihr Systemhaus in 12 Monaten als führender Copilot-Partner in Ihrer Region positioniert ist — oder ob ein Wettbewerber diesen Platz einnimmt.
+              <p className="text-white/75 font-medium mb-1">Über {partnerCount.replace("+", "")} Systemhäuser aus {gestartet} Klassen sind bereits dabei.</p>
+              {offen.zeigeZaehler && (
+                <p className="text-[#00C896] font-medium mb-1">{offen.name}: {offen.belegt} von {offen.capacity} Plätzen bereits vergeben.</p>
+              )}
+              <p className="mt-4">
+                Sie entscheiden, ob Ihr Systemhaus in 12 Monaten als führender Copilot-Partner in Ihrer Region positioniert ist. Oder ob ein Wettbewerber diesen Platz einnimmt. Wir melden uns innerhalb von 24 Stunden persönlich.
               </p>
             </div>
 
@@ -1066,10 +1120,14 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
             <div>
               <h4 className="text-white font-semibold text-sm mb-4">Programm</h4>
               <ul className="space-y-2 text-sm">
-                <li><a href="#solution" className="text-white/50 hover:text-[#00C896] transition-colors">Das Programm</a></li>
+                <li><a href="#programm" className="text-white/50 hover:text-[#00C896] transition-colors">Das Programm</a></li>
                 <li><a href="#included" className="text-white/50 hover:text-[#00C896] transition-colors">Was enthalten ist</a></li>
-                <li><a href="#trainer" className="text-white/50 hover:text-[#00C896] transition-colors">Über den Trainer</a></li>
+                <li><a href="#ablauf" className="text-white/50 hover:text-[#00C896] transition-colors">Ablauf {offen.name}</a></li>
+                <li><a href="#stimmen" className="text-white/50 hover:text-[#00C896] transition-colors">Stimmen aus den Klassen</a></li>
+                <li><a href="#trainer" className="text-white/50 hover:text-[#00C896] transition-colors">Die Trainer</a></li>
                 <li><a href="#faq" className="text-white/50 hover:text-[#00C896] transition-colors">FAQ</a></li>
+                <li><a href="/webinare" className="text-white/50 hover:text-[#00C896] transition-colors">Info-Webinare</a></li>
+                <li><a href="/suche" className="text-white/50 hover:text-[#00C896] transition-colors">Copilot-Partner finden</a></li>
               </ul>
             </div>
 
@@ -1084,6 +1142,7 @@ export default function LandingPage({ partnerCount, klasse3Capacity, klasse3Bele
                 <li><a href="https://www.youtube.com/@alexandereggers" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-[#00C896] transition-colors">YouTube</a></li>
                 <li><a href="/impressum" className="text-white/50 hover:text-[#00C896] transition-colors">Impressum</a></li>
                 <li><a href="/agb" className="text-white/50 hover:text-[#00C896] transition-colors">AGB</a></li>
+                <li><a href="/datenschutz" className="text-white/50 hover:text-[#00C896] transition-colors">Datenschutz</a></li>
               </ul>
             </div>
           </div>
