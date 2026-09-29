@@ -54,7 +54,7 @@ export const STIMMEN: Stimme[] = [
     firma: "ACP",
     klasse: "Klasse 2",
     zitat:
-      "Aus den Modulen haben wir ein eigenes Portfolio abgeleitet: Quick Start, Geschäftsleitungs-Workshop, Tenant-Audit und Adoption-Programm. Die ersten Workshops laufen schon bei unseren Kunden.",
+      "Aus den Modulen der Copilot Masterclass haben wir unser eigenes Portfolio abgeleitet. Es begleitet Kunden von den ersten strategischen Überlegungen bis zur nachhaltigen Nutzung und schafft die Grundlage für eine skalierbare und zukunftssichere Verankerung von KI in den Unternehmensprozessen. Die ersten Kundenworkshops wurden bereits erfolgreich durchgeführt.",
   },
   {
     name: "Franziska Kufner",
