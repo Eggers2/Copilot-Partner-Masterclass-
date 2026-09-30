@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Save } from "lucide-react";
 import type { LeadStatus, LeadSource, AdnChannel } from "@prisma/client";
 import { createLeadAction } from "@/app/admin/actions";
@@ -31,6 +31,7 @@ export function NewLeadForm({
   defaultSource: LeadSource;
 }) {
   const [state, formAction] = useActionState(createLeadAction, null);
+  const [selectedSource, setSelectedSource] = useState<LeadSource>(defaultSource);
 
   return (
     <form
@@ -100,6 +101,7 @@ export function NewLeadForm({
           <select
             name="source"
             defaultValue={defaultSource}
+            onChange={(e) => setSelectedSource(e.target.value as LeadSource)}
             className={inputClass}
           >
             {Object.entries(LEAD_SOURCE_CONFIG).map(([key, config]) => (
@@ -109,6 +111,19 @@ export function NewLeadForm({
             ))}
           </select>
         </div>
+        {selectedSource === "COLD_OUTREACH" && (
+          <div>
+            <label className={labelClass}>Kaltakquise-Kosten (€)</label>
+            <input
+              name="acquisitionCost"
+              type="number"
+              min={0}
+              step={0.01}
+              placeholder="0,00"
+              className={inputClass}
+            />
+          </div>
+        )}
         <div>
           <label className={labelClass}>ADN-Kanal</label>
           <select

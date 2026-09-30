@@ -1,13 +1,23 @@
 import { redirect } from "next/navigation";
 import { isAuthenticated } from "@/lib/auth";
-import { getFollowUpTasks } from "@/lib/db/leads";
-import { FollowUpWidget } from "@/components/admin/FollowUpWidget";
+import { getFollowUpTasks, getKpiStats } from "@/lib/db/leads";
+import { FollowUpList, type Faelligkeit } from "@/components/admin/FollowUpList";
+import { FunnelChart } from "@/components/admin/FunnelChart";
 
-export default async function TasksPage() {
+const FAELLIGKEITEN: Faelligkeit[] = ["alle", "ueberfaellig", "heute", "woche", "spaeter"];
+
+export default async function TasksPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ faellig?: string }>;
+}) {
   const authed = await isAuthenticated();
   if (!authed) redirect("/admin/login");
 
-  const followUps = await getFollowUpTasks();
+  const params = (await searchParams) ?? {};
+  const initialFaelligkeit = FAELLIGKEITEN.find((f) => f === params.faellig) ?? "alle";
+
+  const [followUps, kpi] = await Promise.all([getFollowUpTasks(), getKpiStats()]);
 
   return (
     <div>
@@ -18,7 +28,18 @@ export default async function TasksPage() {
         </p>
       </div>
 
-      <FollowUpWidget leads={followUps} showAll />
+      <div className="mb-8">
+        <FunnelChart byStatus={kpi.byStatus} />
+      </div>
+
+      <FollowUpList
+        key={initialFaelligkeit}
+        initialFaelligkeit={initialFaelligkeit}
+        leads={followUps.map((l) => ({
+          ...l,
+          followUpAt: l.followUpAt?.toISOString() ?? null,
+        }))}
+      />
     </div>
   );
 }

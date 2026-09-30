@@ -72,6 +72,7 @@ export async function updateLead(
     notes?: string | null;
     score?: number;
     revenue?: number;
+    acquisitionCost?: number;
     followUpAt?: Date | null;
     latitude?: number | null;
     longitude?: number | null;
@@ -110,7 +111,15 @@ export async function addActivity(
 }
 
 export async function getKpiStats() {
-  const [total, byStatus, revenueSum] = await Promise.all([
+  const [
+    total,
+    byStatus,
+    revenueSum,
+    revenueByKlasseRaw,
+    klassen,
+    overdueFollowUpCount,
+    coldOutreachCost,
+  ] = await Promise.all([
     prisma.lead.count(),
     prisma.lead.groupBy({
       by: ["status"],
@@ -120,7 +129,44 @@ export async function getKpiStats() {
       where: { status: "WON" },
       _sum: { revenue: true },
     }),
+    prisma.lead.groupBy({
+      by: ["klasseId"],
+      where: { status: "WON" },
+      _sum: { revenue: true },
+      _count: { id: true },
+    }),
+    prisma.klasse.findMany({
+      orderBy: { kickoffDate: "asc" },
+      select: { id: true, name: true },
+    }),
+    // Gleiche Auswahl wie getFollowUpTasks, nur mit Datum in der Vergangenheit
+    prisma.lead.count({
+      where: {
+        followUpAt: { lt: new Date() },
+        status: { notIn: ["WON", "LOST"] },
+      },
+    }),
+    prisma.lead.aggregate({
+      where: { source: "COLD_OUTREACH" },
+      _sum: { acquisitionCost: true },
+      _count: { id: true },
+    }),
   ]);
+
+  // Umsatz je Klasse in Reihenfolge der Kohorten, Leads ohne Klasse am Ende
+  const revenueByKlasse = [
+    ...klassen.map((k) => ({ id: k.id, name: k.name })),
+    { id: null, name: "Ohne Klasse" },
+  ]
+    .map((k) => {
+      const row = revenueByKlasseRaw.find((r) => r.klasseId === k.id);
+      return {
+        name: k.name,
+        revenue: row?._sum.revenue ?? 0,
+        won: row?._count.id ?? 0,
+      };
+    })
+    .filter((k) => k.won > 0);
 
   const statusMap: Record<string, number> = {};
   for (const s of byStatus) {
@@ -145,6 +191,10 @@ export async function getKpiStats() {
     won,
     activeFunnel,
     revenueTotal: revenueSum._sum.revenue ?? 0,
+    revenueByKlasse,
+    overdueFollowUpCount,
+    coldOutreachCostTotal: coldOutreachCost._sum.acquisitionCost ?? 0,
+    coldOutreachCount: coldOutreachCost._count.id,
   };
 }
 
@@ -362,6 +412,7 @@ export async function getFollowUpTasks() {
       name: true,
       company: true,
       status: true,
+      source: true,
       followUpAt: true,
     },
   });

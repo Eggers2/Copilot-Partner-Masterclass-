@@ -134,6 +134,18 @@ export async function updateLeadAction(
   const revenueEuro = parseFloat(revenueRaw);
   const revenueCents = !isNaN(revenueEuro) ? Math.round(revenueEuro * 100) : 0;
 
+  // Kosten nur für Kaltakquise-Leads. Ohne Feld im Formular bleibt der Wert unverändert.
+  const source = formData.get("source") as LeadSource;
+  const acquisitionCostRaw = formData.get("acquisitionCost");
+  const acquisitionCostEuro =
+    typeof acquisitionCostRaw === "string" ? parseFloat(acquisitionCostRaw) : NaN;
+  const acquisitionCost =
+    source === "COLD_OUTREACH" && typeof acquisitionCostRaw === "string"
+      ? !isNaN(acquisitionCostEuro) && acquisitionCostEuro > 0
+        ? Math.round(acquisitionCostEuro * 100)
+        : 0
+      : undefined;
+
   const street = (formData.get("street") as string) || null;
   const zip = (formData.get("zip") as string) || null;
   const city = (formData.get("city") as string) || null;
@@ -165,10 +177,11 @@ export async function updateLeadAction(
     website: (formData.get("website") as string) || null,
     phone: (formData.get("phone") as string) || null,
     status: newStatus,
-    source: formData.get("source") as LeadSource,
+    source,
     notes: (formData.get("notes") as string) || null,
     score: parseInt(formData.get("score") as string) || 0,
     revenue: newStatus === "WON" ? revenueCents : undefined,
+    acquisitionCost,
     followUpAt: followUpAtRaw ? berlinInputToUtc(followUpAtRaw) : null,
     ...(adnChannel ? { adnChannel } : {}),
     klasseId,
@@ -1274,6 +1287,11 @@ export async function createLeadAction(
   const followUpAtRaw = formData.get("followUpAt") as string;
   const sourceRaw = formData.get("source") as string;
   const statusRaw = formData.get("status") as string;
+  const acquisitionCostEuro = parseFloat((formData.get("acquisitionCost") as string) || "");
+  const acquisitionCost =
+    sourceRaw === "COLD_OUTREACH" && !isNaN(acquisitionCostEuro) && acquisitionCostEuro > 0
+      ? Math.round(acquisitionCostEuro * 100)
+      : 0;
 
   const lead = await prisma.lead.create({
     data: {
@@ -1287,6 +1305,7 @@ export async function createLeadAction(
       phone: ((formData.get("phone") as string) || "").trim() || null,
       status: (statusRaw as LeadStatus) || "NEW",
       source: (sourceRaw as LeadSource) || "OTHER",
+      acquisitionCost,
       notes: ((formData.get("notes") as string) || "").trim() || null,
       score: parseInt((formData.get("score") as string) || "0") || 0,
       followUpAt: followUpAtRaw ? berlinInputToUtc(followUpAtRaw) : null,

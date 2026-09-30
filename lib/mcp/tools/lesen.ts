@@ -182,7 +182,7 @@ export const pipelineKennzahlen = defineTool({
   title: "Pipeline-Kennzahlen",
   scope: SCOPE_READ,
   description:
-    "Überblick über CRM und Shop: Leads je Status, Conversion, gewonnener Umsatz, neue Leads der letzten 7 und 30 Tage, " +
+    "Überblick über CRM und Shop: Leads je Status, Conversion, gewonnener Umsatz (gesamt und je Klasse), Kaltakquise-Kosten, neue Leads der letzten 7 und 30 Tage, " +
     "überfällige Follow-ups sowie Bestellungen je Status und Paket.",
   schema: z.object({}),
   async handler() {
@@ -204,6 +204,12 @@ export const pipelineKennzahlen = defineTool({
         gewonnen: kpi.won,
         conversionProzent: kpi.conversionRate,
         umsatzGewonnenEuro: Number(kpi.revenueTotal) / 100,
+        umsatzJeKlasse: kpi.revenueByKlasse.map((k) => ({
+          klasse: k.name,
+          gewonnen: k.won,
+          umsatzEuro: k.revenue / 100,
+        })),
+        kaltakquiseKostenEuro: kpi.coldOutreachCostTotal / 100,
         neueLetzte7Tage: neu7,
         neueLetzte30Tage: neu30,
         ueberfaelligeFollowUps: ueberfaellig,

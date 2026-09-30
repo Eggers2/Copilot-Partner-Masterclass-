@@ -29,6 +29,7 @@ interface Lead {
   notes: string | null;
   score: number;
   revenue: number;
+  acquisitionCost: number;
   followUpAt: string | null;
   createdAt: string;
   adnChannel: AdnChannel;
@@ -119,6 +120,7 @@ export function LeadDetailPanel({
 }) {
   const [state, formAction] = useActionState(updateLeadAction, null);
   const [selectedStatus, setSelectedStatus] = useState<LeadStatus>(lead.status);
+  const [selectedSource, setSelectedSource] = useState<LeadSource>(lead.source);
   const [isDeleting, startTransition] = useTransition();
   const router = useRouter();
 
@@ -256,6 +258,7 @@ export function LeadDetailPanel({
             <select
               name="source"
               defaultValue={lead.source}
+              onChange={(e) => setSelectedSource(e.target.value as LeadSource)}
               className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none"
             >
               {Object.entries(LEAD_SOURCE_CONFIG).map(([key, config]) => (
@@ -309,6 +312,22 @@ export function LeadDetailPanel({
               className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none"
             />
           </div>
+          {selectedSource === "COLD_OUTREACH" && (
+            <div>
+              <label className="block text-sm font-medium text-dark-slate-600 mb-1">
+                Kaltakquise-Kosten (€)
+              </label>
+              <input
+                name="acquisitionCost"
+                type="number"
+                min={0}
+                step={0.01}
+                defaultValue={lead.acquisitionCost > 0 ? lead.acquisitionCost / 100 : ""}
+                placeholder="0,00"
+                className="w-full px-3 py-2 text-sm border border-dark-slate-200 rounded-lg focus:border-[#030386] focus:outline-none"
+              />
+            </div>
+          )}
           {selectedStatus === "WON" && (
             <div>
               <label className="block text-sm font-medium text-dark-slate-600 mb-1">
