@@ -49,14 +49,11 @@ export async function POST(request: NextRequest) {
         position: body.position,
         anmerkungen: body.anmerkungen,
         adnChannel: body.adnChannel,
-        iamcpAktion: body.iamcpAktion === true,
         klasseId: typeof body.klasseId === "string" ? body.klasseId : undefined,
       },
       {
         ip,
-        quelle: `copilotberater.de/bestellen/adn (${body.adnChannel}${
-          body.iamcpAktion === true ? ", IAMCP-Aktion" : ""
-        })`,
+        quelle: `copilotberater.de/bestellen/adn (${body.adnChannel})`,
       }
     );
 
