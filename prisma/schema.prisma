@@ -264,6 +264,8 @@ model Lead {
   notes                String?
   score                Int                   @default(0)
   revenue              Int                   @default(0)
+  /// Kosten in Cent, die für einen Lead aus der Kaltakquise bezahlt wurden
+  acquisitionCost      Int                   @default(0) @map("acquisition_cost")
   followUpAt           DateTime?
   webinarRegistered    Boolean               @default(false) @map("webinar_registered")
   showOnMap            Boolean               @default(true) @map("show_on_map")
