@@ -22,6 +22,7 @@ import {
   PROGRAMM_INHALT,
   STIMME_HIGHLIGHT,
   STIMMEN,
+  PARTNER_VIDEOS,
   type Faq,
 } from "@/lib/landing/inhalte";
 
@@ -521,6 +522,54 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
                 <ArrowRight className="w-4 h-4" />
               </a>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 2.7 PARTNER IM VIDEO ═══ */}
+      <section id="videos" style={{ background: "#23233D" }} className="py-[88px]">
+        <div className="container-main">
+          <div className="mb-10 reveal max-w-[720px]">
+            <span className="section-label">Im Video</span>
+            <h2
+              className="text-white font-bold mt-3 mb-3"
+              style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(24px, 3vw, 38px)", letterSpacing: "-0.025em" }}
+            >
+              Partner erzählen, was die Masterclass verändert hat.
+            </h2>
+            <p className="text-white/60">Aufgenommen beim IAMCP-Treffen. Jeweils rund anderthalb Minuten.</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {PARTNER_VIDEOS.map((v) => (
+              <figure key={v.slug} className="reveal flex flex-col gap-3 min-w-0">
+                <video
+                  className="w-full aspect-video rounded-[14px] border border-white/10 bg-black"
+                  controls
+                  preload="none"
+                  playsInline
+                  poster={`/videos/${v.slug}.jpg`}
+                  aria-label={`Video: ${v.name}, ${v.firma}, über die Copilot Partner Masterclass`}
+                >
+                  <source src={`/videos/${v.slug}.mp4`} type="video/mp4" />
+                </video>
+                <figcaption className="flex flex-col gap-1">
+                  <h3 className="text-white font-bold text-lg leading-snug" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>
+                    {v.titel}
+                  </h3>
+                  <span className="text-white/50 text-[13px]">
+                    <b className="text-white/85 font-semibold">{v.name}</b> &middot; {v.firma} &middot; {v.klasse} &middot; {v.dauerLabel} Min.
+                  </span>
+                </figcaption>
+                <details className="group">
+                  <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden inline-flex items-center gap-1.5 text-sm font-semibold text-[#00C896] hover:text-white transition-colors">
+                    Abschrift lesen
+                    <ChevronDown className="w-4 h-4 transition-transform duration-200 group-open:rotate-180" />
+                  </summary>
+                  <p className="mt-3 text-white/65 text-sm leading-relaxed">{v.abschrift}</p>
+                </details>
+              </figure>
+            ))}
           </div>
         </div>
       </section>
