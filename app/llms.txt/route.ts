@@ -4,6 +4,7 @@ import {
   buildFaqs,
   MITARBEITER_COUNT,
   PARTNER_COUNT,
+  PARTNER_VIDEOS,
   PROGRAMM_DEFINITION,
   PROGRAMM_INHALT,
 } from "@/lib/landing/inhalte";
@@ -37,6 +38,10 @@ ${PROGRAMM_INHALT}
 - Pakete: für 3, 6 oder 15 Mitarbeitende, Konditionen im persönlichen Gespräch
 - Teilnehmende bisher: ${PARTNER_COUNT} Systemhäuser, ${MITARBEITER_COUNT} Mitarbeitende
 - Trainer: Alexander Eggers (Microsoft MVP für M365 und M365 Copilot), Michael Greth (Microsoft MVP)
+
+## Partner im Interview
+
+${PARTNER_VIDEOS.map((v) => `### ${v.name}, ${v.firma} (${v.klasse}): ${v.titel}\n\nVideo: ${SITE_URL}/videos/${v.slug}.mp4\n\n${v.abschrift}`).join("\n\n")}
 
 ## Häufige Fragen
 

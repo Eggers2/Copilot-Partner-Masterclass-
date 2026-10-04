@@ -1,5 +1,10 @@
 import { SITE_URL } from "@/lib/site";
-import { PROGRAMM_DEFINITION, type Faq } from "@/lib/landing/inhalte";
+import {
+  PARTNER_VIDEOS,
+  PROGRAMM_DEFINITION,
+  VIDEOS_VEROEFFENTLICHT,
+  type Faq,
+} from "@/lib/landing/inhalte";
 import type { LandingKlasse } from "@/lib/landing/klassen";
 
 /**
@@ -73,6 +78,20 @@ export function buildLandingJsonLd(offen: LandingKlasse, faqs: Faq[]) {
           inLanguage: "de",
         },
       },
+      ...PARTNER_VIDEOS.map((v) => ({
+        "@type": "VideoObject",
+        "@id": `${SITE_URL}/#video-${v.slug}`,
+        name: `${v.name} (${v.firma}): ${v.titel}`,
+        description: `${v.name} von ${v.firma} (${v.klasse}) über seine Erfahrungen mit der Copilot Partner Masterclass.`,
+        thumbnailUrl: `${SITE_URL}/videos/${v.slug}.jpg`,
+        contentUrl: `${SITE_URL}/videos/${v.slug}.mp4`,
+        uploadDate: VIDEOS_VEROEFFENTLICHT,
+        duration: v.dauer,
+        inLanguage: "de",
+        transcript: v.abschrift,
+        publisher: { "@id": org },
+        about: { "@id": course },
+      })),
       {
         "@type": "FAQPage",
         "@id": `${SITE_URL}/#faq`,
