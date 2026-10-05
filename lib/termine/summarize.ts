@@ -30,12 +30,15 @@ function asString(v: unknown): string {
 }
 
 /**
- * Tool zum strukturierten Zurückgeben des Ergebnisses. Über tool_choice
- * erzwungen → die API liefert ein bereits validiertes Objekt zurück, sodass kein
- * fragiles JSON-Parsing langer Freitexte (Protokoll) nötig ist.
+ * Tool zum strukturierten Zurückgeben des Ergebnisses. strict: true sorgt dafür,
+ * dass die API ein schema-valides Objekt liefert, sodass kein fragiles
+ * JSON-Parsing langer Freitexte (Protokoll) nötig ist. Ein erzwungenes
+ * tool_choice ("tool"/"any") lehnt Sonnet 5.5 ab; der Systemprompt weist
+ * deshalb ausdrücklich an, das Tool zu nutzen.
  */
 const PROTOKOLL_TOOL: Anthropic.Tool = {
   name: "submit_protokoll",
+  strict: true,
   description:
     "Gibt Thema, kompakte Zusammenfassung und ausführliches Meetingprotokoll der Session strukturiert zurück.",
   input_schema: {
@@ -57,6 +60,7 @@ const PROTOKOLL_TOOL: Anthropic.Tool = {
       },
     },
     required: ["thema", "zusammenfassung", "protokoll"],
+    additionalProperties: false,
   },
 };
 
@@ -94,7 +98,7 @@ Erstelle thema, zusammenfassung und protokoll als JSON nach dem im System beschr
   const client = getAnthropic();
   const response = await client.messages.create({
     model: CLAUDE_ANALYSIS_MODEL,
-    max_tokens: 6000,
+    max_tokens: 16000,
     system: [
       {
         type: "text",
@@ -103,7 +107,7 @@ Erstelle thema, zusammenfassung und protokoll als JSON nach dem im System beschr
       },
     ],
     tools: [PROTOKOLL_TOOL],
-    tool_choice: { type: "tool", name: PROTOKOLL_TOOL.name },
+    tool_choice: { type: "auto" },
     messages: [{ role: "user", content: userPrompt }],
   });
 
