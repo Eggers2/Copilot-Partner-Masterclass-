@@ -116,7 +116,7 @@ Sprich den Lead in der Mail mit Vornamen an (aus dem Namen ableiten) und nutze "
   const client = getAnthropic();
   const response = await client.messages.create({
     model: CLAUDE_ANALYSIS_MODEL,
-    max_tokens: 6000,
+    max_tokens: 16000,
     system: [
       {
         type: "text",

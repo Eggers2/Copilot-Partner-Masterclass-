@@ -15,7 +15,15 @@ export function getAnthropic(): Anthropic {
   return client;
 }
 
-export const CLAUDE_MODEL = "claude-haiku-4-5";
+// Modelle sind per Environment-Variable (z.B. in Railway) überschreibbar, damit
+// ein Modellwechsel ohne Codeänderung und Deploy möglich ist.
+const DEFAULT_CLAUDE_MODEL = "claude-sonnet-5-5";
+
+function modelFromEnv(name: string): string {
+  return process.env[name]?.trim() || DEFAULT_CLAUDE_MODEL;
+}
+
+export const CLAUDE_MODEL = modelFromEnv("CLAUDE_MODEL");
 
 export const NEWSLETTER_SYSTEM_PROMPT = `Du bist Redakteur des wöchentlichen "Copilot Insider Update"-Newsletters für die Copilot Partner Masterclass (NextSkills GmbH).
 
@@ -33,9 +41,9 @@ Redaktioneller Ton:
 Format: Du antwortest ausschließlich mit reinem JSON nach dem vorgegebenen Schema, ohne Markdown-Fences, ohne Kommentare, ohne Prosa davor oder danach.`;
 
 // ─── First-Call-Auswertung (VTT-Transkript → Scorecard + Mail) ───────────────
-// Bewusst Sonnet (statt Haiku): die Auswertung verlangt belastbares Scoring,
-// Paketempfehlung und einen persönlich getexteten Mail-Entwurf.
-export const CLAUDE_ANALYSIS_MODEL = "claude-sonnet-4-6";
+// Eigene Variable, damit Auswertungen (First Call, Termin-Protokoll) bei Bedarf
+// auf ein anderes Modell gelegt werden können als die Newsletter-Redaktion.
+export const CLAUDE_ANALYSIS_MODEL = modelFromEnv("CLAUDE_ANALYSIS_MODEL");
 
 const BESTELL_URL = `${process.env.APP_BASE_URL ?? "https://www.copilotberater.de"}/bestellen`;
 
