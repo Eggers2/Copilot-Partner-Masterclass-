@@ -93,7 +93,7 @@ Hier ist das Transkript der Session:
 ${transcript}
 ---
 
-Erstelle thema, zusammenfassung und protokoll als JSON nach dem im System beschriebenen Schema.`;
+Erstelle thema, zusammenfassung und protokoll und gib sie über das Tool "submit_protokoll" zurück.`;
 
   const client = getAnthropic();
   const response = await client.messages.create({
