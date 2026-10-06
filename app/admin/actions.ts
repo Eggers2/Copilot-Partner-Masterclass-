@@ -53,9 +53,11 @@ import {
 import { findeDoppelteMail, planAblefySlots } from "@/lib/ablefy/slots";
 import { inviteGuestToTeam, isGraphConfigured } from "@/lib/teams/graph";
 import {
+  setTeamsAllgemeinGroupId,
   setTeamsAufnahmeModus,
   type TeamsAufnahmeModus,
 } from "@/lib/db/appSettings";
+import { starteBestandsaufnahmeAllgemein } from "@/lib/teams/allgemeinesTeam";
 import { geocodeAddress } from "@/lib/geocode";
 import {
   createWebinar,
@@ -1028,6 +1030,7 @@ export async function updateBestellungAction(
         position: true,
         email: true,
         teamsEingeladenAm: true,
+        teamsAllgemeinEingeladenAm: true,
         ablefyState: true,
         ablefyOrderId: true,
         ablefyOrderToken: true,
@@ -1045,8 +1048,12 @@ export async function updateBestellungAction(
     // dadurch nicht erneut als Teams-Gast eingeladen wird, merken wir uns
     // den Einladungsstatus pro E-Mail.
     const previousInviteByEmail = new Map<string, Date | null>();
+    const previousAllgemeinByEmail = new Map<string, Date | null>();
     for (const e of existingTeilnehmer) {
-      if (e.email) previousInviteByEmail.set(e.email, e.teamsEingeladenAm);
+      if (e.email) {
+        previousInviteByEmail.set(e.email, e.teamsEingeladenAm);
+        previousAllgemeinByEmail.set(e.email, e.teamsAllgemeinEingeladenAm);
+      }
     }
 
     // Ablefy-Zugänge folgen der E-Mail, nicht der Position (siehe
@@ -1079,6 +1086,9 @@ export async function updateBestellungAction(
       const preservedInvite = newTeilnehmerEmail
         ? previousInviteByEmail.get(newTeilnehmerEmail) ?? null
         : null;
+      const preservedAllgemein = newTeilnehmerEmail
+        ? previousAllgemeinByEmail.get(newTeilnehmerEmail) ?? null
+        : null;
 
       const ablefyDaten = ablefyPlan.datenFuer(newTeilnehmerEmail);
 
@@ -1093,6 +1103,7 @@ export async function updateBestellungAction(
           nachname: t.nachname.trim(),
           email: newTeilnehmerEmail,
           teamsEingeladenAm: preservedInvite,
+          teamsAllgemeinEingeladenAm: preservedAllgemein,
           ...ablefyDaten,
         },
         update: {
@@ -1102,7 +1113,12 @@ export async function updateBestellungAction(
           // E-Mail-Wechsel: Einladungsstatus übernehmen, falls dieselbe
           // E-Mail in der Bestellung bereits eingeladen war, sonst zurücksetzen
           // damit der n8n-Webhook die neue Adresse als Teams-Gast einlädt.
-          ...(emailChanged ? { teamsEingeladenAm: preservedInvite } : {}),
+          ...(emailChanged
+            ? {
+                teamsEingeladenAm: preservedInvite,
+                teamsAllgemeinEingeladenAm: preservedAllgemein,
+              }
+            : {}),
           // Ablefy-Zustand wandert mit der E-Mail mit: eine bereits eingebuchte
           // Adresse behält ihre Bestellung auch nach einer Re-Indexierung, eine
           // neue Adresse startet auf OFFEN und wird gleich unten eingebucht.
@@ -1122,10 +1138,17 @@ export async function updateBestellungAction(
   const toInvite = await prisma.bestellungTeilnehmer.findMany({
     where: {
       bestellungId: id,
-      teamsEingeladenAm: null,
+      OR: [{ teamsEingeladenAm: null }, { teamsAllgemeinEingeladenAm: null }],
       NOT: { email: "" },
     },
-    select: { id: true, vorname: true, nachname: true, email: true },
+    select: {
+      id: true,
+      vorname: true,
+      nachname: true,
+      email: true,
+      teamsEingeladenAm: true,
+      teamsAllgemeinEingeladenAm: true,
+    },
   });
   if (bestellung && toInvite.length > 0) {
     await dispatchTeamsGuestInvites({
@@ -1534,6 +1557,34 @@ export async function sendTeamsTestInviteAction(
     };
   }
   return { ok: true };
+}
+
+// ─── Allgemeines Teams-Team (klassenübergreifend) ────────────────────────────
+
+const GUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Speichert die Group-ID des allgemeinen Teams. Leer = Aufnahme abgeschaltet. */
+export async function setTeamsAllgemeinGroupIdAction(
+  groupId: string
+): Promise<{ ok: boolean; error?: string }> {
+  await requireAuth();
+  const value = groupId.trim();
+  if (value && !GUID_RE.test(value)) {
+    return { ok: false, error: "Die Group-ID muss eine GUID sein (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)." };
+  }
+  await setTeamsAllgemeinGroupId(value);
+  revalidatePath("/admin/klassen");
+  return { ok: true };
+}
+
+/** Nimmt alle bisherigen Teilnehmer im Hintergrund ins allgemeine Team auf. */
+export async function starteBestandsaufnahmeAllgemeinAction(): Promise<
+  { ok: true; adressen: number } | { ok: false; error: string }
+> {
+  await requireAuth();
+  const res = await starteBestandsaufnahmeAllgemein();
+  revalidatePath("/admin/klassen");
+  return res;
 }
 
 // ─── KLASSEN-TERMINE & THEMEN ───────────────────────
