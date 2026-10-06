@@ -221,7 +221,7 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
             {/* Desktop Nav */}
             <div className="hidden md:flex items-center gap-8">
               <a href="#programm" className="text-white/70 hover:text-white text-sm font-medium transition-colors">Programm</a>
-              <a href="#stimmen" className="text-white/70 hover:text-white text-sm font-medium transition-colors">Stimmen</a>
+              <a href="#videos" className="text-white/70 hover:text-white text-sm font-medium transition-colors">Stimmen</a>
               <a href="#ablauf" className="text-white/70 hover:text-white text-sm font-medium transition-colors">Ablauf</a>
               <a href="#trainer" className="text-white/70 hover:text-white text-sm font-medium transition-colors">Trainer</a>
               <a href="#faq" className="text-white/70 hover:text-white text-sm font-medium transition-colors">FAQ</a>
@@ -244,7 +244,7 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
           {mobileMenuOpen && (
             <div className="md:hidden pb-4 flex flex-col gap-3">
               <a href="#programm" className="text-white/70 hover:text-white text-sm font-medium py-2">Programm</a>
-              <a href="#stimmen" className="text-white/70 hover:text-white text-sm font-medium py-2">Stimmen</a>
+              <a href="#videos" className="text-white/70 hover:text-white text-sm font-medium py-2">Stimmen</a>
               <a href="#ablauf" className="text-white/70 hover:text-white text-sm font-medium py-2">Ablauf</a>
               <a href="#trainer" className="text-white/70 hover:text-white text-sm font-medium py-2">Trainer</a>
               <a href="#faq" className="text-white/70 hover:text-white text-sm font-medium py-2">FAQ</a>
@@ -432,8 +432,56 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
         </div>
       </section>
 
-      {/* ═══ 2.6 STIMMEN AUS DEN KLASSEN ═══ */}
-      <section id="stimmen" style={{ background: "#1A1A2E" }} className="py-[88px]">
+      {/* ═══ 2.6 PARTNER IM VIDEO ═══ */}
+      <section id="videos" style={{ background: "#1A1A2E" }} className="py-[88px]">
+        <div className="container-main">
+          <div className="mb-10 reveal max-w-[720px]">
+            <span className="section-label">Im Video</span>
+            <h2
+              className="text-white font-bold mt-3 mb-3"
+              style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(24px, 3vw, 38px)", letterSpacing: "-0.025em" }}
+            >
+              Partner erzählen, was die Masterclass verändert hat.
+            </h2>
+            <p className="text-white/60">Vier Systemhäuser aus den ersten beiden Klassen. Jeweils unter einer Minute.</p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {PARTNER_VIDEOS.map((v) => (
+              <figure key={v.slug} className="reveal flex flex-col gap-3 min-w-0">
+                <video
+                  className="w-full aspect-square rounded-[14px] border border-white/10 bg-black"
+                  controls
+                  preload="none"
+                  playsInline
+                  poster={`/videos/${v.slug}.jpg`}
+                  aria-label={`Video: ${v.name}, ${v.firma}, über die Copilot Partner Masterclass`}
+                >
+                  <source src={`/videos/${v.slug}.mp4`} type="video/mp4" />
+                </video>
+                <figcaption className="flex flex-col gap-1">
+                  <h3 className="text-white font-bold text-lg leading-snug" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>
+                    {v.titel}
+                  </h3>
+                  <span className="text-white/50 text-[13px]">
+                    <b className="text-white/85 font-semibold">{v.name}</b> &middot; {v.firma} &middot; {v.klasse} &middot; {v.dauerLabel}
+                  </span>
+                </figcaption>
+                <details className="group">
+                  <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden inline-flex items-center gap-1.5 text-sm font-semibold text-[#00C896] hover:text-white transition-colors">
+                    Abschrift lesen
+                    <ChevronDown className="w-4 h-4 transition-transform duration-200 group-open:rotate-180" />
+                  </summary>
+                  <p className="mt-3 text-white/65 text-sm leading-relaxed">{v.abschrift}</p>
+                </details>
+              </figure>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 2.7 STIMMEN AUS DEN KLASSEN ═══ */}
+      <section id="stimmen" style={{ background: "#23233D" }} className="py-[88px]">
         <div className="container-main">
           <div className="mb-10 reveal max-w-[720px]">
             <span className="section-label">Aus den Klassen</span>
@@ -522,54 +570,6 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
                 <ArrowRight className="w-4 h-4" />
               </a>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ 2.7 PARTNER IM VIDEO ═══ */}
-      <section id="videos" style={{ background: "#23233D" }} className="py-[88px]">
-        <div className="container-main">
-          <div className="mb-10 reveal max-w-[720px]">
-            <span className="section-label">Im Video</span>
-            <h2
-              className="text-white font-bold mt-3 mb-3"
-              style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(24px, 3vw, 38px)", letterSpacing: "-0.025em" }}
-            >
-              Partner erzählen, was die Masterclass verändert hat.
-            </h2>
-            <p className="text-white/60">Vier Systemhäuser aus den ersten beiden Klassen. Jeweils unter einer Minute.</p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {PARTNER_VIDEOS.map((v) => (
-              <figure key={v.slug} className="reveal flex flex-col gap-3 min-w-0">
-                <video
-                  className="w-full aspect-square rounded-[14px] border border-white/10 bg-black"
-                  controls
-                  preload="none"
-                  playsInline
-                  poster={`/videos/${v.slug}.jpg`}
-                  aria-label={`Video: ${v.name}, ${v.firma}, über die Copilot Partner Masterclass`}
-                >
-                  <source src={`/videos/${v.slug}.mp4`} type="video/mp4" />
-                </video>
-                <figcaption className="flex flex-col gap-1">
-                  <h3 className="text-white font-bold text-lg leading-snug" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>
-                    {v.titel}
-                  </h3>
-                  <span className="text-white/50 text-[13px]">
-                    <b className="text-white/85 font-semibold">{v.name}</b> &middot; {v.firma} &middot; {v.klasse} &middot; {v.dauerLabel}
-                  </span>
-                </figcaption>
-                <details className="group">
-                  <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden inline-flex items-center gap-1.5 text-sm font-semibold text-[#00C896] hover:text-white transition-colors">
-                    Abschrift lesen
-                    <ChevronDown className="w-4 h-4 transition-transform duration-200 group-open:rotate-180" />
-                  </summary>
-                  <p className="mt-3 text-white/65 text-sm leading-relaxed">{v.abschrift}</p>
-                </details>
-              </figure>
-            ))}
           </div>
         </div>
       </section>
