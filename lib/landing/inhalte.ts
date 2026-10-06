@@ -103,20 +103,20 @@ export interface PartnerVideo {
   abschrift: string;
 }
 
-/** Interviews vom IAMCP-Treffen. Dateien unter public/videos/<slug>.mp4 und .jpg. */
+/** Kurzinterviews mit Partnern aus Klasse 1 und 2. Dateien unter public/videos/<slug>.mp4 und .jpg (quadratisch). */
 /** Veröffentlichungsdatum auf der Seite, für VideoObject.uploadDate. */
-export const VIDEOS_VEROEFFENTLICHT = "2026-10-04";
+export const VIDEOS_VEROEFFENTLICHT = "2026-10-06";
 export const PARTNER_VIDEOS: PartnerVideo[] = [
   {
     slug: "marvin-nitschke",
     name: "Marvin Nitschke",
     firma: "selobia GmbH",
     klasse: "Klasse 2",
-    titel: "Nach dem ersten Workshop war die Nervosität verflogen",
-    dauer: "PT1M34S",
-    dauerLabel: "1:34",
+    titel: "Mit dem Gelernten direkt erste Aufträge erzielt",
+    dauer: "PT45S",
+    dauerLabel: "0:45",
     abschrift:
-      "Die Masterclass hat uns auf jeden Fall erste Erfolge beschert. Wir konnten aufgrund dessen, was wir gelernt haben, unser Geschäftsmodell aufbauen und haben dieses Geschäftsmodell direkt bei unseren Kunden angeboten. Wir haben auch erste Aufträge erzielt und erste Workshops abgehalten. Was ich auf jeden Fall empfehlen würde: sich jemanden ranholen, wie beispielsweise Alex, der das Wissen aus seinen Erfahrungen komprimiert weitergibt, damit man nicht bei null anfängt. Auf der Basis schaut man dann, was habe ich für Kunden, was kann ich ihnen anbieten, wie kann meine Reise aussehen und wie kann ich mit Copilot Geld verdienen. Herausforderungen hatten wir einige. Gerade weil es ein neues Geschäftsmodell ist, waren wir uns nicht ganz sicher, wie wir das Ganze beim Kunden platzieren, was für Rückfragen kommen und wie das Feedback vom Kunden ist. Aber nach dem ersten Workshop waren die ganze Anspannung und die Nervosität, die man bei einem neuen Geschäftsmodell hat, wie verflogen. Jetzt freuen wir uns schon, wenn wir einen Workshop bei einem Kunden machen. Allein machen kostet immer mehr Zeit und Nerven. Vor allem macht man dann am Anfang die Fehler, die jemand anderes, beispielsweise Alex, schon gemacht hat. Darauf haben wir nicht so viel Lust. Wir wollen in der Mitte starten, aus den Fehlern lernen, die schon gemacht wurden, und direkt auf einem guten Einstiegsniveau sein, um beim Kunden Mehrwert zu bringen.",
+      "Allein machen kostet immer mehr Zeit und Nerven. Die Masterclass hat uns auf jeden Fall erste Erfolge beschert. Wir konnten aufgrund dessen, was wir gelernt haben, unser Geschäftsmodell aufbauen und haben dieses Geschäftsmodell direkt bei unseren Kunden angeboten. Wir haben auch erste Aufträge erzielt und erste Workshops abgehalten. Was ich auf jeden Fall empfehlen würde: sich jemanden ranholen, wie beispielsweise Alex, der das Wissen aus seinen Erfahrungen komprimiert weitergibt, damit man nicht bei null anfängt. Auf der Basis schaut man dann, was habe ich für Kunden, was kann ich ihnen anbieten, wie kann meine Reise aussehen und wie kann ich mit Copilot Geld verdienen.",
   },
   {
     slug: "daniel-schwanitz",
@@ -124,32 +124,32 @@ export const PARTNER_VIDEOS: PartnerVideo[] = [
     firma: "QM Software GmbH",
     klasse: "Klasse 2",
     titel: "Endlich ein Fahrplan statt Versuch und Irrtum",
-    dauer: "PT1M36S",
-    dauerLabel: "1:36",
+    dauer: "PT39S",
+    dauerLabel: "0:39",
     abschrift:
-      "Ich habe mich motiviert, bei der Masterclass mitzumachen, um zu verstehen, wie Copilot funktioniert, wie wir das in den Markt bringen können und wie der gesamte Ablauf strukturiert sein kann. Die Schwierigkeit, bevor wir mit der Masterclass begonnen haben, war, dass wir eher unstrukturiert waren und keinen wirklichen Fahrplan hatten, wie wir das Ganze umsetzen und wie der Weg zur wirklichen Nutzung von Copilot ist. Der Vorteil, das Ganze in der Gemeinschaft zu machen: Es hat Workshop-Charakter, und jeder bringt seine Ideen und Erfahrungen aus Kundenprojekten und Anfragen mit ein. Daraus kann man das gesamte Konzept weiterentwickeln. Denn was heute gut ist, muss morgen nicht mehr gut sein, vielleicht müssen wir übermorgen etwas ganz anderes machen. Das ist ein Thema, das wir fortlaufend beobachten und immer wieder neu durchdenken sollten. Partner, die sich mit Copilot noch gar nicht beschäftigt haben, sollten es unbedingt erst einmal selbst einsetzen. Es ist ein absoluter Gamechanger im eigenen Unternehmen. Wenn ich es selbst als Tool nutze und viele Verbesserungen habe, kann ich es auch leichter beim Kunden anbringen, weil ich die Möglichkeiten und Automatismen verstehe, die dahinterstecken.",
+      "Die Schwierigkeit, bevor wir mit der Masterclass begonnen haben, war, dass wir eher unstrukturiert waren und keinen wirklichen Fahrplan hatten, wie wir das Ganze umsetzen und wie der Weg zur wirklichen Nutzung von Copilot ist. Der Vorteil, das Ganze in der Gemeinschaft zu machen: Es hat Workshop-Charakter, und jeder bringt seine Ideen und Erfahrungen mit ein. Partner, die sich mit Copilot noch gar nicht beschäftigt haben, sollten es unbedingt erst einmal selbst einsetzen. Es ist ein absoluter Gamechanger im eigenen Unternehmen.",
   },
   {
     slug: "josef-haider",
     name: "Josef Haider",
     firma: "Know How! AG",
     klasse: "Klasse 1",
-    titel: "Nicht mehr allein kämpfen",
-    dauer: "PT1M37S",
-    dauerLabel: "1:37",
+    titel: "Tiefer einsteigen statt an der Oberfläche kratzen",
+    dauer: "PT38S",
+    dauerLabel: "0:38",
     abschrift:
-      "Was uns an der Masterclass am meisten begeistert: Wir haben nicht mehr das Gefühl, für uns allein kämpfen zu müssen, sondern können uns unter Anleitung in einer Community mit anderen austauschen und uns gegenseitig challengen. Wir sind Teilnehmer der Masterclass, weil wir nach zwei Jahren Arbeit mit Copilot festgestellt haben, dass wir noch zu sehr an der Oberfläche kratzen und uns tiefer in das Thema reinfuchsen müssen. Der Vorteil, das gemeinsam zu tun, ist genau dieses gegenseitige Challengen. Neben den Q&A-Sessions gibt es auch Teilnehmer-Sessions, die wir selbst leiten und gestalten, und in denen wir uns gegenseitig unsere Projekte vorstellen. Unsere erste Hürde war, den Personenkreis für die Teilnahme sinnvoll zusammenzustellen, damit der Outcome für die Know How! AG der ist, den wir erwarten: zum einen Wissen, zum anderen die Marketingmittel, um dieses Wissen auch nach draußen zu vermarkten. Wer sich noch nicht mit Copilot beschäftigt hat, dem würde ich empfehlen, erst einmal selbst Informationen zu sammeln, dann aber den Einstieg in diese Community zu suchen und sich der Masterclass anzuschließen. Die nächste startet bestimmt.",
+      "Wir sind Teilnehmer der Masterclass, weil wir nach zwei Jahren Arbeit mit Copilot festgestellt haben, dass wir noch zu sehr an der Oberfläche kratzen und uns tiefer in das Thema reinfuchsen müssen. Der Vorteil, das in der Masterclass gemeinsam zu tun, ist, dass man sich gegenseitig challengt. Wer sich noch nicht mit Copilot beschäftigt hat, dem würde ich empfehlen, erst einmal selbst Informationen zu sammeln, dann aber den Einstieg in diese Community zu suchen und sich der Masterclass anzuschließen.",
   },
   {
-    slug: "manuel-gohan",
-    name: "Manuel Gohan",
-    firma: "GOHAN GmbH",
+    slug: "florian-melber",
+    name: "Florian Melber",
+    firma: "SanData Solutions GmbH",
     klasse: "Klasse 1",
-    titel: "Als kleines Systemhaus nicht den Anschluss verlieren",
-    dauer: "PT1M12S",
-    dauerLabel: "1:12",
+    titel: "Ungenutzte Lizenzen sind der perfekte Einstieg",
+    dauer: "PT34S",
+    dauerLabel: "0:34",
     abschrift:
-      "Wir sind ein kleines Systemhaus, und es ist schwierig für uns, mit wenig Ressourcen KI-Wissen aufzubauen. Das war die Motivation. Ich kann die Ressourcen nicht herzaubern. Deswegen wollten wir die Masterclass mitmachen, das Know-how über die Masterclass aufbauen und nicht den Anschluss verlieren. Vor dem ersten Workshop war die größte Herausforderung das Zeitthema. Man muss ja erst einmal ins Doing kommen. Aber als es dann losging, war es sensationell, eine Guideline zu bekommen, an der man sich entlanghangeln kann. In der Masterclass kann man sich austauschen und das Know-how einfach abgreifen. Das Schöne ist auch, dass keiner Angst hat, Wissen zu teilen, weil er denkt, einer ist besser als er. Es geht alles so schnell voran. Deswegen ist es besser, sich zusammenzutun. Wenn du dich noch nicht mit Copilot beschäftigt hast, mach es jetzt, sonst ist es zu spät.",
+      "Sehr viele Kunden haben Lizenzen, zumindest für Copilot Chat, und eigentlich nutzt es niemand wirklich. Ein Einwand, der von Kunden öfter kommt, ist zum Beispiel: Wir haben ja schon Copilot, und das nutzt keiner. Aber genau da gibt uns der Kunde eigentlich den perfekten Einstieg. Ich würde jedem Systemhaus empfehlen, in das Thema einzusteigen, weil KI jetzt einfach das große Thema ist. Es ist ein gutes Potenzial, nicht nur Lizenzen zu verkaufen, sondern auch Know-how und Beratung mitzugeben.",
   },
 ];
 
