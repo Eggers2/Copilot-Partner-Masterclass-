@@ -66,17 +66,35 @@ async function getGraphToken(): Promise<string> {
 }
 
 /**
+ * fetch mit Retry bei Drosselung (429/503). Wichtig für die Massenaufnahme ins
+ * allgemeine Team: Graph liefert dann Retry-After in Sekunden.
+ */
+async function graphFetch(url: string, init: RequestInit): Promise<Response> {
+  for (let versuch = 0; ; versuch++) {
+    const res = await fetch(url, init);
+    if ((res.status !== 429 && res.status !== 503) || versuch >= 3) return res;
+    const retryAfter = Number(res.headers.get("Retry-After"));
+    const wartezeit = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 5_000;
+    await new Promise((r) => setTimeout(r, Math.min(wartezeit, 60_000)));
+  }
+}
+
+/**
  * Lädt eine Person als Gast ein. Idempotent: Für eine bereits eingeladene
  * Adresse liefert Graph den bestehenden User zurück. Gibt die invitedUser-ID
  * (= directoryObject-ID) zurück.
+ *
+ * `sendInvitationMessage: false` für Fälle, in denen die Person schon über ihr
+ * Klassen-Team eingeladen wurde und keine zweite Microsoft-Mail bekommen soll.
  */
 export async function inviteGuest(input: {
   email: string;
   displayName: string;
   redirectUrl: string;
+  sendInvitationMessage?: boolean;
 }): Promise<string> {
   const token = await getGraphToken();
-  const res = await fetch(`${GRAPH_BASE}/invitations`, {
+  const res = await graphFetch(`${GRAPH_BASE}/invitations`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -86,7 +104,7 @@ export async function inviteGuest(input: {
       invitedUserEmailAddress: input.email,
       invitedUserDisplayName: input.displayName,
       inviteRedirectUrl: input.redirectUrl,
-      sendInvitationMessage: true,
+      sendInvitationMessage: input.sendInvitationMessage ?? true,
     }),
   });
 
@@ -117,7 +135,7 @@ export async function addUserToGroup(input: {
   userId: string;
 }): Promise<void> {
   const token = await getGraphToken();
-  const res = await fetch(`${GRAPH_BASE}/groups/${input.groupId}/members/$ref`, {
+  const res = await graphFetch(`${GRAPH_BASE}/groups/${input.groupId}/members/$ref`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -151,11 +169,13 @@ export async function inviteGuestToTeam(input: {
   displayName: string;
   teamsGroupId: string;
   redirectUrl: string;
+  sendInvitationMessage?: boolean;
 }): Promise<void> {
   const userId = await inviteGuest({
     email: input.email,
     displayName: input.displayName,
     redirectUrl: input.redirectUrl,
+    sendInvitationMessage: input.sendInvitationMessage,
   });
   await addUserToGroup({ groupId: input.teamsGroupId, userId });
 }

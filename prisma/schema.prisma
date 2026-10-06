@@ -410,38 +410,41 @@ enum AblefyState {
 }
 
 model BestellungTeilnehmer {
-  id                 Int               @id @default(autoincrement())
-  bestellungId       Int               @map("bestellung_id")
-  bestellung         Bestellung        @relation(fields: [bestellungId], references: [id], onDelete: Cascade)
-  position           Int
-  vorname            String            @default("")
-  nachname           String            @default("")
-  email              String            @default("")
-  teamsEingeladenAm  DateTime?         @map("teams_eingeladen_am")
+  id                         Int               @id @default(autoincrement())
+  bestellungId               Int               @map("bestellung_id")
+  bestellung                 Bestellung        @relation(fields: [bestellungId], references: [id], onDelete: Cascade)
+  position                   Int
+  vorname                    String            @default("")
+  nachname                   String            @default("")
+  email                      String            @default("")
+  teamsEingeladenAm          DateTime?         @map("teams_eingeladen_am")
+  // Aufnahme ins klassenübergreifende allgemeine Teams-Team (Group-ID in
+  // app_settings "teams_allgemein_group_id"), zusätzlich zum Klassen-Team.
+  teamsAllgemeinEingeladenAm DateTime?         @map("teams_allgemein_eingeladen_am")
   // ── Ablefy-Kurszugang (siehe lib/ablefy/client.ts) ────────────────────────
   // Beim Speichern der Teilnehmerliste wird jede eingetragene E-Mail als
   // kostenlose Ablefy-Bestellung auf den Kurs gebucht; Ablefy versendet die
   // Zugangsmail selbst.
-  ablefyState        AblefyState       @default(OFFEN) @map("ablefy_state")
+  ablefyState                AblefyState       @default(OFFEN) @map("ablefy_state")
   // Bestell-ID und -Token aus der Ablefy-Antwort. Beides ist unersetzlich:
   // Ablefy hat keine Such- oder Listenroute für Bestellungen, und der Storno
   // verlangt den Token, nicht die ID.
-  ablefyOrderId      String?           @unique @map("ablefy_order_id")
-  ablefyOrderToken   String?           @map("ablefy_order_token")
+  ablefyOrderId              String?           @unique @map("ablefy_order_id")
+  ablefyOrderToken           String?           @map("ablefy_order_token")
   // Die Adresse, die tatsächlich eingebucht wurde. Weicht sie von `email` ab,
   // wurde der Platz umbenannt und muss neu eingebucht werden.
-  ablefyEmail        String?           @map("ablefy_email")
-  ablefyEingebuchtAm DateTime?         @map("ablefy_eingebucht_am")
+  ablefyEmail                String?           @map("ablefy_email")
+  ablefyEingebuchtAm         DateTime?         @map("ablefy_eingebucht_am")
   // Zeitpunkt des letzten Einbuchungsversuchs; trägt zugleich den Claim für
   // IN_ARBEIT, damit paralleles Speichern keine zweite Bestellung erzeugt.
-  ablefyVersuchAm    DateTime?         @map("ablefy_versuch_am")
-  ablefyFehler       String?           @map("ablefy_fehler")
+  ablefyVersuchAm            DateTime?         @map("ablefy_versuch_am")
+  ablefyFehler               String?           @map("ablefy_fehler")
   // Zuletzt in der Stand-Abfrage gemeldete Rolle (wird je Antwort aktualisiert).
-  rolle              TeilnehmerRolle?
-  erstelltAm         DateTime          @default(now()) @map("erstellt_am")
-  aktualisiertAm     DateTime          @updatedAt @map("aktualisiert_am")
-  eventTeilnahmen    EventTeilnehmer[]
-  umfrageAntworten   UmfrageAntwort[]
+  rolle                      TeilnehmerRolle?
+  erstelltAm                 DateTime          @default(now()) @map("erstellt_am")
+  aktualisiertAm             DateTime          @updatedAt @map("aktualisiert_am")
+  eventTeilnahmen            EventTeilnehmer[]
+  umfrageAntworten           UmfrageAntwort[]
 
   @@unique([bestellungId, position])
   @@index([bestellungId])
@@ -872,6 +875,7 @@ model EmailLog {
 // Laufzeit-Schalter, die im Admin umgelegt werden können – analog zum
 // EmailTemplate.aktiv-Flag, aber nicht an ein einzelnes Template gebunden.
 // Aktueller Key: "teams_aufnahme_modus" = "nativ" | "n8n" (Default ohne Row: "n8n").
+//               "teams_allgemein_group_id" = GUID des allgemeinen Teams ("" = aus).
 model AppSetting {
   key            String   @id
   value          String

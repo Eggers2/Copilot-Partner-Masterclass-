@@ -5,9 +5,11 @@ import { GraduationCap, Lock, Plus } from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
 import { listKlassenMitBelegung } from "@/lib/klassen";
 import { KLASSE_STATUS_CONFIG } from "@/lib/constants/lead-config";
-import { getTeamsAufnahmeModus } from "@/lib/db/appSettings";
+import { getTeamsAllgemeinGroupId, getTeamsAufnahmeModus } from "@/lib/db/appSettings";
 import { isGraphConfigured } from "@/lib/teams/graph";
+import { getAllgemeinStatus, isBestandsaufnahmeAktiv } from "@/lib/teams/allgemeinesTeam";
 import { TeamsModusToggle } from "@/components/admin/TeamsModusToggle";
+import { TeamsAllgemeinCard } from "@/components/admin/TeamsAllgemeinCard";
 
 export default async function KlassenPage() {
   const authed = await isAuthenticated();
@@ -16,6 +18,8 @@ export default async function KlassenPage() {
   const klassen = await listKlassenMitBelegung();
   const teamsModus = await getTeamsAufnahmeModus();
   const graphConfigured = isGraphConfigured();
+  const allgemeinGroupId = await getTeamsAllgemeinGroupId();
+  const allgemeinStatus = await getAllgemeinStatus();
 
   return (
     <div>
@@ -39,6 +43,13 @@ export default async function KlassenPage() {
       </div>
 
       <TeamsModusToggle initialModus={teamsModus} graphConfigured={graphConfigured} />
+      <TeamsAllgemeinCard
+        initialGroupId={allgemeinGroupId ?? ""}
+        graphConfigured={graphConfigured}
+        offenAdressen={allgemeinStatus.offenAdressen}
+        aufgenommenAdressen={allgemeinStatus.aufgenommenAdressen}
+        laeuft={isBestandsaufnahmeAktiv()}
+      />
 
       <div className="grid md:grid-cols-2 gap-4">
         {klassen.map((k) => {

@@ -267,7 +267,9 @@ export async function updateKundeBestellungAction(
           email: newTeilnehmerEmail,
           // E-Mail-Wechsel setzt den Einladungsstatus zurück, damit der
           // n8n-Webhook die neue Adresse erneut als Teams-Gast einlädt.
-          ...(emailChanged ? { teamsEingeladenAm: null } : {}),
+          ...(emailChanged
+            ? { teamsEingeladenAm: null, teamsAllgemeinEingeladenAm: null }
+            : {}),
           // Ablefy-Zustand wandert mit der E-Mail mit, damit eine bereits
           // eingebuchte Adresse nicht ein zweites Mal gebucht wird.
           ...ablefyDaten,
@@ -286,10 +288,17 @@ export async function updateKundeBestellungAction(
   const toInvite = await prisma.bestellungTeilnehmer.findMany({
     where: {
       bestellungId,
-      teamsEingeladenAm: null,
+      OR: [{ teamsEingeladenAm: null }, { teamsAllgemeinEingeladenAm: null }],
       NOT: { email: "" },
     },
-    select: { id: true, vorname: true, nachname: true, email: true },
+    select: {
+      id: true,
+      vorname: true,
+      nachname: true,
+      email: true,
+      teamsEingeladenAm: true,
+      teamsAllgemeinEingeladenAm: true,
+    },
   });
   if (bestellung && toInvite.length > 0) {
     await dispatchTeamsGuestInvites({
