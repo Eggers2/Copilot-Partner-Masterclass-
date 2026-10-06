@@ -537,14 +537,14 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
             >
               Partner erzählen, was die Masterclass verändert hat.
             </h2>
-            <p className="text-white/60">Aufgenommen beim IAMCP-Treffen. Jeweils rund anderthalb Minuten.</p>
+            <p className="text-white/60">Vier Systemhäuser aus den ersten beiden Klassen. Jeweils unter einer Minute.</p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {PARTNER_VIDEOS.map((v) => (
               <figure key={v.slug} className="reveal flex flex-col gap-3 min-w-0">
                 <video
-                  className="w-full aspect-video rounded-[14px] border border-white/10 bg-black"
+                  className="w-full aspect-square rounded-[14px] border border-white/10 bg-black"
                   controls
                   preload="none"
                   playsInline
@@ -558,7 +558,7 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
                     {v.titel}
                   </h3>
                   <span className="text-white/50 text-[13px]">
-                    <b className="text-white/85 font-semibold">{v.name}</b> &middot; {v.firma} &middot; {v.klasse} &middot; {v.dauerLabel} Min.
+                    <b className="text-white/85 font-semibold">{v.name}</b> &middot; {v.firma} &middot; {v.klasse} &middot; {v.dauerLabel}
                   </span>
                 </figcaption>
                 <details className="group">
