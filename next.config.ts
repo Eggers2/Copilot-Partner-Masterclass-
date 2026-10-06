@@ -9,6 +9,17 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        // Kurzlink für den geboosteten LinkedIn-Post (temporär, 307)
+        source: "/li",
+        destination:
+          "/?utm_source=linkedin&utm_medium=boost&utm_campaign=post_zeitfenster_okt26",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
