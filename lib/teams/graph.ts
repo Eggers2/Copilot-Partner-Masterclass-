@@ -66,13 +66,16 @@ async function getGraphToken(): Promise<string> {
 }
 
 /**
- * fetch mit Retry bei Drosselung (429/503). Wichtig für die Massenaufnahme ins
- * allgemeine Team: Graph liefert dann Retry-After in Sekunden.
+ * fetch mit Retry bei Drosselung (429/503) und Gateway-Timeouts (502/504).
+ * Wichtig für die Massenaufnahme ins allgemeine Team: Graph liefert bei
+ * Drosselung Retry-After in Sekunden, sonst warten wir 5 s.
  */
+const RETRY_STATUS = new Set([429, 502, 503, 504]);
+
 async function graphFetch(url: string, init: RequestInit): Promise<Response> {
   for (let versuch = 0; ; versuch++) {
     const res = await fetch(url, init);
-    if ((res.status !== 429 && res.status !== 503) || versuch >= 3) return res;
+    if (!RETRY_STATUS.has(res.status) || versuch >= 3) return res;
     const retryAfter = Number(res.headers.get("Retry-After"));
     const wartezeit = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 5_000;
     await new Promise((r) => setTimeout(r, Math.min(wartezeit, 60_000)));
