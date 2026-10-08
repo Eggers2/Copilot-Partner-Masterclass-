@@ -70,7 +70,10 @@ import {
   updateTermin,
   deleteTermin,
 } from "@/lib/db/termine";
-import { getKlasseTeilnehmerEmails } from "@/lib/klassen";
+import {
+  getKlasseTeilnehmerEmails,
+  getLaufendeGeschlosseneKlassenTeilnehmerEmails,
+} from "@/lib/klassen";
 import type {
   LeadStatus,
   LeadSource,
@@ -1701,6 +1704,20 @@ export async function getKlasseTeilnehmerEmailsAction(
 
   const list = await getKlasseTeilnehmerEmails(klasseId);
   return { emails: list.join("; "), count: list.length };
+}
+
+/**
+ * Teilnehmer-E-Mails aller geschlossenen Klassen, deren Programm heute läuft,
+ * semikolongetrennt (Übersichtsseite /admin/klassen).
+ */
+export async function getGeschlosseneKlassenTeilnehmerEmailsAction(): Promise<{
+  emails: string;
+  count: number;
+  klassen: string[];
+}> {
+  await requireAuth();
+  const { emails, klassen } = await getLaufendeGeschlosseneKlassenTeilnehmerEmails();
+  return { emails: emails.join("; "), count: emails.length, klassen };
 }
 
 /**

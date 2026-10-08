@@ -10,6 +10,7 @@ import { isGraphConfigured } from "@/lib/teams/graph";
 import { getAllgemeinStatus, isBestandsaufnahmeAktiv } from "@/lib/teams/allgemeinesTeam";
 import { TeamsModusToggle } from "@/components/admin/TeamsModusToggle";
 import { TeamsAllgemeinCard } from "@/components/admin/TeamsAllgemeinCard";
+import { GeschlosseneKlassenEmailsButton } from "@/components/admin/GeschlosseneKlassenEmailsButton";
 
 export default async function KlassenPage() {
   const authed = await isAuthenticated();
@@ -33,13 +34,16 @@ export default async function KlassenPage() {
             </p>
           </div>
         </div>
-        <Link
-          href="/admin/klassen/new"
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#030386] hover:bg-[#05015B] rounded-lg transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Neue Klasse
-        </Link>
+        <div className="flex items-start gap-3">
+          <GeschlosseneKlassenEmailsButton />
+          <Link
+            href="/admin/klassen/new"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#030386] hover:bg-[#05015B] rounded-lg transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Neue Klasse
+          </Link>
+        </div>
       </div>
 
       <TeamsModusToggle initialModus={teamsModus} graphConfigured={graphConfigured} />
