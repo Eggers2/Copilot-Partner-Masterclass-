@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { cache } from "react";
-import type { Klasse } from "@prisma/client";
+import type { Klasse, Prisma } from "@prisma/client";
+import { berlinDateString, calendarDateToUtc } from "@/lib/datetime";
 import type { KlasseRow } from "@/lib/landing/klassen";
 
 export class NoOpenKlasseError extends Error {
@@ -150,13 +151,40 @@ function normalizeEmail(email: string): string | null {
 export async function getKlasseTeilnehmerEmails(
   klasseId: string
 ): Promise<string[]> {
+  return collectTeilnehmerEmails({ id: klasseId });
+}
+
+/**
+ * Teilnehmer-E-Mails aller Klassen mit Status CLOSED, deren Programmzeitraum
+ * (startDate bis endDate, inklusive) den heutigen Berlin-Kalendertag umfasst.
+ * Klassenübergreifend dedupliziert.
+ */
+export async function getLaufendeGeschlosseneKlassenTeilnehmerEmails(
+  now: Date = new Date()
+): Promise<{ emails: string[]; klassen: string[] }> {
+  const heute = calendarDateToUtc(berlinDateString(now));
+  const where: Prisma.KlasseWhereInput = {
+    status: "CLOSED",
+    startDate: { lte: heute },
+    endDate: { gte: heute },
+  };
+  const [klassen, emails] = await Promise.all([
+    prisma.klasse.findMany({ where, select: { name: true }, orderBy: { startDate: "asc" } }),
+    collectTeilnehmerEmails(where),
+  ]);
+  return { emails, klassen: klassen.map((k) => k.name) };
+}
+
+async function collectTeilnehmerEmails(
+  klasse: Prisma.KlasseWhereInput
+): Promise<string[]> {
   const [bestellungen, teilnehmer] = await Promise.all([
     prisma.bestellung.findMany({
-      where: { klasseId },
+      where: { klasse: { is: klasse } },
       select: { email: true },
     }),
     prisma.bestellungTeilnehmer.findMany({
-      where: { bestellung: { klasseId } },
+      where: { bestellung: { klasse: { is: klasse } } },
       select: { email: true },
     }),
   ]);
