@@ -144,9 +144,9 @@ function normalizeEmail(email: string): string | null {
 
 /**
  * Liefert alle Teilnehmer-E-Mails einer Klasse, dedupliziert und sortiert.
- * Umfasst die einzelnen Teilnehmer-Plätze (BestellungTeilnehmer) sowie den
- * Besteller-Kontakt (Bestellung.email) – analog zu getMasterclassRecipients,
- * aber auf eine Klasse eingegrenzt. Für den Export in neue Termine.
+ * Nur die gemeldeten Teilnehmer-Plätze (BestellungTeilnehmer); der Besteller
+ * (Bestellung.email) zählt nur, wenn er selbst als Teilnehmer eingetragen ist.
+ * Für den Export in neue Termine.
  */
 export async function getKlasseTeilnehmerEmails(
   klasseId: string
@@ -178,22 +178,12 @@ export async function getLaufendeGeschlosseneKlassenTeilnehmerEmails(
 async function collectTeilnehmerEmails(
   klasse: Prisma.KlasseWhereInput
 ): Promise<string[]> {
-  const [bestellungen, teilnehmer] = await Promise.all([
-    prisma.bestellung.findMany({
-      where: { klasse: { is: klasse } },
-      select: { email: true },
-    }),
-    prisma.bestellungTeilnehmer.findMany({
-      where: { bestellung: { klasse: { is: klasse } } },
-      select: { email: true },
-    }),
-  ]);
+  const teilnehmer = await prisma.bestellungTeilnehmer.findMany({
+    where: { bestellung: { klasse: { is: klasse } } },
+    select: { email: true },
+  });
 
   const set = new Set<string>();
-  for (const b of bestellungen) {
-    const n = normalizeEmail(b.email ?? "");
-    if (n) set.add(n);
-  }
   for (const t of teilnehmer) {
     const n = normalizeEmail(t.email ?? "");
     if (n) set.add(n);
