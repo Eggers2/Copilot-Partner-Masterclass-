@@ -38,6 +38,9 @@ interface LandingPageProps {
   faqs: Faq[];
 }
 
+/** Höhe der fixen Navigationszeile (Tailwind h-16) für den Scroll-Versatz. */
+const NAV_HEIGHT = 64;
+
 const PHASE_LABEL: Record<LandingKlasse["phase"], string> = {
   offen: "Bewerbung offen",
   ausgebucht: "ausgebucht",
@@ -57,17 +60,23 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
     status: "idle",
     message: "",
   });
-  const waitlistRef = useRef<HTMLDivElement>(null);
+  const waitlistRef = useRef<HTMLElement>(null);
+  const heroCtaRef = useRef<HTMLAnchorElement>(null);
   const [navScrolled, setNavScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [heroCtaPassed, setHeroCtaPassed] = useState(false);
+  const [formReached, setFormReached] = useState(false);
+  const showStickyCta = heroCtaPassed && !formReached;
 
-  const scrollToWaitlist = () => {
-    waitlistRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    // Wert direkt aus dem Feld lesen: iOS-Autofill löst nicht immer onChange aus.
+    const value = String(new FormData(e.currentTarget).get("email") ?? email).trim();
+    if (!value) {
+      setFormState({ status: "error", message: "Bitte geben Sie Ihre E-Mail-Adresse ein." });
+      return;
+    }
+    if (value !== email) setEmail(value);
 
     setFormState({ status: "loading", message: "" });
 
@@ -77,7 +86,7 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
       const response = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, ...(utm ?? {}) }),
+        body: JSON.stringify({ email: value, ...(utm ?? {}) }),
       });
 
       const data = await response.json();
@@ -128,21 +137,50 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
     return () => observer.disconnect();
   }, []);
 
-  // Smooth scroll for anchor links with 80px offset
+  // Mobiler Sticky-CTA: sichtbar, sobald der Hero-CTA oben aus dem Bild ist,
+  // ausgeblendet, sobald das Formular im Bild ist oder schon passiert wurde.
+  useEffect(() => {
+    const heroCta = heroCtaRef.current;
+    const form = waitlistRef.current;
+    if (!heroCta || !form) return;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.target === heroCta) {
+          setHeroCtaPassed(!e.isIntersecting && e.boundingClientRect.top < 0);
+        } else if (e.target === form) {
+          setFormReached(e.isIntersecting || e.boundingClientRect.top < 0);
+        }
+      });
+    });
+    observer.observe(heroCta);
+    observer.observe(form);
+    document.body.classList.add("has-sticky-cta");
+    return () => {
+      observer.disconnect();
+      document.body.classList.remove("has-sticky-cta");
+    };
+  }, []);
+
+  // Smooth scroll for anchor links, Versatz = Höhe der fixen Navigation
   useEffect(() => {
     const handleAnchorClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       const anchor = target.closest('a[href^="#"]');
       if (!anchor) return;
       e.preventDefault();
+      setMobileMenuOpen(false);
       const id = anchor.getAttribute("href")?.slice(1);
-      if (!id) return;
+      if (!id) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
       const el = document.getElementById(id);
       if (el) {
-        const top = el.getBoundingClientRect().top + window.scrollY - 80;
+        // Höhe der Navigationszeile (h-16). Nicht die ganze <nav> messen: bei
+        // offenem Burger-Menü ist sie höher, schließt sich aber gleich.
+        const top = el.getBoundingClientRect().top + window.scrollY - NAV_HEIGHT - 16;
         window.scrollTo({ top, behavior: "smooth" });
       }
-      setMobileMenuOpen(false);
     };
     document.addEventListener("click", handleAnchorClick);
     return () => document.removeEventListener("click", handleAnchorClick);
@@ -160,6 +198,9 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="ihre@email.de"
+              name="email"
+              autoComplete="email"
+              inputMode="email"
               required
               disabled={formState.status === "loading"}
               className="w-full pl-12 pr-4 py-4 bg-[#2d2d48] border border-[#2d2d48] focus:border-[#00C896] rounded-[10px] text-white placeholder-[#6B6B8A] outline-none transition-colors text-base disabled:opacity-50"
@@ -167,7 +208,7 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
           </div>
           <button
             type="submit"
-            disabled={formState.status === "loading" || !email.trim()}
+            disabled={formState.status === "loading"}
             className="btn-primary whitespace-nowrap"
           >
             {formState.status === "loading" ? (
@@ -225,9 +266,9 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
               <a href="#ablauf" className="text-white/70 hover:text-white text-sm font-medium transition-colors">Ablauf</a>
               <a href="#trainer" className="text-white/70 hover:text-white text-sm font-medium transition-colors">Trainer</a>
               <a href="#faq" className="text-white/70 hover:text-white text-sm font-medium transition-colors">FAQ</a>
-              <button onClick={scrollToWaitlist} className="btn-primary !py-2.5 !px-5 !text-sm">
+              <a href="#bewerbung" className="btn-primary !py-2.5 !px-5 !text-sm">
                 Platz in {offen.name} sichern
-              </button>
+              </a>
             </div>
 
             {/* Mobile menu toggle */}
@@ -248,9 +289,9 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
               <a href="#ablauf" className="text-white/70 hover:text-white text-sm font-medium py-2">Ablauf</a>
               <a href="#trainer" className="text-white/70 hover:text-white text-sm font-medium py-2">Trainer</a>
               <a href="#faq" className="text-white/70 hover:text-white text-sm font-medium py-2">FAQ</a>
-              <button onClick={() => { scrollToWaitlist(); setMobileMenuOpen(false); }} className="btn-primary !py-2.5 !text-sm mt-2">
+              <a href="#bewerbung" className="btn-primary !py-2.5 !text-sm mt-2">
                 Platz in {offen.name} sichern
-              </button>
+              </a>
             </div>
           )}
         </div>
@@ -303,9 +344,9 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
 
           {/* CTA */}
           <div className="flex flex-col sm:flex-row items-center gap-4 mb-12">
-            <button onClick={scrollToWaitlist} className="btn-primary text-base">
+            <a ref={heroCtaRef} href="#bewerbung" className="btn-primary text-base">
               Jetzt für {offen.name} bewerben <ArrowRight className="w-5 h-5" />
-            </button>
+            </a>
           </div>
 
           {/* Eckdaten */}
@@ -420,9 +461,9 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
                       ) : (
                         <span className="text-white/50 text-[13px]">Frühe Bewerbung &middot; Plätze nach Eingang</span>
                       )}
-                      <button onClick={scrollToWaitlist} className="btn-primary !py-3 !text-sm mt-auto">
+                      <a href="#bewerbung" className="btn-primary !py-3 !text-sm mt-auto">
                         Platz sichern <ArrowRight className="w-4 h-4" />
-                      </button>
+                      </a>
                     </>
                   )}
                 </article>
@@ -1089,9 +1130,9 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
               Kein Verkaufsgespräch. Kein automatisierter Funnel.<br />
               Alexander Eggers oder sein Team melden sich persönlich.
             </p>
-            <button onClick={scrollToWaitlist} className="btn-primary">
+            <a href="#bewerbung" className="btn-primary">
               Bewerbung starten <ArrowRight className="w-5 h-5" />
-            </button>
+            </a>
             <ul className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 mt-6 text-white/50 text-xs">
               <li className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#00C896] flex-shrink-0" /> Persönliche Rückmeldung innerhalb von 24 Stunden
@@ -1117,7 +1158,8 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
         {/* Green glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[350px] rounded-full blur-[120px] opacity-15" style={{ background: "#00C896" }} />
 
-        <div className="relative container-main text-center">
+        {/* Anker ohne transform (.reveal verschiebt sonst das Scrollziel) */}
+        <div id="bewerbung" className="relative container-main text-center">
           <div className="reveal">
             <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium border border-[#00C896]/30 text-[#00C896] mb-8" style={{ background: "rgba(0,200,150,.08)" }}>
               Bewerbung {offen.name} &middot; Start {offen.startMonat}
@@ -1167,7 +1209,7 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
                 <li><a href="#programm" className="text-white/50 hover:text-[#00C896] transition-colors">Das Programm</a></li>
                 <li><a href="#included" className="text-white/50 hover:text-[#00C896] transition-colors">Was enthalten ist</a></li>
                 <li><a href="#ablauf" className="text-white/50 hover:text-[#00C896] transition-colors">Ablauf {offen.name}</a></li>
-                <li><a href="#stimmen" className="text-white/50 hover:text-[#00C896] transition-colors">Stimmen aus den Klassen</a></li>
+                <li><a href="#videos" className="text-white/50 hover:text-[#00C896] transition-colors">Stimmen aus den Klassen</a></li>
                 <li><a href="#trainer" className="text-white/50 hover:text-[#00C896] transition-colors">Die Trainer</a></li>
                 <li><a href="#faq" className="text-white/50 hover:text-[#00C896] transition-colors">FAQ</a></li>
                 <li><a href="/suche" className="text-white/50 hover:text-[#00C896] transition-colors">Copilot-Partner finden</a></li>
@@ -1204,6 +1246,16 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
       </footer>
 
       <LinkedInInsightTag />
+      {/* ═══ MOBILER STICKY-CTA ═══ */}
+      <div
+        className={`sticky-cta md:hidden fixed inset-x-0 bottom-0 z-40 px-4 pt-3 transition-all duration-300 ${showStickyCta ? "translate-y-0 opacity-100" : "translate-y-full opacity-0 pointer-events-none"}`}
+        style={{ background: "rgba(26,26,46,.96)", backdropFilter: "blur(12px)", boxShadow: "0 -2px 20px rgba(0,0,0,.3)" }}
+        aria-hidden={!showStickyCta}
+      >
+        <a href="#bewerbung" tabIndex={showStickyCta ? 0 : -1} className="btn-primary w-full !py-3.5">
+          Platz in {offen.name} sichern <ArrowRight className="w-5 h-5" />
+        </a>
+      </div>
     </main>
   );
 }

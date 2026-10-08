@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return NextResponse.json(
-        { error: "Bitte gib eine gültige E-Mail-Adresse ein." },
+        { error: "Bitte geben Sie eine gültige E-Mail-Adresse ein." },
         { status: 400 }
       );
     }
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: "Deine Bewerbung wurde erfolgreich eingereicht!",
+        message: "Ihre Bewerbung wurde erfolgreich eingereicht.",
         id: entry.id,
       },
       { status: 201 }
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
 
     console.error("Waitlist POST error:", error);
     return NextResponse.json(
-      { error: "Ein interner Fehler ist aufgetreten. Bitte versuche es erneut." },
+      { error: "Ein interner Fehler ist aufgetreten. Bitte versuchen Sie es erneut." },
       { status: 500 }
     );
   }

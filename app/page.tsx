@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import LandingPage from "./LandingPage";
 import { getLandingKlassenRows } from "@/lib/klassen";
 import { buildLandingKlassen } from "@/lib/landing/klassen";
@@ -15,6 +15,10 @@ async function loadKlassen() {
 }
 
 const TITLE = "Copilot Partner Masterclass für Systemhäuser | NextSkills";
+
+// viewport-fit=cover, damit env(safe-area-inset-bottom) am iPhone greift
+// (mobiler Sticky-CTA über dem Home-Indikator).
+export const viewport: Viewport = { viewportFit: "cover" };
 
 export async function generateMetadata(): Promise<Metadata> {
   const { offen } = await loadKlassen();

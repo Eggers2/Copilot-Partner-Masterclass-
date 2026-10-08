@@ -148,3 +148,16 @@ html {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--green);
 }
+
+/* Mobiler Sticky-CTA der Landingpage: Platz am Seitenende freihalten und
+   den Home-Indikator am iPhone berücksichtigen. */
+.sticky-cta {
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+@media (max-width: 767px) {
+  body.has-sticky-cta {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+    background: var(--slate-2);
+  }
+}

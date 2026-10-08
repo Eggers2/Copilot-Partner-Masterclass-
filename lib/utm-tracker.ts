@@ -26,24 +26,47 @@ function truncate(value: string | null, max: number): string | null {
   return trimmed.length > max ? trimmed.slice(0, max) : trimmed;
 }
 
-function readStored(): StoredUtm | null {
+// Zusätzlich zu localStorage auch in sessionStorage ablegen: In manchen
+// In-App-Browsern (LinkedIn, Instagram) ist localStorage blockiert oder wird
+// zwischen Seitenaufrufen verworfen, sessionStorage überlebt den Tab.
+function getStorages(): Storage[] {
+  const storages: Storage[] = [];
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as StoredUtm;
-    if (!parsed.expires_at || parsed.expires_at < Date.now()) return null;
-    return parsed;
+    storages.push(window.localStorage);
   } catch {
-    return null;
+    // Zugriff auf localStorage kann werfen (blockierte Cookies, Private Mode)
   }
+  try {
+    storages.push(window.sessionStorage);
+  } catch {
+    // dito für sessionStorage
+  }
+  return storages;
+}
+
+function readStored(): StoredUtm | null {
+  for (const storage of getStorages()) {
+    try {
+      const raw = storage.getItem(STORAGE_KEY);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw) as StoredUtm;
+      if (!parsed.expires_at || parsed.expires_at < Date.now()) continue;
+      return parsed;
+    } catch {
+      // nächsten Speicher versuchen
+    }
+  }
+  return null;
 }
 
 function writeStored(data: UtmData): void {
-  try {
-    const payload: StoredUtm = { ...data, expires_at: Date.now() + TTL_MS };
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  } catch {
-    // localStorage may be blocked (private mode, quota); silently ignore
+  const payload = JSON.stringify({ ...data, expires_at: Date.now() + TTL_MS } satisfies StoredUtm);
+  for (const storage of getStorages()) {
+    try {
+      storage.setItem(STORAGE_KEY, payload);
+    } catch {
+      // Speicher blockiert oder voll; still ignorieren
+    }
   }
 }
 
