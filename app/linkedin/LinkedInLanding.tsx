@@ -22,9 +22,10 @@ type FormState =
 interface Props {
   klasseName: string;
   startMonat: string;
+  partnerCount: string;
 }
 
-export default function LinkedInLanding({ klasseName, startMonat }: Props) {
+export default function LinkedInLanding({ klasseName, startMonat, partnerCount }: Props) {
   const [email, setEmail] = useState("");
   const [firma, setFirma] = useState("");
   const [formState, setFormState] = useState<FormState>({ status: "idle" });
@@ -212,10 +213,11 @@ export default function LinkedInLanding({ klasseName, startMonat }: Props) {
     );
   };
 
-  const fakten = [
-    { titel: "12 Monate Begleitung", text: "Zwei Live-Sessions pro Monat mit Microsoft MVPs" },
-    { titel: "Fertige Vertriebsunterlagen", text: "Pitch Decks, Angebotsvorlagen, Einwandbehandlung" },
-    { titel: `${klasseName} startet im ${startMonat}`, text: "Online in Microsoft Teams" },
+  // Kerninhalte aus der Startseite, damit kalter Traffic sofort sieht, worum es geht.
+  const haekchen = [
+    "Fertige Pitch Decks und Angebotsvorlagen",
+    "Zwei Live-Sessions im Monat mit Microsoft MVPs",
+    `${klasseName} startet im ${startMonat}`,
   ];
 
   return (
@@ -230,20 +232,40 @@ export default function LinkedInLanding({ klasseName, startMonat }: Props) {
       {/* ═══ HERO MIT FORMULAR ═══ */}
       <section className="relative overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[360px] rounded-full blur-[120px] opacity-20 pointer-events-none" style={{ background: "#00C896" }} />
-        <div className="relative container-main pt-4 pb-14 md:pt-12 md:pb-20 grid md:grid-cols-[1.1fr_1fr] gap-6 md:gap-14 items-center">
+        <div className="relative container-main pt-3 pb-14 md:pt-12 md:pb-20 grid md:grid-cols-[1.1fr_1fr] gap-5 md:gap-14 items-center">
           <div>
-            <span className="section-label">Bevor Sie sich bewerben:</span>
+            <span className="section-label">Copilot Partner Masterclass</span>
             <h1
-              className="text-white font-extrabold leading-[1.12] mt-2 mb-3"
-              style={{ ...HEADING_FONT, fontSize: "clamp(25px, 4vw, 48px)", letterSpacing: "-0.02em" }}
+              className="text-white font-extrabold leading-[1.1] mt-2 mb-3"
+              style={{ ...HEADING_FONT, fontSize: "clamp(28px, 4.6vw, 56px)", letterSpacing: "-0.025em" }}
             >
-              Programm, Pakete und Preise der <span className="text-[#00C896]">Copilot Partner Masterclass</span> auf einer Seite.
+              Vom Lizenz-Reseller zum strategischen <span className="text-[#00C896] whitespace-nowrap">KI-Berater.</span>
             </h1>
-            <p className="text-white/65 text-[15px] md:text-lg leading-relaxed">
-              Der One-Pager kommt sofort per E-Mail. Danach entscheiden Sie in Ruhe, ob die Masterclass zu Ihrem Systemhaus passt.
+            <p className="text-white/65 text-[15px] md:text-lg leading-relaxed mb-4">
+              Das 12-monatige Copilot Programm für Systemhäuser und Microsoft-Partner. Über {partnerCount.replace("+", "")} Systemhäuser sind bereits dabei.
             </p>
+            <ul className="space-y-2">
+              {haekchen.map((h) => (
+                <li key={h} className="flex items-start gap-2.5 text-white/85 text-[14px] md:text-base leading-snug">
+                  <CheckCircle2 className="w-5 h-5 text-[#00C896] flex-shrink-0 mt-px" />
+                  {h}
+                </li>
+              ))}
+            </ul>
           </div>
-          <div id="onepager" ref={heroFormRef} className="w-full max-w-[480px] md:justify-self-end">
+          <div
+            id="onepager"
+            ref={heroFormRef}
+            className="w-full max-w-[480px] md:justify-self-end md:rounded-[14px] md:p-6 md:border md:border-white/[0.08] md:bg-white/[0.04]"
+          >
+            {formState.status !== "success" && (
+              <div className="mb-3">
+                <p className="text-white/50 text-[13px]">Noch nicht bereit für die Bewerbung?</p>
+                <p className="text-white font-bold text-[17px] md:text-lg leading-snug" style={HEADING_FONT}>
+                  Programm, Pakete und Preise als <span className="whitespace-nowrap">One-Pager</span> per E-Mail.
+                </p>
+              </div>
+            )}
             {renderForm("hero")}
           </div>
         </div>
@@ -318,20 +340,6 @@ export default function LinkedInLanding({ klasseName, startMonat }: Props) {
               </figure>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* ═══ DREI FAKTEN ═══ */}
-      <section className="py-12 md:py-16">
-        <div className="container-main">
-          <dl className="grid sm:grid-cols-3 gap-3">
-            {fakten.map((f) => (
-              <div key={f.titel} className="rounded-[12px] px-5 py-4 border border-white/[0.08]" style={{ background: "rgba(255,255,255,.04)" }}>
-                <dt className="text-white font-bold text-lg leading-snug" style={HEADING_FONT}>{f.titel}</dt>
-                <dd className="text-white/55 text-sm mt-1">{f.text}</dd>
-              </div>
-            ))}
-          </dl>
         </div>
       </section>
 
