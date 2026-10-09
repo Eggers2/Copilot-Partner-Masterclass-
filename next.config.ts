@@ -12,10 +12,12 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
-        // Kurzlink für den geboosteten LinkedIn-Post (temporär, 307)
+        // Kurzlink für den geboosteten LinkedIn-Post (temporär, 307). Ziel ist
+        // die eigene LinkedIn-Landingpage; source/medium/campaign bleiben
+        // unverändert (tägliche Auswertung), utm_content markiert die Seite.
         source: "/li",
         destination:
-          "/?utm_source=linkedin&utm_medium=boost&utm_campaign=post_zeitfenster_okt26",
+          "/linkedin?utm_source=linkedin&utm_medium=boost&utm_campaign=post_zeitfenster_okt26&utm_content=lp_onepager",
         permanent: false,
       },
     ];
