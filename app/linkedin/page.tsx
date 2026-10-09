@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import LinkedInLanding from "./LinkedInLanding";
 import { getLandingKlassenRows } from "@/lib/klassen";
 import { buildLandingKlassen } from "@/lib/landing/klassen";
+import { PARTNER_COUNT } from "@/lib/landing/inhalte";
 
 // Landingpage nur für den LinkedIn-Boost (Kurzlink /li). Kleiner erster
 // Schritt statt Bewerbung: E-Mail eintragen, One-Pager kommt per Mail.
@@ -24,5 +25,5 @@ export const metadata: Metadata = {
 export default async function Page() {
   const rows = await getLandingKlassenRows();
   const { offen } = buildLandingKlassen(rows ?? [], new Date());
-  return <LinkedInLanding klasseName={offen.name} startMonat={offen.startMonat} />;
+  return <LinkedInLanding klasseName={offen.name} startMonat={offen.startMonat} partnerCount={PARTNER_COUNT} />;
 }
