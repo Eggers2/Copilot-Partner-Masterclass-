@@ -6,9 +6,10 @@ import LinkedInInsightTag from "@/components/LinkedInInsightTag";
 import { captureUtmData, getUtmData } from "@/lib/utm-tracker";
 import { PARTNER_VIDEOS, STIMME_HIGHLIGHT, STIMMEN } from "@/lib/landing/inhalte";
 
-// Ziel für "Lieber direkt sprechen? Termin buchen". Platzhalter, bis das
-// endgültige Ziel feststeht.
-const TERMIN_BUCHEN_URL = "mailto:info@next-skills.de?subject=Termin%20zur%20Copilot%20Partner%20Masterclass";
+// Ziel für "Lieber direkt sprechen? Termin buchen": Microsoft-Bookings-Link
+// von Alexander, derselbe wie auf /synaxon.
+const TERMIN_BUCHEN_URL =
+  "https://outlook.office.com/bookwithme/user/4b050f737ab34ce585384802dacd4143@nextvideo.de/meetingtype/SVRwCe7HMUGxuT6WGxi68g2?anonymous&ismsaljsauthenabled&ep=mLinkFromTile";
 
 const HEADING_FONT = { fontFamily: "'Bricolage Grotesque', sans-serif" };
 
@@ -129,6 +130,8 @@ export default function LinkedInLanding({ klasseName, startMonat }: Props) {
           </div>
           <a
             href={TERMIN_BUCHEN_URL}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 mt-5 text-sm font-semibold text-white/70 hover:text-[#00C896] transition-colors"
           >
             Lieber direkt sprechen? Termin buchen <ArrowRight className="w-4 h-4" />
