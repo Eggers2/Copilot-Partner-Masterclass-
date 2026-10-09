@@ -13,9 +13,17 @@ const TERMIN_BUCHEN_URL =
 
 const HEADING_FONT = { fontFamily: "'Bricolage Grotesque', sans-serif" };
 
+// Reihenfolge der Partnervideos auf dieser Seite (Startseite bleibt unverändert).
+const VIDEO_REIHENFOLGE = ["florian-melber", "josef-haider", "marvin-nitschke", "daniel-schwanitz"];
+const VIDEOS = [...PARTNER_VIDEOS].sort(
+  (a, b) => VIDEO_REIHENFOLGE.indexOf(a.slug) - VIDEO_REIHENFOLGE.indexOf(b.slug)
+);
+
+type Aktion = "onepager" | "bewerbung";
+
 type FormState =
   | { status: "idle" }
-  | { status: "loading" }
+  | { status: "loading"; aktion: Aktion }
   | { status: "error"; message: string }
   | { status: "success"; email: string };
 
@@ -79,20 +87,27 @@ export default function LinkedInLanding({ klasseName, startMonat, partnerCount }
     const emailValue = String(data.get("email") ?? email).trim();
     const firmaValue = String(data.get("firma") ?? firma).trim();
     const website = String(data.get("website") ?? "");
+    // Welcher der beiden Buttons gedrückt wurde. Enter im Feld nimmt den ersten (One-Pager).
+    const submitter = (e.nativeEvent as SubmitEvent).submitter;
+    const aktion: Aktion = submitter?.getAttribute("value") === "bewerbung" ? "bewerbung" : "onepager";
     if (!emailValue) {
       setFormState({ status: "error", message: "Bitte geben Sie Ihre E-Mail-Adresse ein." });
       return;
     }
     setEmail(emailValue);
     setFirma(firmaValue);
-    setFormState({ status: "loading" });
+    setFormState({ status: "loading", aktion });
 
     try {
       const response = await fetch("/api/onepager", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: emailValue, firma: firmaValue, website, ...(getUtmData() ?? {}) }),
+        body: JSON.stringify({ email: emailValue, firma: firmaValue, website, aktion, ...(getUtmData() ?? {}) }),
       });
+      if (response.ok && aktion === "bewerbung") {
+        window.location.href = "/danke";
+        return;
+      }
       if (response.ok) {
         setFormState({ status: "success", email: emailValue.toLowerCase() });
         return;
@@ -142,6 +157,9 @@ export default function LinkedInLanding({ klasseName, startMonat, partnerCount }
     }
 
     const loading = formState.status === "loading";
+    const spinner = (
+      <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+    );
     return (
       <form onSubmit={handleSubmit} className="space-y-3 text-left">
         <div className="relative">
@@ -181,17 +199,27 @@ export default function LinkedInLanding({ klasseName, startMonat, partnerCount }
           <label htmlFor={`${id}-website`}>Website</label>
           <input id={`${id}-website`} type="text" name="website" tabIndex={-1} autoComplete="off" defaultValue="" />
         </div>
-        <button type="submit" disabled={loading} className="btn-primary w-full">
-          {loading ? (
-            <>
-              <div className="w-5 h-5 border-2 border-[#1A1A2E]/30 border-t-[#1A1A2E] rounded-full animate-spin" />
-              Wird gesendet...
-            </>
+        <button type="submit" name="aktion" value="onepager" disabled={loading} className="btn-primary w-full">
+          {formState.status === "loading" && formState.aktion === "onepager" ? (
+            <>{spinner} Wird gesendet...</>
           ) : (
             <>
               One-Pager per E-Mail erhalten
               <ArrowRight className="w-5 h-5" />
             </>
+          )}
+        </button>
+        <button
+          type="submit"
+          name="aktion"
+          value="bewerbung"
+          disabled={loading}
+          className="w-full inline-flex items-center justify-center gap-2 px-4 py-3.5 rounded-[10px] border border-[#00C896]/50 text-[#00C896] text-[15px] font-semibold hover:bg-[#00C896]/10 transition-colors disabled:opacity-50"
+        >
+          {formState.status === "loading" && formState.aktion === "bewerbung" ? (
+            <>{spinner} Wird gesendet...</>
+          ) : (
+            <>Schon bereit? Direkt für {klasseName} bewerben</>
           )}
         </button>
 
@@ -281,8 +309,8 @@ export default function LinkedInLanding({ klasseName, startMonat, partnerCount }
           <p className="text-white/60 mb-8">Vier Systemhäuser aus den ersten beiden Klassen. Jeweils unter einer Minute.</p>
 
           {/* Mobil wischbar, Desktop vier Spalten. preload="none": Video lädt erst beim Tippen. */}
-          <div className="-mx-6 px-6 md:mx-0 md:px-0 flex md:grid md:grid-cols-4 gap-4 overflow-x-auto snap-x snap-mandatory pb-2 [scrollbar-width:none]">
-            {PARTNER_VIDEOS.map((v) => (
+          <div className="-mx-6 px-6 md:mx-0 md:px-0 flex md:grid md:grid-cols-4 gap-4 overflow-x-auto snap-x snap-mandatory scroll-px-6 md:scroll-px-0 pb-2 [scrollbar-width:none]">
+            {VIDEOS.map((v) => (
               <figure key={v.slug} className="snap-start shrink-0 w-[78%] sm:w-[45%] md:w-auto flex flex-col gap-3">
                 <video
                   className="w-full aspect-square rounded-[14px] border border-white/10 bg-black"
@@ -326,7 +354,7 @@ export default function LinkedInLanding({ klasseName, startMonat, partnerCount }
             </figcaption>
           </figure>
 
-          <div className="-mx-6 px-6 md:mx-0 md:px-0 flex md:grid md:grid-cols-3 gap-4 overflow-x-auto snap-x snap-mandatory pb-2 [scrollbar-width:none]">
+          <div className="-mx-6 px-6 md:mx-0 md:px-0 flex md:grid md:grid-cols-3 gap-4 overflow-x-auto snap-x snap-mandatory scroll-px-6 md:scroll-px-0 pb-2 [scrollbar-width:none]">
             {STIMMEN.map((s) => (
               <figure
                 key={s.name}
