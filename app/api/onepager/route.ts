@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { LeadSource } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { ONEPAGER_BETREFF, sendOnePagerEmail } from "@/lib/email/onePager";
+import { onePagerBetreff, sendOnePagerEmail, type OnePagerAnlass } from "@/lib/email/onePager";
 
-// One-Pager-Anforderung der LinkedIn-Landingpage (/linkedin).
+// One-Pager-Anforderung und Bewerbung der LinkedIn-Landingpage (/linkedin).
+// Beides läuft über dasselbe Formular, `aktion: "bewerbung"` unterscheidet.
 //
 // Legt einen Lead mit Status NEW an (Quelle aus utm_source wie bei
 // /api/waitlist) oder ergänzt beim bestehenden Lead nur eine Aktivität,
@@ -82,6 +83,7 @@ export async function POST(request: NextRequest) {
       );
     }
     const firma = truncate(body.firma, 160);
+    const anlass: OnePagerAnlass = body.aktion === "bewerbung" ? "bewerbung" : "onepager";
 
     const utmSource = truncate(body.utm_source, 100);
     const utmMedium = truncate(body.utm_medium, 100);
@@ -132,27 +134,39 @@ export async function POST(request: NextRequest) {
         leadId,
         type: "NOTE",
         content:
-          `One-Pager über LinkedIn-Landingpage angefordert (utm_content=${utmContent ?? "leer"})` +
+          (anlass === "bewerbung"
+            ? `Bewerbung über LinkedIn-Landingpage (utm_content=${utmContent ?? "leer"})`
+            : `One-Pager über LinkedIn-Landingpage angefordert (utm_content=${utmContent ?? "leer"})`) +
           (existing && firma ? `\nAngegebene Firma: ${firma}` : ""),
       },
     });
 
-    const mail = await sendOnePagerEmail(email);
+    const mail = await sendOnePagerEmail(email, anlass);
 
     if (!mail.ok) {
-      console.error("[onepager] Versand fehlgeschlagen:", mail.error);
+      console.error(`[onepager] Versand (${anlass}) fehlgeschlagen:`, mail.error);
       await prisma.leadActivity.create({
         data: {
           leadId,
           type: "EMAIL",
-          content: `One-Pager-Mail fehlgeschlagen${mail.error ? `: ${mail.error}` : ""}`,
+          content:
+            (anlass === "bewerbung" ? "Bewerbungs-Bestätigung fehlgeschlagen" : "One-Pager-Mail fehlgeschlagen") +
+            (mail.error ? `: ${mail.error}` : ""),
         },
       });
+      // Die Bewerbung ist trotzdem im CRM, Alex meldet sich ohnehin persönlich.
+      if (anlass === "bewerbung") return NextResponse.json({ success: true }, { status: 201 });
       return NextResponse.json({ error: FEHLER_TEXT }, { status: 502 });
     }
 
     await prisma.leadActivity.create({
-      data: { leadId, type: "EMAIL", content: `One-Pager-Mail versendet: ${ONEPAGER_BETREFF}` },
+      data: {
+        leadId,
+        type: "EMAIL",
+        content:
+          (anlass === "bewerbung" ? "Bewerbungs-Bestätigung versendet: " : "One-Pager-Mail versendet: ") +
+          onePagerBetreff(anlass),
+      },
     });
 
     return NextResponse.json({ success: true }, { status: 201 });
