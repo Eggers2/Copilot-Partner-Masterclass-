@@ -92,7 +92,7 @@ export function ActivityTimeline({
                     {formatBerlinDateTime(activity.createdAt)}
                   </span>
                 </div>
-                <p className="text-sm text-dark-slate-700">
+                <p className="text-sm text-dark-slate-700 whitespace-pre-line">
                   {activity.content}
                 </p>
               </div>

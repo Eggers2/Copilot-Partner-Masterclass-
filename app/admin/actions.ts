@@ -395,6 +395,12 @@ export async function sendFirstCallEmailAction(
       attachments ? " (One Pager angehängt)" : " (ohne One Pager – PDF fehlt im Repo)"
     }`,
   });
+  // Versendeten Mailtext als Notiz am Kontakt ablegen, damit der genaue
+  // Wortlaut im CRM nachlesbar bleibt.
+  await addActivity(leadId, {
+    type: "NOTE" as ActivityType,
+    content: `E-Mail an ${lead.email}\nBetreff: ${subject.trim()}\n\n${body.trim()}`,
+  });
   revalidatePath(`/admin/leads/${leadId}`);
   return { success: true, id: res.id };
 }
