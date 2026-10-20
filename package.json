@@ -16,7 +16,8 @@
     "test": "tsx --test tests/*.test.ts",
     "tz:snapshot": "tsx scripts/tz-snapshot.ts",
     "tz:migrate": "tsx scripts/tz-migrate-followup.ts",
-    "tz:vergleich": "tsx scripts/tz-vergleich.ts"
+    "tz:vergleich": "tsx scripts/tz-vergleich.ts",
+    "import:resend-mails": "tsx scripts/import-resend-emails.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",
