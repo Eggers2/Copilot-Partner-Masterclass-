@@ -845,6 +845,56 @@ export async function updateBestellungStatusAction(
   revalidatePath("/admin/shop");
 }
 
+const KALENDERTAG = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Kündigung des Systemhauses vermerken. Eine gekündigte Bestellung verlängert
+ * sich nicht automatisch (lib/orders/vertrag.ts).
+ */
+export async function setBestellungKuendigungAction(
+  id: number,
+  input: { gekuendigtAm: string; kuendigungZum: string; notiz?: string | null }
+): Promise<{ success?: boolean; error?: string }> {
+  await requireAuth();
+
+  if (!KALENDERTAG.test(input.gekuendigtAm)) {
+    return { error: "Bitte das Eingangsdatum der Kündigung angeben." };
+  }
+  if (!KALENDERTAG.test(input.kuendigungZum)) {
+    return { error: "Bitte das Vertragsende angeben, zu dem gekündigt wurde." };
+  }
+  // ISO-Kalendertage lassen sich als Strings vergleichen.
+  if (input.kuendigungZum < input.gekuendigtAm) {
+    return { error: "Das Vertragsende darf nicht vor dem Eingang der Kündigung liegen." };
+  }
+
+  await prisma.bestellung.update({
+    where: { id },
+    data: {
+      gekuendigtAm: calendarDateToUtc(input.gekuendigtAm),
+      kuendigungZum: calendarDateToUtc(input.kuendigungZum),
+      kuendigungNotiz: input.notiz?.trim() || null,
+    },
+  });
+  revalidatePath("/admin/shop");
+  revalidatePath(`/admin/shop/${id}`);
+  return { success: true };
+}
+
+/** Vermerkte Kündigung zurücknehmen: der Vertrag verlängert sich wieder. */
+export async function kuendigungZuruecknehmenAction(
+  id: number
+): Promise<{ success?: boolean; error?: string }> {
+  await requireAuth();
+  await prisma.bestellung.update({
+    where: { id },
+    data: { gekuendigtAm: null, kuendigungZum: null, kuendigungNotiz: null },
+  });
+  revalidatePath("/admin/shop");
+  revalidatePath(`/admin/shop/${id}`);
+  return { success: true };
+}
+
 interface TeilnehmerInput {
   position: number;
   vorname: string;

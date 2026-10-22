@@ -1,5 +1,5 @@
 "use client";
-import { formatBerlinDateTime } from "@/lib/datetime";
+import { formatBerlinDateTime, formatCalendarDate } from "@/lib/datetime";
 
 import { useState, useMemo, useTransition } from "react";
 import Link from "next/link";
@@ -49,6 +49,9 @@ interface Bestellung {
   iamcpAktion: boolean;
   klasseName: string | null;
   intern: boolean;
+  /** Kündigung des Systemhauses (Kalendertage), null = ungekündigt */
+  gekuendigtAm: string | null;
+  kuendigungZum: string | null;
   belegt: number;
   teilnehmer: {
     position: number;
@@ -247,6 +250,8 @@ export function BestellungenTable({
       "Anmerkungen",
       "Status",
       "Erstellt am",
+      "Gekündigt am",
+      "Vertragsende",
     ];
     const rows = filtered.map((b) => [
       b.bestellNr,
@@ -271,6 +276,8 @@ export function BestellungenTable({
       b.anmerkungen ?? "",
       b.status,
       formatBerlinDateTime(b.erstelltAm, ""),
+      formatCalendarDate(b.gekuendigtAm, ""),
+      formatCalendarDate(b.kuendigungZum, ""),
     ]);
 
     const csvContent = [
@@ -537,6 +544,14 @@ export function BestellungenTable({
                           {b.intern && (
                             <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-dark-slate-100 text-dark-slate-600 align-middle">
                               Intern
+                            </span>
+                          )}
+                          {b.gekuendigtAm && (
+                            <span
+                              className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 align-middle"
+                              title={`Kündigung eingegangen am ${formatCalendarDate(b.gekuendigtAm)}, keine automatische Verlängerung`}
+                            >
+                              Gekündigt zum {formatCalendarDate(b.kuendigungZum)}
                             </span>
                           )}
                         </p>

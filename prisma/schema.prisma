@@ -386,6 +386,13 @@ model Bestellung {
   // sevDesk-Kontakt-Cache: gesetzt, sobald für diese Bestellung einmal ein
   // Kontakt in sevDesk gefunden/angelegt wurde (siehe lib/sevdesk.ts).
   sevdeskContactId     String?                @map("sevdesk_contact_id")
+  // Kündigung durch das Systemhaus. Ist gekuendigtAm gesetzt, verlängert sich
+  // der Vertrag nicht automatisch, er endet zum Stichtag kuendigungZum (siehe
+  // lib/orders/vertrag.ts). Beides sind Kalendertage (@db.Date), keine
+  // Zeitpunkte. NULL = ungekündigt, der Vertrag läuft weiter.
+  gekuendigtAm         DateTime?              @map("gekuendigt_am") @db.Date
+  kuendigungZum        DateTime?              @map("kuendigung_zum") @db.Date
+  kuendigungNotiz      String?                @map("kuendigung_notiz")
   erstelltAm           DateTime               @default(now()) @map("erstellt_am")
   aktualisiertAm       DateTime               @updatedAt @map("aktualisiert_am")
   teilnehmer           BestellungTeilnehmer[]
