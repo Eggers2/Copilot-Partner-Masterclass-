@@ -56,6 +56,8 @@ export default async function ShopDashboard() {
           mwstBetrag: b.mwstBetrag.toString(),
           preisBrutto: b.preisBrutto.toString(),
           erstelltAm: b.erstelltAm.toISOString(),
+          gekuendigtAm: b.gekuendigtAm?.toISOString() ?? null,
+          kuendigungZum: b.kuendigungZum?.toISOString() ?? null,
           klasseName: b.klasse?.name ?? null,
           belegt: b._count.teilnehmer,
           teilnehmer: b.teilnehmer.map((t) => ({

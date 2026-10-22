@@ -6,6 +6,9 @@ import { isAuthenticated } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { BestellungEditForm } from "@/components/admin/BestellungEditForm";
 import { SendCustomerOtpCodeButton } from "@/components/admin/SendCustomerOtpCodeButton";
+import { BestellungKuendigung } from "@/components/admin/BestellungKuendigung";
+import { berlinDateString, calendarDateInput } from "@/lib/datetime";
+import { endeMindestlaufzeit } from "@/lib/orders/vertrag";
 
 export default async function BestellungDetailPage({
   params,
@@ -24,6 +27,7 @@ export default async function BestellungDetailPage({
       where: { id: bestellungId },
       include: {
         teilnehmer: { orderBy: { position: "asc" } },
+        klasse: { select: { kickoffDate: true } },
       },
     }),
     prisma.klasse.findMany({
@@ -64,6 +68,19 @@ export default async function BestellungDetailPage({
           kundenEmail={bestellung.email}
         />
       </div>
+
+      <BestellungKuendigung
+        bestellungId={bestellung.id}
+        gekuendigtAm={bestellung.gekuendigtAm ? calendarDateInput(bestellung.gekuendigtAm) : null}
+        kuendigungZum={bestellung.kuendigungZum ? calendarDateInput(bestellung.kuendigungZum) : null}
+        kuendigungNotiz={bestellung.kuendigungNotiz}
+        heute={berlinDateString(new Date())}
+        vertragsendeVorschlag={
+          bestellung.klasse
+            ? calendarDateInput(endeMindestlaufzeit(bestellung.klasse.kickoffDate))
+            : null
+        }
+      />
 
       <BestellungEditForm
         klassen={klassen}

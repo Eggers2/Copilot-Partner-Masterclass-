@@ -1,5 +1,5 @@
 import type { Lead, LeadActivity, Bestellung } from "@prisma/client";
-import { formatBerlinDateTime } from "@/lib/datetime";
+import { calendarDateInput, formatBerlinDateTime } from "@/lib/datetime";
 
 /**
  * Kompakte Darstellungen für Tool-Antworten. Tracking-Felder (UTM, Referrer,
@@ -107,6 +107,10 @@ export function bestellungSummary(b: Bestellung & { klasse?: { name: string } | 
     adnChannel: b.adnChannel,
     iamcpAktion: b.iamcpAktion,
     intern: b.intern,
+    // Gekündigte Verträge verlängern sich nicht automatisch.
+    gekuendigt: b.gekuendigtAm != null,
+    gekuendigtAm: b.gekuendigtAm ? calendarDateInput(b.gekuendigtAm) : null,
+    vertragsendeZum: b.kuendigungZum ? calendarDateInput(b.kuendigungZum) : null,
     klasse: b.klasse?.name ?? null,
     erstelltAm: b.erstelltAm.toISOString(),
   };
