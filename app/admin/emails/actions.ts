@@ -9,6 +9,7 @@ import {
 } from "@/lib/db/emailTemplates";
 import { renderTemplate, sampleVarsFor } from "@/lib/email/renderTemplate";
 import { isResendConfigured, sendEmail } from "@/lib/email/resend";
+import { istWartelisteVorlage, wartelisteVersandOptionen } from "@/lib/followup/versand";
 
 export async function saveTemplateAction(
   key: string,
@@ -58,10 +59,14 @@ export async function sendTestEmailAction(key: string, toEmail: string) {
   if (!template) return { ok: false, error: "Template nicht gefunden." };
 
   const vars = sampleVarsFor(key);
+  const html = renderTemplate(template.html, vars);
   const result = await sendEmail({
     to: email,
     subject: `[TEST] ${renderTemplate(template.betreff, vars)}`,
-    html: renderTemplate(template.html, vars),
+    html,
+    // Wartelisten-Mails mit Absender, Textfassung und Abmelde-Header wie im
+    // echten Versand, damit Spam-Tests (z.B. mail-tester.com) aussagekräftig sind.
+    ...(istWartelisteVorlage(key) ? wartelisteVersandOptionen(html, vars.abmelde_link) : {}),
     templateKey: key,
   });
 

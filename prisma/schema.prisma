@@ -281,6 +281,14 @@ model Lead {
   referrer             String?               @db.VarChar(500)
   landingPage          String?               @map("landing_page") @db.VarChar(500)
   firstTouchAt         DateTime?             @map("first_touch_at")
+  /// Automatische Follow-up-Sequenz nach dem Wartelisten-Eintrag (lib/followup).
+  /// sequenzSchritt = Anzahl versendeter Follow-up-Mails (0 bis 4).
+  /// sequenzNaechsteAm = nächste fällige Aktion, null = keine laufende Sequenz.
+  /// sequenzStopp = Grund für das Ende: "abgeschlossen" | "status" | "abgemeldet".
+  sequenzStartAm       DateTime?             @map("sequenz_start_am")
+  sequenzSchritt       Int                   @default(0) @map("sequenz_schritt")
+  sequenzNaechsteAm    DateTime?             @map("sequenz_naechste_am")
+  sequenzStopp         String?               @map("sequenz_stopp")
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
   activities           LeadActivity[]
@@ -289,6 +297,7 @@ model Lead {
 
   @@index([utmSource])
   @@index([utmCampaign])
+  @@index([sequenzNaechsteAm])
   @@map("waitlist")
 }
 
