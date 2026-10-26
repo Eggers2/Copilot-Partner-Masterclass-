@@ -63,3 +63,14 @@ test("Anrede mit und ohne Vornamen", () => {
   assert.equal(anrede("Max"), "Hallo Max,");
   assert.equal(anrede(null), "Hallo,");
 });
+
+test("Textfassung enthält Anrede, Bookings-Link und Abmelde-Link, aber kein HTML", async () => {
+  const { htmlToPlainText } = await import("../lib/email/format");
+  const { TEMPLATE_REGISTRY, renderTemplate, sampleVarsFor } = await import("../lib/email/renderTemplate");
+  const key = "warteliste_followup_1";
+  const text = htmlToPlainText(renderTemplate(TEMPLATE_REGISTRY[key].defaultHtml, sampleVarsFor(key)));
+  assert.match(text, /^Hallo Max,/);
+  assert.match(text, /Hier einen Termin mit mir buchen: https:\/\/outlook\.office\.com\/bookwithme\/\S+&ep=bwmEmailSignature/);
+  assert.match(text, /Keine weiteren Mails dazu: https:\/\/www\.copilotberater\.de\/warteliste\/abmelden/);
+  assert.doesNotMatch(text, /<|&amp;/);
+});

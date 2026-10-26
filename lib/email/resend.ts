@@ -22,6 +22,8 @@ export interface SendEmailInput {
   to: string | string[];
   subject: string;
   html: string;
+  /** optionale Textfassung (multipart/alternative), verbessert die Zustellbarkeit */
+  text?: string;
   /** optionaler Absender-Override, sonst RESEND_FROM_EMAIL */
   from?: string;
   /** optionaler Reply-To, sonst nur der Absender aus RESEND_FROM_EMAIL */
@@ -61,6 +63,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
       to: recipients,
       subject: input.subject,
       html: input.html,
+      ...(input.text ? { text: input.text } : {}),
       ...(input.replyTo ? { replyTo: input.replyTo } : {}),
       ...(input.headers ? { headers: input.headers } : {}),
       ...(input.attachments && input.attachments.length > 0

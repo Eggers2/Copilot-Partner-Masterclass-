@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { addActivity } from "@/lib/db/leads";
 import { getEmailTemplate } from "@/lib/db/emailTemplates";
 import { renderTemplate } from "@/lib/email/renderTemplate";
+import { htmlToPlainText } from "@/lib/email/format";
 import { isResendConfigured, sendEmail } from "@/lib/email/resend";
 import { signToken } from "@/lib/newsletter/tokens";
 import {
@@ -86,10 +87,12 @@ export async function sendeWartelisteBestaetigung(lead: Lead, baseUrl: string): 
     const template = await getEmailTemplate(BESTAETIGUNG_KEY);
     if (!template) return;
     const vars = variablenFuer(lead, baseUrl);
+    const html = renderTemplate(template.html, vars);
     const result = await sendEmail({
       to: lead.email,
       subject: renderTemplate(template.betreff, vars),
-      html: renderTemplate(template.html, vars),
+      html,
+      text: htmlToPlainText(html),
       ...absender(),
       headers: abmeldeHeader(vars.abmelde_link),
       templateKey: BESTAETIGUNG_KEY,
@@ -206,10 +209,12 @@ export async function runFollowupCron(
 
     const vars = variablenFuer(lead, baseUrl);
     const betreff = renderTemplate(template.betreff, vars);
+    const html = renderTemplate(template.html, vars);
     const result = await sendEmail({
       to: lead.email,
       subject: betreff,
-      html: renderTemplate(template.html, vars),
+      html,
+      text: htmlToPlainText(html),
       ...absender(),
       headers: abmeldeHeader(vars.abmelde_link),
       templateKey: template.key,
