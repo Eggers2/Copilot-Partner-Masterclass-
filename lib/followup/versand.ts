@@ -60,6 +60,23 @@ function abmeldeHeader(link: string): Record<string, string> {
   };
 }
 
+/**
+ * Versand-Optionen aller Wartelisten-Mails: Absender, Reply-To, Textfassung
+ * und Abmelde-Header. Auch die Testmail aus /admin/emails nutzt sie, damit
+ * der Test genauso beim Spamfilter ankommt wie der echte Versand.
+ */
+export function wartelisteVersandOptionen(html: string, abmeldeLinkUrl: string) {
+  return {
+    ...absender(),
+    text: htmlToPlainText(html),
+    headers: abmeldeHeader(abmeldeLinkUrl),
+  };
+}
+
+export function istWartelisteVorlage(key: string): boolean {
+  return key.startsWith("warteliste_");
+}
+
 /** Felder, mit denen ein neuer Lead in die Sequenz startet. */
 export function sequenzStartDaten(jetzt: Date = new Date()) {
   return { sequenzStartAm: jetzt, sequenzSchritt: 0, sequenzNaechsteAm: ersteFaelligkeit(jetzt) };
@@ -92,9 +109,7 @@ export async function sendeWartelisteBestaetigung(lead: Lead, baseUrl: string): 
       to: lead.email,
       subject: renderTemplate(template.betreff, vars),
       html,
-      text: htmlToPlainText(html),
-      ...absender(),
-      headers: abmeldeHeader(vars.abmelde_link),
+      ...wartelisteVersandOptionen(html, vars.abmelde_link),
       templateKey: BESTAETIGUNG_KEY,
     });
     if (result.ok) {
@@ -214,9 +229,7 @@ export async function runFollowupCron(
       to: lead.email,
       subject: betreff,
       html,
-      text: htmlToPlainText(html),
-      ...absender(),
-      headers: abmeldeHeader(vars.abmelde_link),
+      ...wartelisteVersandOptionen(html, vars.abmelde_link),
       templateKey: template.key,
     });
 
