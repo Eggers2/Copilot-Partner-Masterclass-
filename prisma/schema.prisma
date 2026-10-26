@@ -32,6 +32,7 @@ enum LeadSource {
   COLD_OUTREACH
   OTHER
   SYNAXON
+  EVENT
 }
 
 enum ActivityType {
