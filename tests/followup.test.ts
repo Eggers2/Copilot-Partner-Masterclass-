@@ -74,3 +74,13 @@ test("Textfassung enthält Anrede, Bookings-Link und Abmelde-Link, aber kein HTM
   assert.match(text, /Keine weiteren Mails dazu: https:\/\/www\.copilotberater\.de\/warteliste\/abmelden/);
   assert.doesNotMatch(text, /<|&amp;/);
 });
+
+test("Bestätigung verlinkt den Sofort-Bonus auf copilotberater.de, nicht mehr bei Wix", async () => {
+  const { existsSync } = await import("node:fs");
+  const { TEMPLATE_REGISTRY } = await import("../lib/email/renderTemplate");
+  const html = TEMPLATE_REGISTRY.warteliste_bestaetigung.defaultHtml;
+  assert.doesNotMatch(html, /usrfiles\.com/);
+  const match = html.match(/https:\/\/www\.copilotberater\.de(\/downloads\/[^"]+\.pdf)/);
+  assert.ok(match, "Bonus-Link fehlt");
+  assert.ok(existsSync(`public${match[1]}`), `public${match[1]} fehlt`);
+});
