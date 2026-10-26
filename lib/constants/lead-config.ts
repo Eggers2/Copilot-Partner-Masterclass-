@@ -36,6 +36,7 @@ export const LEAD_SOURCE_CONFIG: Record<LeadSource, { label: string }> = {
   COLD_OUTREACH: { label: "Kaltakquise" },
   OTHER: { label: "Sonstiges" },
   SYNAXON: { label: "SYNAXON" },
+  EVENT: { label: "Event" },
 };
 
 export const ADN_CHANNEL_CONFIG: Record<
