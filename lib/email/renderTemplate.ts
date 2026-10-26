@@ -1,3 +1,6 @@
+import { BESTAETIGUNG_BETREFF, BESTAETIGUNG_HTML, FOLLOWUP_VORLAGEN } from "@/lib/followup/vorlagen";
+import { FOLLOWUP_TAGE, TERMIN_LINK, followupTemplateKey } from "@/lib/followup/sequenz";
+
 // HTML-Escaping für eingesetzte Variablenwerte (Muster aus
 // lib/newsletter/render.ts). Schützt vor kaputtem Markup, wenn z.B. ein Name
 // ein `<` enthält.
@@ -391,6 +394,34 @@ const UMFRAGE_LIEFERRISIKO_INTERN_DEFAULT_HTML = `<div style="font-family: -appl
  * Registry aller konfigurierbaren Templates. Treibt die Editor-Hilfe, die
  * Beispieldaten für Vorschau/Test-Mail und das initiale Seeding.
  */
+const WARTELISTE_VARIABLEN = {
+  anrede: "Hallo Max,",
+  termin_link: TERMIN_LINK,
+  abmelde_link: "https://www.copilotberater.de/warteliste/abmelden?token=beispiel",
+};
+
+// Vier Follow-up-Mails der Wartelisten-Sequenz (lib/followup/versand.ts).
+const WARTELISTE_FOLLOWUPS: Record<string, TemplateDefinition> = Object.fromEntries(
+  FOLLOWUP_VORLAGEN.map((v, i) => {
+    const schritt = i + 1;
+    const key = followupTemplateKey(schritt);
+    return [
+      key,
+      {
+        key,
+        name: `Warteliste: Follow-up ${schritt} von ${FOLLOWUP_VORLAGEN.length} (Tag ${FOLLOWUP_TAGE[i]})`,
+        beschreibung:
+          `Automatische Follow-up-Mail ${schritt} an Tag ${FOLLOWUP_TAGE[i]} nach dem Wartelisten-Eintrag (stündlicher Cron, werktags 8 bis 18 Uhr). ` +
+          "Inaktiv = diese Mail wird nicht versendet, betroffene Leads warten an dieser Stelle, bis die Vorlage aktiv ist. " +
+          "Die Sequenz stoppt, sobald der Lead-Status nicht mehr NEW oder CONTACTED ist oder der Lead den Abmelde-Link klickt.",
+        variables: WARTELISTE_VARIABLEN,
+        defaultBetreff: v.betreff,
+        defaultHtml: v.html,
+      },
+    ];
+  })
+);
+
 export const TEMPLATE_REGISTRY: Record<string, TemplateDefinition> = {
   kundenportal_otp: {
     key: "kundenportal_otp",
@@ -531,6 +562,18 @@ export const TEMPLATE_REGISTRY: Record<string, TemplateDefinition> = {
     defaultBetreff: "Connect Day Storno: {{firma}} ({{personen}} Plätze frei)",
     defaultHtml: CONNECT_DAY_STORNO_INTERN_DEFAULT_HTML,
   },
+  warteliste_bestaetigung: {
+    key: "warteliste_bestaetigung",
+    name: "Warteliste: Bestätigung (Tag 0)",
+    beschreibung:
+      "Geht sofort nach dem Eintrag über das Wartelisten-Formular raus, zusammen mit der internen Info an WARTELISTE_NOTIFY_EMAIL (sonst NEWSLETTER_REVIEW_EMAIL). " +
+      "Aktiv = Versand über Resend, der n8n-Webhook (N8N_WEBHOOK_URL) wird für Wartelisten-Einträge nicht mehr aufgerufen. Inaktiv = wie bisher über n8n. " +
+      "Die Follow-up-Sequenz startet in beiden Fällen.",
+    variables: WARTELISTE_VARIABLEN,
+    defaultBetreff: BESTAETIGUNG_BETREFF,
+    defaultHtml: BESTAETIGUNG_HTML,
+  },
+  ...WARTELISTE_FOLLOWUPS,
 };
 
 export function getTemplateDefinition(key: string): TemplateDefinition | undefined {

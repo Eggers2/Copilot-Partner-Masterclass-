@@ -7,7 +7,12 @@ import { createHmac, timingSafeEqual } from "crypto";
  * Teil der signierten Nutzlast, damit ein Abmelde-Token nicht als Freigabe-Token
  * (oder umgekehrt) missbraucht werden kann.
  */
-export type TokenPurpose = "approve" | "unsub" | "umfrage-slot" | "umfrage-klasse";
+export type TokenPurpose =
+  | "approve"
+  | "unsub"
+  | "umfrage-slot"
+  | "umfrage-klasse"
+  | "warteliste-abmelden";
 
 function getSecret(): string {
   const secret = process.env.CUSTOMER_SESSION_SECRET;

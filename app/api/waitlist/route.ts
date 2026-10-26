@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { LeadSource } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { resolveAppBaseUrl } from "@/lib/auth/customer";
+import {
+  bestaetigungUeberApp,
+  sendeWartelisteBestaetigung,
+  sequenzStartDaten,
+} from "@/lib/followup/versand";
 
 function truncate(value: unknown, max: number): string | null {
   if (typeof value !== "string") return null;
@@ -73,12 +79,18 @@ export async function POST(request: NextRequest) {
         landingPage,
         firstTouchAt,
         ...(mappedSource ? { source: mappedSource } : {}),
+        // Follow-up-Sequenz (lib/followup): vier Mails an Tag 2, 5, 9 und 14.
+        ...sequenzStartDaten(),
       },
     });
 
-    // N8N Webhook: fire-and-forget – E-Mail-Benachrichtigung bei neuer Anmeldung
+    // Bestätigung + interne Info: über Resend, sobald die Vorlage
+    // "warteliste_bestaetigung" unter /admin/emails aktiv ist. Sonst wie
+    // bisher über den n8n-Webhook (Workflow "EMail Masterclass").
     const webhookUrl = process.env.N8N_WEBHOOK_URL;
-    if (webhookUrl) {
+    if (await bestaetigungUeberApp().catch(() => false)) {
+      await sendeWartelisteBestaetigung(entry, await resolveAppBaseUrl());
+    } else if (webhookUrl) {
       fetch(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
