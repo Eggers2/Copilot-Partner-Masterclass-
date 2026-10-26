@@ -21,17 +21,19 @@ import {
 // über Resend. Ersetzt die n8n-Workflows "EMail Masterclass" und
 // "Masterclass – Follow-up Sequenz (4 Mails)".
 //
-// Absender: WARTELISTE_FROM_EMAIL (Domain muss bei Resend verifiziert sein),
-// sonst RESEND_FROM_EMAIL. Antworten gehen an WARTELISTE_REPLY_TO.
+// Absender: WARTELISTE_FROM_EMAIL, sonst Alex persönlich auf copilotberater.de
+// (wie der Newsletter bei Resend verifiziert). Antworten gehen an
+// WARTELISTE_REPLY_TO, sonst ae@next-skills.de.
 
 const BESTAETIGUNG_KEY = "warteliste_bestaetigung";
+const DEFAULT_FROM = "Alexander Eggers <alexander@copilotberater.de>";
 const DEFAULT_REPLY_TO = "ae@next-skills.de";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-function absender(): { from?: string; replyTo: string } {
+function absender(): { from: string; replyTo: string } {
   return {
-    from: process.env.WARTELISTE_FROM_EMAIL || undefined,
+    from: process.env.WARTELISTE_FROM_EMAIL || DEFAULT_FROM,
     replyTo: process.env.WARTELISTE_REPLY_TO || DEFAULT_REPLY_TO,
   };
 }
