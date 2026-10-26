@@ -80,7 +80,8 @@ export const FOLLOWUP_VORLAGEN: { betreff: string; html: string }[] = [
 /**
  * Bestätigung direkt nach dem Eintrag. Übernommen aus dem n8n-Workflow
  * "EMail Masterclass" (Sofort-Bonus + Termin-Button), ergänzt um den
- * Abmelde-Link für die folgende Sequenz.
+ * Abmelde-Link für die folgende Sequenz. Das Bonus-PDF liegt in
+ * public/downloads (früher bei Wix).
  */
 export const BESTAETIGUNG_BETREFF =
   "Bestätigt: Du bist auf der Warteliste für die Copilot Masterclass 🚀";
@@ -99,7 +100,7 @@ export const BESTAETIGUNG_HTML = `<table role="presentation" width="100%" cellpa
     <p>Sobald die Termine für die nächste Klasse feststehen, hörst du als Erstes von mir. Bis dahin musst du aber nicht warten. Im KI-Markt kann es sich niemand leisten, Däumchen zu drehen.</p>
     <p>Deshalb bekommst du heute schon deinen versprochenen <strong>Sofort-Bonus</strong>. Darin erfährst du, welche drei Fehler die meisten Systemhäuser beim KI-Pitch machen und wie du es von Tag eins an besser machst.</p>
     <div style="text-align:center; margin:32px 0;">
-      <a href="https://8db8c715-1a96-4b57-a5f9-9ce732377cc1.usrfiles.com/ugd/8db8c7_b511a84998704756820775d08f75e1f2.pdf" style="background:#00C896; color:#1A1A2E; text-decoration:none; padding:14px 36px; border-radius:6px; font-weight:bold; display:inline-block; font-size:16px;">Sofort-Bonus herunterladen &darr;</a>
+      <a href="https://www.copilotberater.de/downloads/Partner-Guide_3_Fehler_Copilot-Pitch.pdf" style="background:#00C896; color:#1A1A2E; text-decoration:none; padding:14px 36px; border-radius:6px; font-weight:bold; display:inline-block; font-size:16px;">Sofort-Bonus herunterladen &darr;</a>
     </div>
   </td></tr>
   <tr><td style="padding:0 30px;"><div style="border-top:2px solid #EAF9F4;"></div></td></tr>
