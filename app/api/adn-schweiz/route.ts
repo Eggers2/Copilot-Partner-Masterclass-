@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { resolveAppBaseUrl } from "@/lib/auth/customer";
+import {
+  bestaetigungUeberApp,
+  sendeWartelisteBestaetigung,
+  sequenzStartDaten,
+} from "@/lib/followup/versand";
 import {
   ADN_SCHWEIZ_LANDING_PAGE,
   ADN_SCHWEIZ_PDF_URL,
@@ -16,6 +22,10 @@ import {
 // der bestehende Lead nur ergänzt (leere Felder nachgetragen, NOTE-Aktivität
 // angehängt), Status, Quelle und UTM-Werte bleiben unverändert. Der Download
 // wird in beiden Fällen freigegeben.
+//
+// Nur neue Leads mit Marketing-Einwilligung kommen in die Wartelisten-
+// Sequenz (Bestätigung plus vier Follow-ups). Ohne Einwilligung geht keine
+// Mail an den Lead.
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -126,6 +136,8 @@ export async function POST(request: NextRequest) {
             referrer: input.referrer,
             landingPage: ADN_SCHWEIZ_LANDING_PAGE,
             firstTouchAt: new Date(),
+            // Wartelisten-Sequenz (vier Follow-up-Mails) nur mit Einwilligung.
+            ...(input.marketingConsent ? sequenzStartDaten() : {}),
           },
           select: { id: true },
         });
@@ -147,25 +159,34 @@ export async function POST(request: NextRequest) {
       data: { leadId, type: "NOTE", content: notiz },
     });
 
-    // N8N Webhook: fire-and-forget wie bei /api/waitlist
-    const webhookUrl = process.env.N8N_WEBHOOK_URL;
-    if (webhookUrl) {
-      fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: input.email,
-          timestamp: new Date().toISOString(),
-          entryId: leadId,
-          source: "EVENT",
-          marketing_consent: input.marketingConsent,
-          existing_lead: bestehenderLead,
-        }),
-      })
-        .then((res) => {
-          if (!res.ok) console.error(`N8N webhook returned ${res.status}`);
+    // Mails an den Lead nur mit Marketing-Einwilligung und nur bei neuen
+    // Leads: Bestätigung wie bei /api/waitlist, über Resend oder, solange die
+    // Vorlage inaktiv ist, über den n8n-Workflow "EMail Masterclass". Der
+    // Workflow schickt die Wartelisten-Bestätigung an jeden übergebenen
+    // Kontakt, deshalb wird er ohne Einwilligung nicht aufgerufen.
+    if (input.marketingConsent && !bestehenderLead) {
+      const webhookUrl = process.env.N8N_WEBHOOK_URL;
+      if (await bestaetigungUeberApp().catch(() => false)) {
+        const lead = await prisma.lead.findUnique({ where: { id: leadId } });
+        if (lead) await sendeWartelisteBestaetigung(lead, await resolveAppBaseUrl());
+      } else if (webhookUrl) {
+        fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: input.email,
+            timestamp: new Date().toISOString(),
+            entryId: leadId,
+            source: "EVENT",
+            marketing_consent: true,
+            existing_lead: false,
+          }),
         })
-        .catch((err) => console.error("N8N webhook delivery failed:", err));
+          .then((res) => {
+            if (!res.ok) console.error(`N8N webhook returned ${res.status}`);
+          })
+          .catch((err) => console.error("N8N webhook delivery failed:", err));
+      }
     }
 
     return NextResponse.json({ success: true, download: ADN_SCHWEIZ_PDF_URL }, { status: 201 });
