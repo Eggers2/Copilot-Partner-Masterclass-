@@ -284,11 +284,16 @@ model Lead {
   /// Automatische Follow-up-Sequenz nach dem Wartelisten-Eintrag (lib/followup).
   /// sequenzSchritt = Anzahl versendeter Follow-up-Mails (0 bis 4).
   /// sequenzNaechsteAm = nächste fällige Aktion, null = keine laufende Sequenz.
-  /// sequenzStopp = Grund für das Ende: "abgeschlossen" | "status" | "abgemeldet".
+  /// sequenzStopp = Grund für das Ende: "abgeschlossen" | "status" | "abgemeldet" | "keine_mails".
   sequenzStartAm       DateTime?             @map("sequenz_start_am")
   sequenzSchritt       Int                   @default(0) @map("sequenz_schritt")
   sequenzNaechsteAm    DateTime?             @map("sequenz_naechste_am")
   sequenzStopp         String?               @map("sequenz_stopp")
+  /// Lead will keine E-Mails mehr (Abmeldelink, Newsletter-Abmeldung, fehlende
+  /// Einwilligung oder manuell im Admin). Gesetzt = keine automatischen Mails,
+  /// im Admin und im CRM-Werkzeug deutlich markiert.
+  keineMailsAm         DateTime?             @map("keine_mails_am")
+  keineMailsGrund      String?               @map("keine_mails_grund")
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
   activities           LeadActivity[]

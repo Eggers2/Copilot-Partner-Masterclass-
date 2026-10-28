@@ -31,7 +31,8 @@ export const leadsSuchen = defineTool({
   scope: SCOPE_READ,
   description:
     "Sucht Leads im CRM (Warteliste, Interessenten, Kunden) nach Freitext, Status oder Quelle. " +
-    "Liefert eine kompakte Liste, sortiert nach Erstelldatum absteigend. Für Details anschließend lead_details aufrufen.",
+    "Liefert eine kompakte Liste, sortiert nach Erstelldatum absteigend. Für Details anschließend lead_details aufrufen. " +
+    "keineMails ungleich null heißt: diesem Lead keine E-Mail schicken.",
   schema: z.object({
     suche: z
       .string()

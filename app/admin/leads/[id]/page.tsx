@@ -9,6 +9,7 @@ import {
 } from "@/lib/db/bestellungen";
 import { prisma } from "@/lib/prisma";
 import { LeadDetailPanel } from "@/components/admin/LeadDetailPanel";
+import { KeineMailsHinweis } from "@/components/admin/KeineMailsHinweis";
 import { FirstCallSection } from "@/components/admin/FirstCallSection";
 import { ActivityTimeline } from "@/components/admin/ActivityTimeline";
 import { AddActivityForm } from "@/components/admin/AddActivityForm";
@@ -93,6 +94,11 @@ export default async function LeadDetailPage({
 
       <div className="grid lg:grid-cols-5 gap-6">
         <div className="lg:col-span-3 space-y-6">
+          <KeineMailsHinweis
+            leadId={lead.id}
+            keineMailsAm={lead.keineMailsAm?.toISOString() ?? null}
+            keineMailsGrund={lead.keineMailsGrund}
+          />
           <LeadDetailPanel lead={serializedLead} klassen={klassen} />
           <FirstCallSection leadId={lead.id} existingScore={serializedFirstCallScore} />
           {lead.status === "WON" && (

@@ -16,6 +16,7 @@ Pflichtregeln, gelernt aus /adn-schweiz (Oktober 2026). Sie gelten für Event- u
 4. **Einwilligung dokumentieren:** In Notiz und NOTE-Aktivität immer "Marketing-Einwilligung: ja" oder "Marketing-Einwilligung: nein".
 5. **UTM-Werte** direkt aus der URL der Seite lesen, nicht aus `lib/utm-tracker.ts` (der speichert den ersten Kontakt).
 6. Vor dem Einbinden eines Webhooks oder Workflows immer prüfen, was er tatsächlich verschickt.
+7. **Feld "Keine E-Mails"** am Lead (`keineMailsAm`, `keineMailsGrund`, Logik in `lib/leads/keineMails.ts`): Leads ohne Einwilligung damit markieren (`sperreMails`). Jeder neue automatische Versand muss Leads mit gesetztem Feld auslassen.
 
 Vorlage: `app/adn-schweiz`, `app/api/adn-schweiz/route.ts`, `lib/adn-schweiz/lead.ts`.
 

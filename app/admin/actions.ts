@@ -18,6 +18,7 @@ import {
   saveTranscriptAnalysis,
 } from "@/lib/db/leads";
 import { analyzeFirstCall, type FirstCallAnalysis } from "@/lib/firstcall/analyze";
+import { KEINE_MAILS_GRUND, entsperreMails, sperreMails } from "@/lib/leads/keineMails";
 import { sendEmail, sendBulkWithAttachments } from "@/lib/email/resend";
 import { plainTextToHtml } from "@/lib/email/format";
 import { summarizeTermin } from "@/lib/termine/summarize";
@@ -227,6 +228,22 @@ export async function addActivityAction(
   revalidatePath(`/admin/leads/${leadId}`);
 
   return { success: true };
+}
+
+/** Setzt "Keine E-Mails" am Lead (manuell im Admin). */
+export async function setKeineMailsAction(id: string): Promise<void> {
+  await requireAuth();
+  await sperreMails(id, KEINE_MAILS_GRUND.manuell);
+  revalidatePath(`/admin/leads/${id}`);
+  revalidatePath("/admin");
+}
+
+/** Entfernt "Keine E-Mails" am Lead. */
+export async function clearKeineMailsAction(id: string): Promise<void> {
+  await requireAuth();
+  await entsperreMails(id);
+  revalidatePath(`/admin/leads/${id}`);
+  revalidatePath("/admin");
 }
 
 export async function deleteLeadAction(id: string): Promise<void> {
