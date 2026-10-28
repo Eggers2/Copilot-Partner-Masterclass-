@@ -35,6 +35,7 @@ interface Lead {
   notes?: string | null;
   createdAt: string;
   followUpAt: string | null;
+  keineMailsAm?: string | null;
   lastActivityAt: string | null;
   _count: { activities: number };
   firstCallScore: { totalScore: number } | null;
@@ -333,6 +334,14 @@ export function LeadsTable({ leads }: LeadsTableProps) {
                       <div>
                         <p className="text-sm font-medium text-dark-slate-900">
                           {lead.name || lead.email}
+                          {lead.keineMailsAm && (
+                            <span
+                              title="Keine E-Mails an diesen Lead"
+                              className="ml-2 inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700 align-middle"
+                            >
+                              Keine E-Mails
+                            </span>
+                          )}
                         </p>
                         {lead.name && (
                           <a

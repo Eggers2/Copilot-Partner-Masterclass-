@@ -1,6 +1,7 @@
 import type { EmailTemplate, Lead, LeadStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { addActivity } from "@/lib/db/leads";
+import { KEINE_MAILS_GRUND, sperreMails } from "@/lib/leads/keineMails";
 import { getEmailTemplate } from "@/lib/db/emailTemplates";
 import { renderTemplate } from "@/lib/email/renderTemplate";
 import { htmlToPlainText } from "@/lib/email/format";
@@ -100,6 +101,8 @@ export async function bestaetigungUeberApp(): Promise<boolean> {
  * nicht: ein Fehler beim Versand darf den Eintrag nie scheitern lassen.
  */
 export async function sendeWartelisteBestaetigung(lead: Lead, baseUrl: string): Promise<void> {
+  // "Keine E-Mails" gesetzt: weder Bestätigung noch interne Info.
+  if (lead.keineMailsAm) return;
   try {
     const template = await getEmailTemplate(BESTAETIGUNG_KEY);
     if (!template) return;
@@ -168,7 +171,7 @@ export async function runFollowupCron(
   };
 
   const leads = await prisma.lead.findMany({
-    where: { sequenzNaechsteAm: { lte: jetzt }, sequenzStopp: null },
+    where: { sequenzNaechsteAm: { lte: jetzt }, sequenzStopp: null, keineMailsAm: null },
     orderBy: { sequenzNaechsteAm: "asc" },
     take: 100,
   });
@@ -186,6 +189,7 @@ export async function runFollowupCron(
       sequenzSchritt: lead.sequenzSchritt,
       sequenzNaechsteAm: lead.sequenzNaechsteAm,
       sequenzStopp: null,
+      keineMailsAm: null,
     };
 
     if (!SEQUENZ_STATUS.includes(lead.status)) {
@@ -319,7 +323,11 @@ export async function meldeVonSequenzAb(leadId: string): Promise<string | null> 
     select: { email: true, sequenzStopp: true },
   });
   if (!lead) return null;
-  if (lead.sequenzStopp === "abgemeldet") return lead.email;
+  if (lead.sequenzStopp === "abgemeldet") {
+    // Erneuter Klick, z.B. nachdem "Keine E-Mails" im Admin entfernt wurde.
+    await sperreMails(leadId, KEINE_MAILS_GRUND.abmeldelinkWarteliste);
+    return lead.email;
+  }
 
   await prisma.lead.update({
     where: { id: leadId },
@@ -329,6 +337,7 @@ export async function meldeVonSequenzAb(leadId: string): Promise<string | null> 
     type: "NOTE",
     content: "Follow-up-Sequenz: per Link abgemeldet, keine weiteren Mails",
   });
+  await sperreMails(leadId, KEINE_MAILS_GRUND.abmeldelinkWarteliste);
   return lead.email;
 }
 

@@ -7,6 +7,7 @@ import {
   sendeWartelisteBestaetigung,
   sequenzStartDaten,
 } from "@/lib/followup/versand";
+import { sperreMails } from "@/lib/leads/keineMails";
 import {
   ADN_SCHWEIZ_LANDING_PAGE,
   ADN_SCHWEIZ_PDF_URL,
@@ -164,6 +165,12 @@ export async function POST(request: NextRequest) {
     // Vorlage inaktiv ist, über den n8n-Workflow "EMail Masterclass". Der
     // Workflow schickt die Wartelisten-Bestätigung an jeden übergebenen
     // Kontakt, deshalb wird er ohne Einwilligung nicht aufgerufen.
+    // Neuer Lead ohne Einwilligung: als "Keine E-Mails" markieren, damit
+    // auch keine manuelle Mail rausgeht.
+    if (!input.marketingConsent && !bestehenderLead) {
+      await sperreMails(leadId, "Keine Marketing-Einwilligung (ADN Schweiz, 28.10.2026)");
+    }
+
     if (input.marketingConsent && !bestehenderLead) {
       const webhookUrl = process.env.N8N_WEBHOOK_URL;
       if (await bestaetigungUeberApp().catch(() => false)) {

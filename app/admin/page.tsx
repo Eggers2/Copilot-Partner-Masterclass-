@@ -35,6 +35,7 @@ export default async function AdminDashboard() {
           ...l,
           createdAt: l.createdAt.toISOString(),
           followUpAt: l.followUpAt?.toISOString() ?? null,
+          keineMailsAm: l.keineMailsAm?.toISOString() ?? null,
           lastActivityAt: l.activities[0]?.createdAt?.toISOString() ?? null,
           klasseName: l.klasse?.name ?? null,
         }))}

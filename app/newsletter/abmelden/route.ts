@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyToken } from "@/lib/newsletter/tokens";
 import { htmlResponse, pageShell, submitButton } from "@/lib/newsletter/publicPage";
+import { KEINE_MAILS_GRUND, sperreMailsFuerEmail } from "@/lib/leads/keineMails";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -84,6 +85,10 @@ export async function POST(req: NextRequest) {
     create: { email },
     update: {},
   });
+  // Gleiche Adresse als Lead im CRM: dort "Keine E-Mails" setzen.
+  await sperreMailsFuerEmail(email, KEINE_MAILS_GRUND.newsletterAbmeldung).catch((err) =>
+    console.error("[newsletter] Keine-E-Mails am Lead fehlgeschlagen:", err)
+  );
 
   return htmlResponse(
     200,

@@ -44,6 +44,7 @@ const INTERNAL_ERROR = -32603;
 const SERVER_INSTRUCTIONS = `Du arbeitest mit dem CRM der Copilot Partner Masterclass (NextSkills GmbH).
 Datenmodell: Leads (Warteliste/Interessenten/Kunden, Tabelle mit Status NEW, CONTACTED, QUALIFIED, PROPOSAL, WON, LOST, WAITLIST, WEBINAR_ATTENDED, FOLLOW_UP, EXPERTE, ONE_MAN_SHOW), Bestellungen aus dem Online-Shop (Status neu, bearbeitet, abgeschlossen), Webinare mit Anmeldungen sowie Klassen (Kohorten der Masterclass).
 Zeitstempel sind ISO-8601 in UTC; Nutzer sitzen in Deutschland (Europe/Berlin). Geldbeträge sind Euro.
+WICHTIG: Ist bei einem Lead das Feld keineMails gesetzt (nicht null), will er keine E-Mails oder hat nie eingewilligt. Dann keine E-Mail an ihn schreiben oder entwerfen, auch keine Erst- oder Follow-up-Mail, sondern den Lead auslassen und das dem Nutzer sagen.
 Vor Änderungen den aktuellen Stand per lead_details lesen. Schreibaktionen erzeugen sichtbare Aktivitäten in der Lead-Timeline und werden protokolliert. Es gibt bewusst kein Löschen.`;
 
 function err(id: JsonRpcId, code: number, message: string, data?: unknown): JsonRpcResponse {

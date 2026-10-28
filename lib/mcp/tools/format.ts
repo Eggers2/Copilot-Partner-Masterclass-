@@ -11,6 +11,19 @@ import { calendarDateInput, formatBerlinDateTime } from "@/lib/datetime";
  * Bestätigungstext schreibt, nennt eine Uhrzeit, die das Admin nicht anzeigt.
  */
 
+/**
+ * "Keine E-Mails": null = Mails erlaubt. Sonst seit wann und warum der Lead
+ * keine Mails bekommen darf. Vor jeder Mail an einen Lead prüfen.
+ */
+function keineMailsOut(lead: Pick<Lead, "keineMailsAm" | "keineMailsGrund">) {
+  if (!lead.keineMailsAm) return null;
+  return {
+    seit: lead.keineMailsAm.toISOString(),
+    seitLokal: formatBerlinDateTime(lead.keineMailsAm),
+    grund: lead.keineMailsGrund,
+  };
+}
+
 export function leadSummary(
   lead: Lead & {
     klasse?: { name: string } | null;
@@ -26,6 +39,7 @@ export function leadSummary(
     email: lead.email,
     telefon: lead.phone,
     status: lead.status,
+    keineMails: keineMailsOut(lead),
     quelle: lead.source,
     score: lead.score,
     firstCallScore: lead.firstCallScore?.totalScore ?? null,
@@ -52,6 +66,7 @@ export function leadFull(lead: Lead, mitTracking: boolean) {
       ort: lead.city,
     },
     status: lead.status,
+    keineMails: keineMailsOut(lead),
     quelle: lead.source,
     score: lead.score,
     umsatzEuro: lead.status === "WON" ? lead.revenue / 100 : null,
