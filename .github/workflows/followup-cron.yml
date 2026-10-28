@@ -4,7 +4,9 @@ name: Follow-up Cron
 # lib/followup). Die Zeitprüfung liegt serverseitig: der Endpoint versendet nur
 # werktags zwischen 8 und 18 Uhr Europe/Berlin und claimt jeden Schritt, damit
 # überlappende Läufe nie doppelt senden. Dieser Workflow muss daher nur
-# stündlich im richtigen Fenster feuern.
+# im richtigen Fenster feuern. GitHub lässt geplante Läufe oft ausfallen oder
+# verzögert sie stark; deshalb alle 15 Minuten, ein ausgefallener Lauf wird vom
+# nächsten aufgefangen. Doppelte Mails sind ausgeschlossen (Claim je Schritt).
 #
 # Voraussetzungen (einmalig):
 #   • Repo-Secret  CRON_SECRET   (Settings → Secrets and variables → Actions)
@@ -15,7 +17,7 @@ on:
   schedule:
     # Zeiten in UTC. 6 bis 16 UTC deckt 8 bis 18 Uhr Berlin über Sommer- und
     # Winterzeit ab; Läufe außerhalb des Berliner Fensters sind No-op.
-    - cron: "7 6-16 * * 1-5"
+    - cron: "*/15 6-16 * * 1-5"
   workflow_dispatch:
     inputs:
       force:
