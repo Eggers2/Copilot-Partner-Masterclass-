@@ -8,7 +8,7 @@
 
 ## Landingpages mit Lead-Erfassung (Event, Download, Formular)
 
-Pflichtregeln, gelernt aus /adn-schweiz (Oktober 2026):
+Pflichtregeln, gelernt aus /adn-schweiz (Oktober 2026). Sie gelten für Event- und Sonder-Landingpages mit Einwilligungs-Checkbox. Das Wartelisten-Formular der Startseite (`/api/waitlist`) startet die Sequenz für jeden Eintrag und bleibt davon unberührt.
 
 1. **Mails und Wartelisten-Lauf nur mit Marketing-Einwilligung.** Nur wer die Einwilligungs-Checkbox gesetzt hat, bekommt die Wartelisten-Bestätigung und kommt in den Follow-up-Lauf (`sequenzStartDaten()` aus `lib/followup/versand.ts`, Bestätigung und vier Follow-ups). Ohne Einwilligung geht keine einzige Mail an den Lead.
 2. **Versand über Resend, wie in `/api/waitlist`.** Bestätigung über `bestaetigungUeberApp()` und `sendeWartelisteBestaetigung()`. Den n8n-Webhook `N8N_WEBHOOK_URL` nicht als "interne Benachrichtigung" aufrufen: der n8n-Workflow "EMail Masterclass" schickt jedem übergebenen Kontakt die Wartelisten-Bestätigung.
