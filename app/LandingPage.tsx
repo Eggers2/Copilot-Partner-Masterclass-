@@ -235,6 +235,10 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
         <p className="text-[#6B6B8A] text-xs text-center">
           Keine Verpflichtung · Persönliche Rückmeldung · {plaetzeText}
         </p>
+        <p className="text-[#6B6B8A] text-xs text-center leading-snug">
+          Mit dem Eintrag erhalten Sie Informationen zur Masterclass per E-Mail, Abmeldung jederzeit möglich. Details in der{" "}
+          <a href="/datenschutz" className="underline hover:text-[#00C896]">Datenschutzerklärung</a>.
+        </p>
       </form>
     </div>
   );
