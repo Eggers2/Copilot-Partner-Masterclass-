@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Lead } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { resolveAppBaseUrl } from "@/lib/auth/customer";
+import {
+  bestaetigungUeberApp,
+  sendeWartelisteBestaetigung,
+  sequenzStartDaten,
+} from "@/lib/followup/versand";
 import { checkRateLimit } from "@/lib/rate-limit";
 import {
   ADN_SCHWEIZ_LANDING_PAGE,
@@ -16,6 +23,12 @@ import {
 // der bestehende Lead nur ergänzt (leere Felder nachgetragen, NOTE-Aktivität
 // angehängt), Status, Quelle und UTM-Werte bleiben unverändert. Der Download
 // wird in beiden Fällen freigegeben.
+//
+// Mit Marketing-Einwilligung startet ein neuer Lead wie bei /api/waitlist in
+// die Wartelisten-Sequenz: Bestätigung mit Sofort-Bonus über Resend, danach
+// die vier Follow-ups. Ohne Einwilligung wird er nur eingetragen und bekommt
+// keine Mail. Bestehende Leads bekommen nie eine Mail, sie stecken schon in
+// einem Lauf oder sind längst weiter.
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -90,7 +103,7 @@ export async function POST(request: NextRequest) {
     const notiz = buildAdnSchweizNotiz(input.utm, input.marketingConsent);
 
     let leadId: string;
-    let bestehenderLead = false;
+    let neuerLead: Lead | null = null;
 
     const existing = await prisma.lead.findUnique({
       where: { email: input.email },
@@ -98,7 +111,6 @@ export async function POST(request: NextRequest) {
     });
 
     if (existing) {
-      bestehenderLead = true;
       leadId = existing.id;
       if ((!existing.name && input.name) || (!existing.company && input.firma)) {
         await prisma.lead.update({
@@ -126,10 +138,11 @@ export async function POST(request: NextRequest) {
             referrer: input.referrer,
             landingPage: ADN_SCHWEIZ_LANDING_PAGE,
             firstTouchAt: new Date(),
+            ...(input.marketingConsent ? sequenzStartDaten() : {}),
           },
-          select: { id: true },
         });
         leadId = created.id;
+        neuerLead = created;
       } catch (error) {
         // Zwei Absendungen gleichzeitig: der zweite Versuch ergänzt den ersten.
         if (!isUniqueViolation(error)) throw error;
@@ -139,7 +152,6 @@ export async function POST(request: NextRequest) {
         });
         if (!raced) throw error;
         leadId = raced.id;
-        bestehenderLead = true;
       }
     }
 
@@ -147,25 +159,11 @@ export async function POST(request: NextRequest) {
       data: { leadId, type: "NOTE", content: notiz },
     });
 
-    // N8N Webhook: fire-and-forget wie bei /api/waitlist
-    const webhookUrl = process.env.N8N_WEBHOOK_URL;
-    if (webhookUrl) {
-      fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: input.email,
-          timestamp: new Date().toISOString(),
-          entryId: leadId,
-          source: "EVENT",
-          marketing_consent: input.marketingConsent,
-          existing_lead: bestehenderLead,
-        }),
-      })
-        .then((res) => {
-          if (!res.ok) console.error(`N8N webhook returned ${res.status}`);
-        })
-        .catch((err) => console.error("N8N webhook delivery failed:", err));
+    // Bestätigung nur über Resend, wenn die Vorlage "warteliste_bestaetigung"
+    // aktiv ist. Kein n8n-Fallback: der schickte früher allen die Mail, auch
+    // ohne Einwilligung.
+    if (neuerLead && input.marketingConsent && (await bestaetigungUeberApp().catch(() => false))) {
+      await sendeWartelisteBestaetigung(neuerLead, await resolveAppBaseUrl());
     }
 
     return NextResponse.json({ success: true, download: ADN_SCHWEIZ_PDF_URL }, { status: 201 });
