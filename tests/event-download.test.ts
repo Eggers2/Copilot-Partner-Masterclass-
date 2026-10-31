@@ -1,6 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildAdnSchweizNotiz, parseUtm } from "../lib/adn-schweiz/lead";
+import { EVENT_DOWNLOADS } from "../lib/event-download/events";
+import { buildEventNotiz, parseUtm } from "../lib/event-download/lead";
+
+const ADN = EVENT_DOWNLOADS["adn-schweiz"].notizTitel;
 
 test("parseUtm übernimmt nur UTM-Felder, kürzt auf 100 Zeichen und nimmt bei Mehrfachwerten den ersten", () => {
   const utm = parseUtm({
@@ -20,7 +23,7 @@ test("parseUtm übernimmt nur UTM-Felder, kürzt auf 100 Zeichen und nimmt bei M
 });
 
 test("Notiz enthält Titel, UTM-Werte und Einwilligung ja", () => {
-  const notiz = buildAdnSchweizNotiz(
+  const notiz = buildEventNotiz(ADN, 
     { utm_source: "adn", utm_medium: "event", utm_campaign: "adn_schweiz_okt26" },
     true
   );
@@ -34,7 +37,23 @@ test("Notiz enthält Titel, UTM-Werte und Einwilligung ja", () => {
 
 test("Notiz ohne UTM-Werte und ohne Einwilligung", () => {
   assert.equal(
-    buildAdnSchweizNotiz({}, false),
+    buildEventNotiz(ADN, {}, false),
     "ADN Schweiz 28.10.2026, Folien-Download\nUTM: keine\nMarketing-Einwilligung: nein"
   );
+});
+
+test("Ingram München: eigener Notiztitel, Pfad und PDF", () => {
+  const e = EVENT_DOWNLOADS["ingram-muenchen"];
+  assert.equal(
+    buildEventNotiz(
+      e.notizTitel,
+      { utm_source: "ingram", utm_medium: "event", utm_campaign: "ingram_muenchen_nov26" },
+      true
+    ),
+    "Ingram Micro München 03.11.2026, Folien-Download\n" +
+      "UTM: utm_source=ingram, utm_medium=event, utm_campaign=ingram_muenchen_nov26\n" +
+      "Marketing-Einwilligung: ja"
+  );
+  assert.equal(e.slug, "ingram-muenchen");
+  assert.match(e.pdfUrl, /^\/downloads\/.+\.pdf$/);
 });

@@ -1,14 +1,5 @@
-// Folien-Download nach dem Vortrag bei ADN Schweiz (Opfikon, 28.10.2026).
-// Seite /adn-schweiz, Danke-Seite /adn-schweiz/danke, API /api/adn-schweiz.
-// Hier liegen die reinen Hilfsfunktionen, damit Route und Tests dieselbe
-// Logik nutzen.
-
-export const ADN_SCHWEIZ_PDF_URL =
-  "/downloads/ADN_Schweiz_Copilot_Wertschoepfung_2026-10-28.pdf";
-
-export const ADN_SCHWEIZ_NOTIZ_TITEL = "ADN Schweiz 28.10.2026, Folien-Download";
-
-export const ADN_SCHWEIZ_LANDING_PAGE = "/adn-schweiz";
+// Reine Hilfsfunktionen für den Folien-Download (lib/event-download),
+// damit Route und Tests dieselbe Logik nutzen.
 
 export const UTM_KEYS = [
   "utm_source",
@@ -43,13 +34,17 @@ export function parseUtm(source: Record<string, unknown>): UtmWerte {
 }
 
 /** Notiz für Lead und Aktivität. Enthält immer Titel, UTM-Werte und Einwilligung. */
-export function buildAdnSchweizNotiz(utm: UtmWerte, marketingConsent: boolean): string {
+export function buildEventNotiz(
+  notizTitel: string,
+  utm: UtmWerte,
+  marketingConsent: boolean
+): string {
   const utmZeile = UTM_KEYS.filter((key) => utm[key])
     .map((key) => `${key}=${utm[key]}`)
     .join(", ");
 
   return [
-    ADN_SCHWEIZ_NOTIZ_TITEL,
+    notizTitel,
     `UTM: ${utmZeile || "keine"}`,
     `Marketing-Einwilligung: ${marketingConsent ? "ja" : "nein"}`,
   ].join("\n");

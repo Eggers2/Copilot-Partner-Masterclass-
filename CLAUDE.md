@@ -18,7 +18,7 @@ Pflichtregeln, gelernt aus /adn-schweiz (Oktober 2026). Sie gelten für Event- u
 6. Vor dem Einbinden eines Webhooks oder Workflows immer prüfen, was er tatsächlich verschickt.
 7. **Feld "Keine E-Mails"** am Lead (`keineMailsAm`, `keineMailsGrund`, Logik in `lib/leads/keineMails.ts`): Leads ohne Einwilligung damit markieren (`sperreMails`). Jeder neue automatische Versand muss Leads mit gesetztem Feld auslassen.
 
-Vorlage: `app/adn-schweiz`, `app/api/adn-schweiz/route.ts`, `lib/adn-schweiz/lead.ts`.
+Vorlage für Folien-Downloads nach Vorträgen: gemeinsame Seiten und Logik in `lib/event-download` und `components/event-download`. Neue Veranstaltung = Eintrag in `lib/event-download/events.ts` plus drei kurze Dateien nach dem Muster von `app/adn-schweiz`, `app/adn-schweiz/danke` und `app/api/adn-schweiz`.
 
 ## Texte
 
