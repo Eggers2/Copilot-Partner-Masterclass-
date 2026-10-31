@@ -23,7 +23,7 @@ export interface EventDownload {
   notizTitel: string;
   /** Grund für "Keine E-Mails" bei neuen Leads ohne Einwilligung */
   keineMailsGrund: string;
-  /** PDF unter public/downloads */
+  /** PDF unter public/downloads. Zum Austausch nur die Datei ersetzen, der Name bleibt. */
   pdfUrl: string;
 }
 
