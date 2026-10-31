@@ -130,3 +130,27 @@ export function bestellungSummary(b: Bestellung & { klasse?: { name: string } | 
     erstelltAm: b.erstelltAm.toISOString(),
   };
 }
+
+/** Ein gemeldeter Teilnehmer mit Bestellung und Klasse (teilnehmer_suchen, klassen_teilnehmer). */
+export function teilnehmerOut(t: {
+  vorname: string;
+  nachname: string;
+  email: string;
+  teamsEingeladenAm: Date | null;
+  bestellung: Pick<Bestellung, "id" | "bestellNr" | "firma" | "gekuendigtAm" | "intern"> & {
+    klasse: { name: string; slug: string };
+  };
+}) {
+  return {
+    vorname: t.vorname,
+    nachname: t.nachname,
+    email: t.email,
+    teamsEingeladenAm: t.teamsEingeladenAm?.toISOString() ?? null,
+    bestellungId: t.bestellung.id,
+    bestellNr: t.bestellung.bestellNr,
+    firma: t.bestellung.firma,
+    klasse: { name: t.bestellung.klasse.name, slug: t.bestellung.klasse.slug },
+    gekuendigt: t.bestellung.gekuendigtAm != null,
+    intern: t.bestellung.intern,
+  };
+}

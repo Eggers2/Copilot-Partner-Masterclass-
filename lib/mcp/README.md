@@ -34,9 +34,9 @@ Maker-Verbindung genutzt werden, damit Endnutzer des Agents kein Admin-Passwort 
 | Kurze Laufzeiten | Auth-Code 5 min (einmalig), Access-Token 1 h, Refresh-Token 30 Tage mit Rotation. |
 | Diebstahl-Erkennung | Wiederverwendeter Auth-Code widerruft alle Tokens des Clients; altes Refresh-Token ist nach Rotation wertlos. |
 | Nur Hashes in der DB | SHA-256 von Codes, Access- und Refresh-Tokens (`mcp_auth_codes`, `mcp_tokens`). |
-| Scopes | `crm:read` (9 Werkzeuge), `crm:write` (6 Werkzeuge). Schreibwerkzeuge sind ohne Scope unsichtbar und nicht aufrufbar. |
+| Scopes | `crm:read` (11 Werkzeuge), `crm:write` (6 Werkzeuge). Schreibwerkzeuge sind ohne Scope unsichtbar und nicht aufrufbar. |
 | Kein Löschen | Keine Delete-Werkzeuge; Umsatz, Rechnungsdaten und E-Mail-Adressen sind nicht änderbar. |
-| Kein Massenexport | Listen liefern maximal 50 Datensätze; Tracking-Felder (UTM, Referrer) nur auf Anfrage. |
+| Kein Massenexport | Listen liefern maximal 50 Datensätze; Ausnahme sind die Teilnehmer-Werkzeuge für den Abgleich mit Teams-Anwesenheitslisten (`teilnehmer_suchen` bis 200, `klassen_teilnehmer` bis 1000, nur Name, E-Mail, Bestellung und Klasse). Tracking-Felder (UTM, Referrer) nur auf Anfrage. |
 | Audit | Jeder Tool-Aufruf mit Argumenten, Dauer und Ergebnis in `mcp_audit_logs`; Schreibaktionen erzeugen zusätzlich `LeadActivity`-Einträge wie im Admin. |
 | Rate-Limit | 120 Aufrufe/min pro Token, Registrierungs- und Token-Endpunkt pro IP limitiert. |
 | Kein CORS | Der Endpunkt setzt keine CORS-Header, Browser können Antworten nicht auslesen. Eine Origin-Sperre gibt es bewusst nicht, weil Power Platform einen Origin-Header mitsendet und das Bearer-Token den Zugriff schützt. |
@@ -50,6 +50,7 @@ lib/mcp/oauth.ts        Registrierung, Auth-Codes, Token-Austausch/-Rotation, Wi
 lib/mcp/server.ts       JSON-RPC (initialize, ping, tools/list, tools/call)
 lib/mcp/audit.ts        Audit-Log und Verbindungsliste
 lib/mcp/tools/lesen.ts  Lesewerkzeuge
+lib/mcp/tools/teilnehmer.ts  Such- und Zähllogik der Teilnehmer-Werkzeuge (ohne DB, getestet in tests/mcp-teilnehmer.test.ts)
 lib/mcp/tools/schreiben.ts  Schreibwerkzeuge
 app/api/mcp/route.ts    MCP-Endpunkt (Streamable HTTP, zustandslos, nur POST)
 app/api/mcp/oauth/*     register, token, revoke
