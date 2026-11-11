@@ -449,6 +449,124 @@ export async function updateConnectDayTeilnehmer(
   });
 }
 
+export interface AdminTeilnehmerInput {
+  /** ID des EventTeilnehmer-Eintrags (ein Platz der Anmeldung) */
+  eventTeilnehmerId: string;
+  /**
+   * Masterclass-Platz der Bestellung, mit dem der Connect-Day-Platz verknüpft
+   * wird. Gleiche ID wie bisher = nur Daten korrigieren bzw. Ersatzperson
+   * eintragen, die nicht in der Masterclass-Liste steht.
+   */
+  bestellungTeilnehmerId: number;
+  vorname: string;
+  nachname: string;
+  email: string;
+  hinweise?: string | null;
+}
+
+export type AdminTeilnehmerErrorCode =
+  | "teilnehmer_not_found"
+  | "registration_cancelled"
+  | "invalid_input"
+  | "invalid_teilnehmer"
+  | "teilnehmer_already_registered";
+
+export class AdminTeilnehmerError extends Error {
+  constructor(public code: AdminTeilnehmerErrorCode) {
+    super(code);
+    this.name = "AdminTeilnehmerError";
+  }
+}
+
+/**
+ * Admin-Änderung EINES Teilnehmers einer Anmeldung. Anders als der Partner-
+ * Tausch (updateConnectDayTeilnehmer) darf der Admin Name, E-Mail und
+ * Hinweise frei setzen, etwa für eine Ersatzperson, die nicht in der
+ * Masterclass-Liste steht. Personenzahl, Rechnung und Plätze bleiben
+ * unverändert. Keine Sperre ab Eventbeginn, damit sich auch am Tag selbst
+ * noch korrigieren lässt.
+ */
+export async function adminUpdateConnectDayTeilnehmer(
+  input: AdminTeilnehmerInput
+): Promise<void> {
+  const vorname = input.vorname.trim();
+  const nachname = input.nachname.trim();
+  const email = input.email.trim().toLowerCase();
+  if (!vorname || !nachname || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new AdminTeilnehmerError("invalid_input");
+  }
+
+  const eintrag = await prisma.eventTeilnehmer.findUnique({
+    where: { id: input.eventTeilnehmerId },
+    select: {
+      id: true,
+      registration: {
+        select: {
+          id: true,
+          eventId: true,
+          bestellungId: true,
+          status: true,
+          bestellung: { select: { teilnehmer: { select: { id: true } } } },
+        },
+      },
+    },
+  });
+  if (!eintrag) throw new AdminTeilnehmerError("teilnehmer_not_found");
+  const registration = eintrag.registration;
+  if (registration.status !== "CONFIRMED") {
+    throw new AdminTeilnehmerError("registration_cancelled");
+  }
+
+  const gehoertZurBestellung = registration.bestellung.teilnehmer.some(
+    (t) => t.id === input.bestellungTeilnehmerId
+  );
+  if (!gehoertZurBestellung) {
+    throw new AdminTeilnehmerError("invalid_teilnehmer");
+  }
+
+  // Dieselbe Masterclass-Person darf weder in einem anderen Platz dieser
+  // Anmeldung noch in einer anderen bestätigten Anmeldung der Bestellung
+  // stecken.
+  const doppelt = await prisma.eventTeilnehmer.findFirst({
+    where: {
+      id: { not: eintrag.id },
+      bestellungTeilnehmerId: input.bestellungTeilnehmerId,
+      registration: {
+        eventId: registration.eventId,
+        bestellungId: registration.bestellungId,
+        status: "CONFIRMED",
+      },
+    },
+    select: { id: true },
+  });
+  if (doppelt) {
+    throw new AdminTeilnehmerError("teilnehmer_already_registered");
+  }
+
+  try {
+    await prisma.eventTeilnehmer.update({
+      where: { id: eintrag.id },
+      data: {
+        bestellungTeilnehmerId: input.bestellungTeilnehmerId,
+        vorname,
+        nachname,
+        email,
+        hinweise: input.hinweise?.trim() || null,
+      },
+    });
+  } catch (err) {
+    // Unique (registrationId, bestellungTeilnehmerId) bei parallelem Klick
+    if (
+      err instanceof Error &&
+      "code" in err &&
+      (err as { code?: string }).code === "P2002"
+    ) {
+      throw new AdminTeilnehmerError("teilnehmer_already_registered");
+    }
+    throw err;
+  }
+}
+
 export interface StornoResult {
   firma: string;
   bestellNr: string;

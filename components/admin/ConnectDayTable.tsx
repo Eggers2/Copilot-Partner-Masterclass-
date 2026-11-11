@@ -3,14 +3,17 @@
 import { useState } from "react";
 import { formatBerlinDate, formatBerlinDateTime } from "@/lib/datetime";
 import { useRouter } from "next/navigation";
-import { Download, RefreshCw, XCircle, Loader2, Wallet, Undo2 } from "lucide-react";
+import { Download, RefreshCw, XCircle, Loader2, Wallet, Undo2, Pencil } from "lucide-react";
 import {
   adminStornoConnectDayAction,
+  adminUpdateConnectDayTeilnehmerAction,
   markConnectDayBezahltAction,
   retryConnectDayInvoiceAction,
 } from "@/app/admin/connect-day/actions";
 
 interface TeilnehmerRow {
+  id: string;
+  bestellungTeilnehmerId: number;
   vorname: string;
   nachname: string;
   email: string;
@@ -31,7 +34,25 @@ interface RegistrationRow {
   bezahltAm: string | null;
   angemeldetAm: string;
   stornoAm: string | null;
+  bestellungTeilnehmer: BestellungTeilnehmerOption[];
+  belegtAnderswo: number[];
   teilnehmer: TeilnehmerRow[];
+}
+
+interface BestellungTeilnehmerOption {
+  id: number;
+  vorname: string;
+  nachname: string;
+  email: string;
+}
+
+interface EditForm {
+  eventTeilnehmerId: string;
+  bestellungTeilnehmerId: number;
+  vorname: string;
+  nachname: string;
+  email: string;
+  hinweise: string;
 }
 
 const INVOICE_BADGES: Record<string, { label: string; className: string }> = {
@@ -51,6 +72,54 @@ export function ConnectDayTable({
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [stornoId, setStornoId] = useState<string | null>(null);
+  const [edit, setEdit] = useState<EditForm | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const startEdit = (t: TeilnehmerRow) => {
+    setEditError(null);
+    setEdit({
+      eventTeilnehmerId: t.id,
+      bestellungTeilnehmerId: t.bestellungTeilnehmerId,
+      vorname: t.vorname,
+      nachname: t.nachname,
+      email: t.email,
+      hinweise: t.hinweise ?? "",
+    });
+  };
+
+  // Andere Person aus der Bestellung gewählt: Felder mit deren Daten füllen.
+  const waehlePerson = (r: RegistrationRow, id: number) => {
+    if (!edit) return;
+    const p = r.bestellungTeilnehmer.find((o) => o.id === id);
+    if (!p) return;
+    const istAktuell = r.teilnehmer.some(
+      (t) => t.id === edit.eventTeilnehmerId && t.bestellungTeilnehmerId === id
+    );
+    const aktuell = r.teilnehmer.find((t) => t.id === edit.eventTeilnehmerId);
+    setEdit({
+      ...edit,
+      bestellungTeilnehmerId: id,
+      vorname: istAktuell && aktuell ? aktuell.vorname : p.vorname,
+      nachname: istAktuell && aktuell ? aktuell.nachname : p.nachname,
+      email: istAktuell && aktuell ? aktuell.email : p.email,
+      hinweise: istAktuell && aktuell ? aktuell.hinweise ?? "" : "",
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!edit) return;
+    setSaving(true);
+    setEditError(null);
+    const result = await adminUpdateConnectDayTeilnehmerAction(edit);
+    setSaving(false);
+    if (result.error) {
+      setEditError(result.error);
+      return;
+    }
+    setEdit(null);
+    router.refresh();
+  };
 
   const retryInvoice = async (id: string) => {
     setLoading(id);
@@ -198,17 +267,54 @@ export function ConnectDayTable({
                       </p>
                     </td>
                     <td className="px-4 py-3 text-sm text-dark-slate-600">
-                      {r.teilnehmer.map((t) => (
-                        <p key={`${t.vorname}-${t.nachname}`}>
-                          {t.vorname} {t.nachname}
-                          {t.hinweise && (
-                            <span className="text-xs text-dark-slate-400">
-                              {" "}
-                              ({t.hinweise})
+                      {r.teilnehmer.map((t) =>
+                        edit?.eventTeilnehmerId === t.id ? (
+                          <TeilnehmerEditForm
+                            key={t.id}
+                            form={edit}
+                            optionen={r.bestellungTeilnehmer}
+                            gesperrt={
+                              new Set([
+                                ...r.belegtAnderswo,
+                                ...r.teilnehmer
+                                  .filter((o) => o.id !== t.id)
+                                  .map((o) => o.bestellungTeilnehmerId),
+                              ])
+                            }
+                            error={editError}
+                            saving={saving}
+                            onChange={setEdit}
+                            onPerson={(id) => waehlePerson(r, id)}
+                            onSave={saveEdit}
+                            onCancel={() => setEdit(null)}
+                          />
+                        ) : (
+                          <p key={t.id} className="group flex items-start gap-1">
+                            <span>
+                              {t.vorname} {t.nachname}
+                              {t.hinweise && (
+                                <span className="text-xs text-dark-slate-400">
+                                  {" "}
+                                  ({t.hinweise})
+                                </span>
+                              )}
+                              <span className="block text-xs text-dark-slate-400">
+                                {t.email}
+                              </span>
                             </span>
-                          )}
-                        </p>
-                      ))}
+                            {!storniert && (
+                              <button
+                                onClick={() => startEdit(t)}
+                                disabled={saving}
+                                className="p-1 rounded text-dark-slate-400 hover:text-[#030386] hover:bg-[#E3ECF8]/50 disabled:opacity-30"
+                                title="Teilnehmer ändern"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </p>
+                        )
+                      )}
                     </td>
                     <td className="px-4 py-3 text-sm text-dark-slate-600">
                       {r.personen}
@@ -330,6 +436,103 @@ export function ConnectDayTable({
             )}
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+}
+
+function TeilnehmerEditForm({
+  form,
+  optionen,
+  gesperrt,
+  error,
+  saving,
+  onChange,
+  onPerson,
+  onSave,
+  onCancel,
+}: {
+  form: EditForm;
+  optionen: BestellungTeilnehmerOption[];
+  gesperrt: Set<number>;
+  error: string | null;
+  saving: boolean;
+  onChange: (f: EditForm) => void;
+  onPerson: (id: number) => void;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  const input =
+    "w-full px-2 py-1 text-xs border border-dark-slate-200 rounded focus:outline-none focus:border-[#030386]";
+  return (
+    <div className="my-1 p-2 rounded-lg border border-[#030386]/30 bg-[#E3ECF8]/30 space-y-1.5 min-w-[260px]">
+      <label className="block text-xs text-dark-slate-500">
+        Person aus der Bestellung
+        <select
+          className={input}
+          value={form.bestellungTeilnehmerId}
+          onChange={(e) => onPerson(Number(e.target.value))}
+        >
+          {optionen.map((o) => (
+            <option
+              key={o.id}
+              value={o.id}
+              disabled={gesperrt.has(o.id) && o.id !== form.bestellungTeilnehmerId}
+            >
+              {`${o.vorname} ${o.nachname}`.trim() || o.email || `Platz ${o.id}`}
+              {gesperrt.has(o.id) ? " (schon angemeldet)" : ""}
+            </option>
+          ))}
+        </select>
+      </label>
+      <p className="text-[11px] text-dark-slate-400">
+        Für eine Ersatzperson außerhalb der Liste die Felder unten einfach
+        überschreiben.
+      </p>
+      <div className="grid grid-cols-2 gap-1.5">
+        <input
+          className={input}
+          placeholder="Vorname"
+          value={form.vorname}
+          onChange={(e) => onChange({ ...form, vorname: e.target.value })}
+        />
+        <input
+          className={input}
+          placeholder="Nachname"
+          value={form.nachname}
+          onChange={(e) => onChange({ ...form, nachname: e.target.value })}
+        />
+      </div>
+      <input
+        className={input}
+        type="email"
+        placeholder="E-Mail"
+        value={form.email}
+        onChange={(e) => onChange({ ...form, email: e.target.value })}
+      />
+      <input
+        className={input}
+        placeholder="Hinweise (z. B. Ernährung)"
+        value={form.hinweise}
+        onChange={(e) => onChange({ ...form, hinweise: e.target.value })}
+      />
+      {error && <p className="text-xs text-red-600">{error}</p>}
+      <div className="flex items-center gap-1.5">
+        <button
+          onClick={onSave}
+          disabled={saving}
+          className="flex items-center gap-1 px-2 py-1 text-xs font-semibold text-white bg-[#030386] rounded hover:opacity-90 disabled:opacity-50"
+        >
+          {saving && <Loader2 className="w-3 h-3 animate-spin" />}
+          Speichern
+        </button>
+        <button
+          onClick={onCancel}
+          disabled={saving}
+          className="px-2 py-1 text-xs text-dark-slate-500 hover:text-dark-slate-900"
+        >
+          Abbrechen
+        </button>
       </div>
     </div>
   );

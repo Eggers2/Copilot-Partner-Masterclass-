@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import {
+  adminUpdateConnectDayTeilnehmer,
+  AdminTeilnehmerError,
+  type AdminTeilnehmerErrorCode,
   cancelConnectDayRegistration,
   CONNECT_DAY_SLUG,
   promoteConnectDayWaitlist,
@@ -60,6 +63,45 @@ export async function adminStornoConnectDayAction(
   revalidatePath("/admin/connect-day");
   revalidatePath("/kundenportal/connect-day");
   revalidatePath("/kundenportal/bestellungen");
+  return { success: true };
+}
+
+const ADMIN_TEILNEHMER_ERRORS: Record<AdminTeilnehmerErrorCode, string> = {
+  teilnehmer_not_found: "Teilnehmer nicht gefunden.",
+  registration_cancelled:
+    "Die Anmeldung ist storniert, Teilnehmer lassen sich nicht mehr ändern.",
+  invalid_input: "Bitte Vorname, Nachname und eine gültige E-Mail-Adresse angeben.",
+  invalid_teilnehmer: "Die gewählte Person gehört nicht zu dieser Bestellung.",
+  teilnehmer_already_registered:
+    "Diese Person ist bereits über diese oder eine andere Anmeldung der Firma angemeldet.",
+};
+
+/**
+ * Ändert einen einzelnen Teilnehmer einer Anmeldung (Tausch oder Korrektur).
+ * Personenzahl, Rechnung und Plätze bleiben unverändert.
+ */
+export async function adminUpdateConnectDayTeilnehmerAction(input: {
+  eventTeilnehmerId: string;
+  bestellungTeilnehmerId: number;
+  vorname: string;
+  nachname: string;
+  email: string;
+  hinweise?: string;
+}): Promise<ActionResult> {
+  await requireAuth();
+
+  try {
+    await adminUpdateConnectDayTeilnehmer(input);
+  } catch (err) {
+    if (err instanceof AdminTeilnehmerError) {
+      return { error: ADMIN_TEILNEHMER_ERRORS[err.code] };
+    }
+    console.error("[ConnectDay] Admin-Teilnehmer-Änderung fehlgeschlagen:", err);
+    return { error: "Änderung fehlgeschlagen. Bitte erneut versuchen." };
+  }
+
+  revalidatePath("/admin/connect-day");
+  revalidatePath("/kundenportal/connect-day");
   return { success: true };
 }
 

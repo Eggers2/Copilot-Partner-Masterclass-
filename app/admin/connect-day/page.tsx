@@ -55,7 +55,17 @@ export default async function AdminConnectDayPage() {
   const registrations = await prisma.eventRegistration.findMany({
     where: { eventId: event.id },
     include: {
-      bestellung: { select: { firma: true, bestellNr: true, email: true } },
+      bestellung: {
+        select: {
+          firma: true,
+          bestellNr: true,
+          email: true,
+          teilnehmer: {
+            orderBy: { position: "asc" },
+            select: { id: true, vorname: true, nachname: true, email: true },
+          },
+        },
+      },
       teilnehmer: { orderBy: { position: "asc" } },
     },
     orderBy: { erstelltAm: "desc" },
@@ -250,7 +260,22 @@ export default async function AdminConnectDayPage() {
           bezahltAm: r.bezahltAm?.toISOString() ?? null,
           angemeldetAm: r.erstelltAm.toISOString(),
           stornoAm: r.stornoAm?.toISOString() ?? null,
+          // Masterclass-Plätze der Bestellung als Auswahl für den Admin-Tausch
+          bestellungTeilnehmer: r.bestellung.teilnehmer
+            .filter((t) => t.vorname.trim() || t.nachname.trim() || t.email.trim())
+            .map((t) => ({
+              id: t.id,
+              vorname: t.vorname,
+              nachname: t.nachname,
+              email: t.email,
+            })),
+          // In anderen bestätigten Anmeldungen derselben Bestellung belegt
+          belegtAnderswo: confirmed
+            .filter((o) => o.id !== r.id && o.bestellungId === r.bestellungId)
+            .flatMap((o) => o.teilnehmer.map((t) => t.bestellungTeilnehmerId)),
           teilnehmer: r.teilnehmer.map((t) => ({
+            id: t.id,
+            bestellungTeilnehmerId: t.bestellungTeilnehmerId,
             vorname: t.vorname,
             nachname: t.nachname,
             email: t.email,
