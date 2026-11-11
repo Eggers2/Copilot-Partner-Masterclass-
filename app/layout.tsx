@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-import { SITE_URL } from "@/lib/site";
+import { OG_IMAGE, SITE_URL } from "@/lib/site";
 
 const TITLE = "Copilot Partner Masterclass für Systemhäuser | NextSkills";
 const DESCRIPTION =
@@ -19,20 +19,13 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "Copilot Partner Masterclass",
     locale: "de_DE",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Copilot Partner Masterclass von NextSkills",
-      },
-    ],
+    images: [OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
-    images: ["/og-image.png"],
+    images: [OG_IMAGE.url],
   },
   robots: {
     index: true,
