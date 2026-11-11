@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { OG_IMAGE } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Copilot-Berater finden | copilotberater.de",
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
     description:
       "Zertifizierte Microsoft Copilot Partner im DACH-Raum – per PLZ oder Ort den passenden Berater finden.",
     type: "website",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [OG_IMAGE],
   },
 };
 

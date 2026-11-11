@@ -4,6 +4,7 @@ import { getLandingKlassenRows } from "@/lib/klassen";
 import { buildLandingKlassen } from "@/lib/landing/klassen";
 import { buildFaqs, PARTNER_COUNT, MITARBEITER_COUNT } from "@/lib/landing/inhalte";
 import { buildLandingJsonLd } from "@/lib/landing/schema";
+import { OG_IMAGE } from "@/lib/site";
 
 // Klassen und Belegung kommen live aus der DB → kein Static Render.
 // Welche Klasse als offen gilt, steuert der Admin unter Klassen (Status OPEN).
@@ -29,8 +30,23 @@ export async function generateMetadata(): Promise<Metadata> {
     // Canonical nur hier, nicht im Root-Layout: dort würde es jede Unterseite
     // erben und alle auf die Startseite zeigen lassen.
     alternates: { canonical: "/" },
-    openGraph: { title: TITLE, description, url: "/" },
-    twitter: { title: TITLE, description },
+    // Next.js ersetzt openGraph und twitter aus dem Layout komplett statt
+    // sie zu mischen. Ohne images hier fehlt der Startseite das Vorschaubild.
+    openGraph: {
+      title: TITLE,
+      description,
+      url: "/",
+      type: "website",
+      siteName: "Copilot Partner Masterclass",
+      locale: "de_DE",
+      images: [OG_IMAGE],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: TITLE,
+      description,
+      images: [OG_IMAGE.url],
+    },
   };
 }
 

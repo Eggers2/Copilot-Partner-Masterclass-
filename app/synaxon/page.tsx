@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { OG_IMAGE } from "@/lib/site";
 import Link from "next/link";
 import LinkedInInsightTag from "@/components/LinkedInInsightTag";
 import { parseSynaxonSrc } from "@/lib/synaxon/source";
@@ -37,13 +38,13 @@ export const metadata: Metadata = {
     url: PAGE_URL,
     siteName: "NextSkills",
     locale: "de_DE",
-    images: [{ url: `${BASE_URL}/og-image.png`, width: 1200, height: 630, alt: "Copilot Partner Masterclass" }],
+    images: [{ url: `${BASE_URL}${OG_IMAGE.url}`, width: 1200, height: 630, alt: "Copilot Partner Masterclass" }],
   },
   twitter: {
     card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
-    images: [`${BASE_URL}/og-image.png`],
+    images: [`${BASE_URL}${OG_IMAGE.url}`],
   },
 };
 

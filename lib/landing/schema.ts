@@ -1,4 +1,4 @@
-import { SITE_URL } from "@/lib/site";
+import { OG_IMAGE, SITE_URL } from "@/lib/site";
 import {
   PARTNER_VIDEOS,
   PROGRAMM_DEFINITION,
@@ -22,7 +22,7 @@ export function buildLandingJsonLd(offen: LandingKlasse, faqs: Faq[]) {
         "@id": org,
         name: "NextSkills GmbH",
         url: SITE_URL,
-        logo: `${SITE_URL}/og-image.png`,
+        logo: `${SITE_URL}${OG_IMAGE.url}`,
         email: "info@next-skills.de",
         description:
           "NextSkills ist auf Microsoft 365 Copilot Adoption und das Enablement von Microsoft-Partnern im DACH-Raum spezialisiert.",
