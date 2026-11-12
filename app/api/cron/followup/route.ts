@@ -3,6 +3,7 @@ import { resolveAppBaseUrl } from "@/lib/auth/customer";
 import { berlinNow } from "@/lib/newsletter/schedule";
 import { imSendefenster } from "@/lib/followup/sequenz";
 import { runFollowupCron } from "@/lib/followup/versand";
+import { bereinigeSchutzLog } from "@/lib/anmeldeschutz/log";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -29,6 +30,10 @@ export async function POST(req: NextRequest) {
   if (req.headers.get("x-cron-secret") !== secret) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
+
+  // Protokoll des Bot-Schutzes: Einträge älter als 90 Tage löschen,
+  // unabhängig vom Sendefenster.
+  await bereinigeSchutzLog().catch((err) => console.error("[cron/followup] Schutz-Log:", err));
 
   const force = new URL(req.url).searchParams.get("force") === "1";
   const t = berlinNow();

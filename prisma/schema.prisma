@@ -994,3 +994,21 @@ model ZeitzonenMigrationFollowUp {
 
   @@map("zeitzonen_migration_followup")
 }
+
+/// Abgewiesene oder verdächtige Anmeldungen an öffentlichen Formularen
+/// (Bot-Schutz, lib/anmeldeschutz). Keine vollständigen E-Mail-Adressen und
+/// keine IP-Adressen, nur ein gesalzener IP-Hash und die Domain. Einträge
+/// älter als 90 Tage löscht der stündliche Follow-up-Cron.
+model AnmeldungSchutzLog {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  endpunkt    String   @db.VarChar(40)
+  ipHash      String?  @map("ip_hash") @db.VarChar(64)
+  grund       String   @db.VarChar(40)
+  emailDomain String?  @map("email_domain") @db.VarChar(255)
+  details     String?
+
+  @@index([createdAt])
+  @@index([grund])
+  @@map("anmeldung_schutz_log")
+}
