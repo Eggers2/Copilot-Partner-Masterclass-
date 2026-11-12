@@ -6,11 +6,7 @@ import { addActivity } from "@/lib/db/leads";
 // setzt. Automatische Mails (Wartelisten-Bestätigung, Follow-up-Sequenz)
 // gehen dann nie raus, im Admin und im CRM-Werkzeug ist es deutlich markiert.
 
-export const KEINE_MAILS_GRUND = {
-  abmeldelinkWarteliste: "Abmeldelink Wartelisten-Mails",
-  newsletterAbmeldung: "Newsletter-Abmeldung",
-  manuell: "Manuell im Admin gesetzt",
-} as const;
+export { KEINE_MAILS_GRUND } from "./keineMailsGruende";
 
 /**
  * Setzt "Keine E-Mails" und beendet eine laufende Sequenz. Idempotent: ist das

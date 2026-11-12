@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Script from "next/script";
 import {
   AlertCircle,
   CheckCircle2,
   ArrowRight,
   Mail,
+  User,
+  Building2,
   Layers,
   Box,
   Users,
@@ -36,7 +39,23 @@ interface LandingPageProps {
   mitarbeiterCount: string;
   klassen: LandingKlassen;
   faqs: Faq[];
+  /** Cloudflare Turnstile, null = nicht eingerichtet (kein Widget). */
+  turnstileSiteKey: string | null;
+  /** Signierter Zeitstempel für die Zeitfalle (lib/anmeldeschutz/zeitfalle). */
+  formularToken: string | null;
 }
+
+declare global {
+  interface Window {
+    turnstile?: { reset: (widget?: string | HTMLElement) => void };
+  }
+}
+
+/** Unsichtbares Feld gegen Bots, muss zu HONEYPOT_FELD in lib/anmeldeschutz/pruefung passen. */
+const HONEYPOT_FELD = "firmenwebseite";
+
+const INPUT_CLASS =
+  "w-full pl-12 pr-4 py-4 bg-[#2d2d48] border border-[#2d2d48] focus:border-[#00C896] rounded-[10px] text-white placeholder-[#6B6B8A] outline-none transition-colors text-base disabled:opacity-50";
 
 /** Höhe der fixen Navigationszeile (Tailwind h-16) für den Scroll-Versatz. */
 const NAV_HEIGHT = 64;
@@ -49,7 +68,14 @@ const PHASE_LABEL: Record<LandingKlasse["phase"], string> = {
   abgeschlossen: "abgeschlossen",
 };
 
-export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, faqs }: LandingPageProps) {
+export default function LandingPage({
+  partnerCount,
+  mitarbeiterCount,
+  klassen,
+  faqs,
+  turnstileSiteKey,
+  formularToken,
+}: LandingPageProps) {
   const { offen, zeitleiste, gestartet, geradeGestartet } = klassen;
   const percent =
     offen.capacity && offen.capacity > 0 ? Math.min(100, (offen.belegt / offen.capacity) * 100) : 0;
@@ -70,10 +96,13 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Wert direkt aus dem Feld lesen: iOS-Autofill löst nicht immer onChange aus.
-    const value = String(new FormData(e.currentTarget).get("email") ?? email).trim();
-    if (!value) {
-      setFormState({ status: "error", message: "Bitte geben Sie Ihre E-Mail-Adresse ein." });
+    // Werte direkt aus den Feldern lesen: iOS-Autofill löst nicht immer onChange aus.
+    const fd = new FormData(e.currentTarget);
+    const value = String(fd.get("email") ?? email).trim();
+    const name = String(fd.get("name") ?? "").trim();
+    const company = String(fd.get("company") ?? "").trim();
+    if (!value || !name || !company) {
+      setFormState({ status: "error", message: "Bitte geben Sie Name, Firma und E-Mail-Adresse an." });
       return;
     }
     if (value !== email) setEmail(value);
@@ -86,7 +115,15 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
       const response = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: value, ...(utm ?? {}) }),
+        body: JSON.stringify({
+          email: value,
+          name,
+          company,
+          [HONEYPOT_FELD]: String(fd.get(HONEYPOT_FELD) ?? ""),
+          formular_token: formularToken,
+          turnstile_token: String(fd.get("cf-turnstile-response") ?? ""),
+          ...(utm ?? {}),
+        }),
       });
 
       const data = await response.json();
@@ -96,11 +133,14 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
         return;
       }
 
+      // Ein Turnstile-Token gilt nur einmal: für den nächsten Versuch neu holen.
+      window.turnstile?.reset();
       setFormState({
         status: "error",
         message: data.error || "Ein Fehler ist aufgetreten.",
       });
     } catch {
+      window.turnstile?.reset();
       setFormState({
         status: "error",
         message: "Verbindungsfehler. Bitte versuchen Sie es erneut.",
@@ -192,20 +232,70 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex flex-col gap-3">
           <div className="flex-1 relative">
+            <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#6B6B8A]" />
+            <input
+              type="text"
+              name="name"
+              placeholder="Vor- und Nachname"
+              aria-label="Vor- und Nachname"
+              autoComplete="name"
+              required
+              minLength={2}
+              maxLength={200}
+              disabled={formState.status === "loading"}
+              className={INPUT_CLASS}
+            />
+          </div>
+          <div className="flex-1 relative">
+            <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#6B6B8A]" />
+            <input
+              type="text"
+              name="company"
+              placeholder="Firma"
+              aria-label="Firma"
+              autoComplete="organization"
+              required
+              minLength={2}
+              maxLength={200}
+              disabled={formState.status === "loading"}
+              className={INPUT_CLASS}
+            />
+          </div>
+          <div className="flex-1 relative">
             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#6B6B8A]" />
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="ihre@email.de"
+              placeholder="ihre@firma.de"
+              aria-label="Geschäftliche E-Mail-Adresse"
               name="email"
               autoComplete="email"
               inputMode="email"
               required
               disabled={formState.status === "loading"}
-              className="w-full pl-12 pr-4 py-4 bg-[#2d2d48] border border-[#2d2d48] focus:border-[#00C896] rounded-[10px] text-white placeholder-[#6B6B8A] outline-none transition-colors text-base disabled:opacity-50"
+              className={INPUT_CLASS}
             />
           </div>
+          {/* Honeypot: für Menschen unsichtbar (nicht display:none, das erkennen Bots). */}
+          <div
+            aria-hidden="true"
+            style={{ position: "absolute", left: "-10000px", top: "auto", width: 1, height: 1, overflow: "hidden" }}
+          >
+            <label>
+              Webseite der Firma
+              <input type="text" name={HONEYPOT_FELD} tabIndex={-1} autoComplete="off" defaultValue="" />
+            </label>
+          </div>
+          {turnstileSiteKey && (
+            <div
+              className="cf-turnstile"
+              data-sitekey={turnstileSiteKey}
+              data-theme="dark"
+              data-language="de"
+              data-size="flexible"
+            />
+          )}
           <button
             type="submit"
             disabled={formState.status === "loading"}
@@ -245,6 +335,9 @@ export default function LandingPage({ partnerCount, mitarbeiterCount, klassen, f
 
   return (
     <main className="min-h-screen" style={{ fontFamily: "'Figtree', system-ui, sans-serif" }}>
+      {turnstileSiteKey && (
+        <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="afterInteractive" async defer />
+      )}
       {/* ═══ 1. NAVBAR ═══ */}
       <nav
         className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"

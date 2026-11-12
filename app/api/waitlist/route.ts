@@ -2,11 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { LeadSource } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { resolveAppBaseUrl } from "@/lib/auth/customer";
-import {
-  bestaetigungUeberApp,
-  sendeWartelisteBestaetigung,
-  sequenzStartDaten,
-} from "@/lib/followup/versand";
+import { addActivity } from "@/lib/db/leads";
+import { KEINE_MAILS_GRUND } from "@/lib/leads/keineMails";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { loeseWartelisteBestaetigungAus, sequenzStartDaten } from "@/lib/followup/versand";
+import { clientIp, protokolliere } from "@/lib/anmeldeschutz/log";
+import { pruefeAnmeldung } from "@/lib/anmeldeschutz/pruefung";
+import { turnstileSecret } from "@/lib/anmeldeschutz/turnstile";
+
+// Wartelisten-Formular der Startseite (app/LandingPage.tsx).
+//
+// Bot-Schutz (lib/anmeldeschutz): Rate Limit, Honeypot, Zeitfalle, Turnstile,
+// Pflichtfelder Name und Firma, Wegwerf-Domains. Erkannte Bots bekommen eine
+// Erfolgsantwort, ohne dass etwas angelegt wird. Verdächtige Anmeldungen
+// landen in der Prüfquarantäne: Lead mit "Keine E-Mails", ohne Sequenz, bis
+// Alex ihn im Admin freigibt. Jede Abweisung steht in anmeldung_schutz_log.
+
+const ENDPUNKT = "waitlist";
+const RATE_LIMIT = 5;
+const RATE_FENSTER_MS = 60 * 60 * 1000;
 
 function truncate(value: unknown, max: number): string | null {
   if (typeof value !== "string") return null;
@@ -35,100 +49,122 @@ function parseFirstTouchAt(value: unknown): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    !!error &&
+    typeof error === "object" &&
+    "code" in error &&
+    (error as { code?: string }).code === "P2002"
+  );
+}
+
+/** Gleiche Antwort für neue, bereits vorhandene und still verworfene Anmeldungen. */
+function erfolg(status: 200 | 201 = 201) {
+  return NextResponse.json(
+    { success: true, message: "Ihre Bewerbung wurde erfolgreich eingereicht." },
+    { status }
+  );
+}
+
 export async function POST(request: NextRequest) {
+  const ip = clientIp(request.headers);
   try {
-    const body = await request.json();
-    const { email } = body;
-
-    if (!email || typeof email !== "string") {
+    if (!checkRateLimit(`waitlist:${ip ?? "unbekannt"}`, RATE_LIMIT, RATE_FENSTER_MS)) {
+      await protokolliere({ endpunkt: ENDPUNKT, grund: "rate_limit", ip });
       return NextResponse.json(
-        { error: "E-Mail-Adresse ist erforderlich." },
-        { status: 400 }
+        { error: "Zu viele Anfragen. Bitte versuchen Sie es später noch einmal." },
+        { status: 429 }
       );
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { error: "Bitte geben Sie eine gültige E-Mail-Adresse ein." },
-        { status: 400 }
-      );
+    let body: Record<string, unknown>;
+    try {
+      const parsed = await request.json();
+      body = parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : {};
+    } catch {
+      body = {};
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
+    const entscheidung = await pruefeAnmeldung(body, { ip, turnstileSecret: turnstileSecret() });
+
+    if (entscheidung.aktion === "still") {
+      await protokolliere({ endpunkt: ENDPUNKT, ip, ...entscheidung });
+      return erfolg(200);
+    }
+    if (entscheidung.aktion === "abweisen") {
+      await protokolliere({ endpunkt: ENDPUNKT, ip, ...entscheidung });
+      return NextResponse.json({ error: entscheidung.meldung }, { status: 400 });
+    }
+
+    for (const p of entscheidung.protokoll) {
+      await protokolliere({ endpunkt: ENDPUNKT, ip, emailDomain: entscheidung.emailDomain, ...p });
+    }
+
+    const { email, name, company, verdacht, hinweise } = entscheidung;
+
+    // Bestehender Lead: nichts ändern, keine Mail, gleiche Antwort wie bei
+    // einer neuen Anmeldung (sonst ließe sich ablesen, wer eingetragen ist).
+    const vorhanden = await prisma.lead.findFirst({
+      where: { email: { equals: email, mode: "insensitive" } },
+      select: { id: true },
+    });
+    if (vorhanden) {
+      await protokolliere({ endpunkt: ENDPUNKT, grund: "bereits_vorhanden", ip, emailDomain: entscheidung.emailDomain });
+      return erfolg();
+    }
 
     const utmSource = truncate(body.utm_source, 100);
-    const utmMedium = truncate(body.utm_medium, 100);
-    const utmCampaign = truncate(body.utm_campaign, 100);
-    const utmContent = truncate(body.utm_content, 100);
-    const utmTerm = truncate(body.utm_term, 100);
-    const referrer = truncate(body.referrer, 500);
-    const landingPage = truncate(body.landing_page, 500);
-    const firstTouchAt = parseFirstTouchAt(body.first_touch_at);
     const mappedSource = parseLeadSource(utmSource);
+    const quarantaene = verdacht.length > 0;
+    const notizZeilen = [
+      ...hinweise.map((h) => `Hinweis: ${h}`),
+      ...(quarantaene ? [`Bot-Prüfung: ${verdacht.join("; ")}`] : []),
+    ];
 
     const entry = await prisma.lead.create({
       data: {
-        email: normalizedEmail,
+        email,
+        name,
+        company,
+        notes: notizZeilen.length > 0 ? notizZeilen.join("\n") : null,
         utmSource,
-        utmMedium,
-        utmCampaign,
-        utmContent,
-        utmTerm,
-        referrer,
-        landingPage,
-        firstTouchAt,
+        utmMedium: truncate(body.utm_medium, 100),
+        utmCampaign: truncate(body.utm_campaign, 100),
+        utmContent: truncate(body.utm_content, 100),
+        utmTerm: truncate(body.utm_term, 100),
+        referrer: truncate(body.referrer, 500),
+        landingPage: truncate(body.landing_page, 500),
+        firstTouchAt: parseFirstTouchAt(body.first_touch_at),
         ...(mappedSource ? { source: mappedSource } : {}),
-        // Follow-up-Sequenz (lib/followup): vier Mails an Tag 2, 5, 9 und 14.
-        ...sequenzStartDaten(),
+        ...(quarantaene
+          ? // Prüfquarantäne: keine Mails, keine Sequenz bis zur Freigabe im Admin.
+            { keineMailsAm: new Date(), keineMailsGrund: KEINE_MAILS_GRUND.botVerdacht }
+          : // Follow-up-Sequenz (lib/followup): vier Mails an Tag 2, 5, 9 und 14.
+            sequenzStartDaten()),
       },
     });
 
-    // Bestätigung + interne Info: über Resend, sobald die Vorlage
-    // "warteliste_bestaetigung" unter /admin/emails aktiv ist. Sonst wie
-    // bisher über den n8n-Webhook (Workflow "EMail Masterclass").
-    const webhookUrl = process.env.N8N_WEBHOOK_URL;
-    if (await bestaetigungUeberApp().catch(() => false)) {
-      await sendeWartelisteBestaetigung(entry, await resolveAppBaseUrl());
-    } else if (webhookUrl) {
-      fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: normalizedEmail,
-          timestamp: new Date().toISOString(),
-          entryId: entry.id,
-          source: "application",
-        }),
-      })
-        .then((res) => {
-          if (!res.ok) console.error(`N8N webhook returned ${res.status}`);
-        })
-        .catch((err) => console.error("N8N webhook delivery failed:", err));
+    if (quarantaene) {
+      await addActivity(entry.id, {
+        type: "NOTE",
+        content: `Keine E-Mails: ${KEINE_MAILS_GRUND.botVerdacht} (${verdacht.join("; ")}). Freigabe auf der Lead-Seite.`,
+      });
+      await protokolliere({
+        endpunkt: ENDPUNKT,
+        grund: "verdacht_quarantaene",
+        ip,
+        emailDomain: entscheidung.emailDomain,
+        details: verdacht.join("; "),
+      });
+    } else {
+      await loeseWartelisteBestaetigungAus(entry, await resolveAppBaseUrl());
     }
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: "Ihre Bewerbung wurde erfolgreich eingereicht.",
-        id: entry.id,
-      },
-      { status: 201 }
-    );
+    return erfolg();
   } catch (error: unknown) {
-    if (
-      error &&
-      typeof error === "object" &&
-      "code" in error &&
-      error.code === "P2002"
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "Mit dieser E-Mail-Adresse liegt bereits eine Bewerbung vor.",
-        },
-        { status: 409 }
-      );
+    if (isUniqueViolation(error)) {
+      // Gleichzeitige doppelte Anmeldung: wie "bereits vorhanden" behandeln.
+      return erfolg();
     }
 
     console.error("Waitlist POST error:", error);

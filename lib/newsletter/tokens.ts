@@ -12,7 +12,8 @@ export type TokenPurpose =
   | "unsub"
   | "umfrage-slot"
   | "umfrage-klasse"
-  | "warteliste-abmelden";
+  | "warteliste-abmelden"
+  | "warteliste-formular";
 
 function getSecret(): string {
   const secret = process.env.CUSTOMER_SESSION_SECRET;

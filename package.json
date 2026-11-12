@@ -25,6 +25,7 @@
     "@anthropic-ai/sdk": "^0.90.0",
     "@prisma/client": "^5.22.0",
     "bcryptjs": "^3.0.3",
+    "disposable-email-domains-js": "1.26.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.468.0",
     "luxon": "^3.7.2",

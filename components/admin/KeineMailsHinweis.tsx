@@ -1,8 +1,13 @@
 "use client";
 
 import { useTransition } from "react";
-import { MailX } from "lucide-react";
-import { clearKeineMailsAction, setKeineMailsAction } from "@/app/admin/actions";
+import { MailX, ShieldAlert } from "lucide-react";
+import {
+  clearKeineMailsAction,
+  freigebenBotPruefungAction,
+  setKeineMailsAction,
+} from "@/app/admin/actions";
+import { KEINE_MAILS_GRUND } from "@/lib/leads/keineMailsGruende";
 import { formatBerlinDateTime } from "@/lib/datetime";
 
 // Feld "Keine E-Mails" am Lead: gesetzt als deutlicher roter Hinweis, damit
@@ -34,6 +39,34 @@ export function KeineMailsHinweis({
         >
           <MailX className="w-3.5 h-3.5" />
           Als „Keine E-Mails“ markieren
+        </button>
+      </div>
+    );
+  }
+
+  if (keineMailsGrund === KEINE_MAILS_GRUND.botVerdacht) {
+    return (
+      <div role="alert" className="rounded-xl border-2 border-amber-300 bg-amber-50 p-4 flex items-start gap-3">
+        <ShieldAlert className="w-6 h-6 text-amber-700 flex-shrink-0 mt-0.5" />
+        <div className="flex-1">
+          <p className="text-base font-bold text-amber-900 m-0">Anmeldung in Prüfung: Verdacht auf Bot</p>
+          <p className="text-sm text-amber-900/90 mt-1 mb-0">
+            Seit {formatBerlinDateTime(keineMailsAm)}. Den Grund findest du in der Notiz. Bisher ging keine Mail raus.
+          </p>
+          <p className="text-xs text-amber-900/70 mt-1 mb-0">
+            Freigeben verschickt die Wartelisten-Bestätigung und startet die Follow-up-Sequenz.
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => {
+            if (!confirm("Anmeldung freigeben? Der Lead bekommt die Bestätigung und die Follow-up-Mails.")) return;
+            startTransition(() => freigebenBotPruefungAction(leadId));
+          }}
+          className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50 whitespace-nowrap"
+        >
+          Freigeben
         </button>
       </div>
     );

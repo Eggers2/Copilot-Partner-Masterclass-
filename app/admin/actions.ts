@@ -19,6 +19,7 @@ import {
 } from "@/lib/db/leads";
 import { analyzeFirstCall, type FirstCallAnalysis } from "@/lib/firstcall/analyze";
 import { KEINE_MAILS_GRUND, entsperreMails, sperreMails } from "@/lib/leads/keineMails";
+import { gibQuarantaeneFrei } from "@/lib/followup/versand";
 import { sendEmail, sendBulkWithAttachments } from "@/lib/email/resend";
 import { plainTextToHtml } from "@/lib/email/format";
 import { summarizeTermin } from "@/lib/termine/summarize";
@@ -236,6 +237,18 @@ export async function setKeineMailsAction(id: string): Promise<void> {
   await sperreMails(id, KEINE_MAILS_GRUND.manuell);
   revalidatePath(`/admin/leads/${id}`);
   revalidatePath("/admin");
+}
+
+/**
+ * Gibt einen Lead aus der Prüfquarantäne des Wartelisten-Formulars frei:
+ * Bestätigung und Follow-up-Sequenz starten wie bei einer normalen Anmeldung.
+ */
+export async function freigebenBotPruefungAction(id: string): Promise<void> {
+  await requireAuth();
+  await gibQuarantaeneFrei(id, await resolveAppBaseUrl());
+  revalidatePath(`/admin/leads/${id}`);
+  revalidatePath("/admin");
+  revalidatePath("/admin/anmeldeschutz");
 }
 
 /** Entfernt "Keine E-Mails" am Lead. */

@@ -140,6 +140,56 @@ export async function sendeWartelisteBestaetigung(lead: Lead, baseUrl: string): 
   }
 }
 
+/**
+ * Bestätigung und interne Info zum Wartelisten-Eintrag: über Resend, sobald
+ * die Vorlage "warteliste_bestaetigung" unter /admin/emails aktiv ist. Sonst
+ * wie bisher über den n8n-Webhook (Workflow "EMail Masterclass"). Wirft nicht.
+ */
+export async function loeseWartelisteBestaetigungAus(lead: Lead, baseUrl: string): Promise<void> {
+  if (lead.keineMailsAm) return;
+  const webhookUrl = process.env.N8N_WEBHOOK_URL;
+  if (await bestaetigungUeberApp().catch(() => false)) {
+    await sendeWartelisteBestaetigung(lead, baseUrl);
+  } else if (webhookUrl) {
+    fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: lead.email,
+        timestamp: new Date().toISOString(),
+        entryId: lead.id,
+        source: "application",
+      }),
+    })
+      .then((res) => {
+        if (!res.ok) console.error(`N8N webhook returned ${res.status}`);
+      })
+      .catch((err) => console.error("N8N webhook delivery failed:", err));
+  }
+}
+
+/**
+ * Gibt einen Lead aus der Prüfquarantäne des Wartelisten-Formulars frei:
+ * hebt "Keine E-Mails" auf, startet die Follow-up-Sequenz und verschickt die
+ * Bestätigung, als hätte er sich eben eingetragen. Greift nur bei Leads, die
+ * noch in der Quarantäne stehen und nie eine Sequenz hatten. Liefert true,
+ * wenn freigegeben wurde.
+ */
+export async function gibQuarantaeneFrei(leadId: string, baseUrl: string): Promise<boolean> {
+  const { count } = await prisma.lead.updateMany({
+    where: { id: leadId, keineMailsGrund: KEINE_MAILS_GRUND.botVerdacht, sequenzStartAm: null },
+    data: { keineMailsAm: null, keineMailsGrund: null, ...sequenzStartDaten() },
+  });
+  if (count === 0) return false;
+  await addActivity(leadId, {
+    type: "NOTE",
+    content: "Bot-Prüfung: Anmeldung freigegeben, Bestätigung und Follow-up-Sequenz gestartet",
+  });
+  const lead = await prisma.lead.findUnique({ where: { id: leadId } });
+  if (lead) await loeseWartelisteBestaetigungAus(lead, baseUrl);
+  return true;
+}
+
 // ─── Stündlicher Cron: Follow-ups ────────────────────────────────────────────
 
 export interface FollowupCronErgebnis {

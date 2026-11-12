@@ -5,6 +5,8 @@ import { buildLandingKlassen } from "@/lib/landing/klassen";
 import { buildFaqs, PARTNER_COUNT, MITARBEITER_COUNT } from "@/lib/landing/inhalte";
 import { buildLandingJsonLd } from "@/lib/landing/schema";
 import { OG_IMAGE } from "@/lib/site";
+import { turnstileSiteKey } from "@/lib/anmeldeschutz/turnstile";
+import { erzeugeFormularToken } from "@/lib/anmeldeschutz/zeitfalle";
 
 // Klassen und Belegung kommen live aus der DB → kein Static Render.
 // Welche Klasse als offen gilt, steuert der Admin unter Klassen (Status OPEN).
@@ -66,6 +68,8 @@ export default async function Page() {
         mitarbeiterCount={MITARBEITER_COUNT}
         klassen={klassen}
         faqs={faqs}
+        turnstileSiteKey={turnstileSiteKey()}
+        formularToken={erzeugeFormularToken()}
       />
     </>
   );
